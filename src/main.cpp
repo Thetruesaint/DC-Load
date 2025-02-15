@@ -1,8 +1,12 @@
+#define WOKWI_SIMULATION
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#ifndef WOKWI_SIMULATION
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_MCP4725.h>
+#endif
 #include <Keypad.h>                           //http://playground.arduino.cc/Code/Keypad
 #include <EEPROM.h>                           //include EEPROM library used for storing setup data
 #include <math.h>                             
@@ -15,7 +19,7 @@ void loop();
 void load_ON_status(boolean loadonoff);
 void read_encoder();
 void readKeypadInput();
-void LoadSwitch();
+void Load_Switch_Check();
 void LimitsChecks ();
 void ActualReading();
 void currentDisplayCal();
@@ -51,8 +55,10 @@ void transientListSetup() ;
 void transientLoadToggle() ;
 void transientSwitch(float current_setting, boolean toggle_status) ;
 
+#ifndef WOKWI_SIMULATION
 Adafruit_MCP4725 dac;                         // Objeto dac para el MP4725
 Adafruit_ADS1115 ads;                         // Objeto ads para el ADS115
+#endif
 LiquidCrystal_I2C lcd(0x27, 20, 4);           // Objeto lcd.Sddress to 0x27 for a 20 chars and 4 line display
 RTC_DS1307 rtc;                               // Objeto rtc para el DS1307
 
@@ -172,12 +178,15 @@ int current_instruction;                      //used in Transient List Mode
 void setup() {
 
   //-------------------------------------Inicializa perifericos-------------------------------------------
+  Serial.begin(9600);                           // Para Debugs y Logs
   lcd.begin(20,4);                              // initialize the lcd, default address 0x27
+  rtc.begin();                                  // Inicializa el RTC en teoría en address 0x68
+  #ifndef WOKWI_SIMULATION
   ads.begin();                                  // initialize the ads, default address 0x48
   ads.setGain(GAIN_TWOTHIRDS);                  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
   dac.begin(0x60);                              // initialize the ads, default address 0x60
-  rtc.begin();                                  // Inicializa el RTC en teoría en address 0x68
-  Serial.begin(9600);                           // Para Debugs y Logs
+  #endif
+
   // Ver de agregar Heald Checks antes de inicializar e informar error de detectarse.
 
   //-------------------------------------Configuraciones iniciales de única vez-----------------------------
@@ -252,7 +261,7 @@ void setup() {
 //------------------------------------- Bucle Principal-------------------------------------------------
 void loop() {
   readKeypadInput();                                     //read Keypad entry
-  LoadSwitch();                                        //Load on/off
+  Load_Switch_Check();                                        //Load on/off
   Transient();                                           //test for Transient Mode
   lcd.setCursor(18,3);                                   //sets display of Mode indicator at bottom right of LCD
   lcd.print(Mode);                                       //display mode selected on LCD (CC, CP, CR or BC)
@@ -279,7 +288,9 @@ void load_ON_status(boolean loadonoff) {
     if(!loadonoff) {
       lcd.setCursor(8,0);
       lcd.print("OFF");
+      #ifndef WOKWI_SIMULATION
       dac.setVoltage(0,false);                          //Ensures Load is OFF - sets DAC output voltage to 0
+      #endif
       Load = 0;                                         //Setea Flag para el Log
     }
     else if (loadonoff) {
@@ -428,7 +439,7 @@ void readKeypadInput (void) {
   }
 
 //-----------------------------Toggle Current Load ON or OFF------------------------------
-void LoadSwitch(void) {
+void Load_Switch_Check(void) {
   if (digitalRead(LoadOnOff) == LOW) {
     delay(200);                                          //simple key bounce delay 
     if(toggle) {
@@ -627,49 +638,52 @@ void readVoltageCurrent (void) {
                                                                     //ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
                                                                     //ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
                                                                     //ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
-  
-    ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
+  #ifndef WOKWI_SIMULATION
+  ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
+  adc3 = ads.readADC_SingleEnded(vltgmtr);
+  voltage = ads.computeVolts(adc3)*50.5589;                         // Por 50 por el divisor resistivo y ampl. dif. para sensado remoto de 50 a 1 (Max. 200V). Calibración promedio
+
+  if (0 <= voltage && voltage < 12) {                             // Si es entre 0 y 12V, pongo la ganancia en x16 y vuelvo a leer para mejorar la presición.
+    ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV    
     adc3 = ads.readADC_SingleEnded(vltgmtr);
-    voltage = ads.computeVolts(adc3)*50.5589;                         // Por 50 por el divisor resistivo y ampl. dif. para sensado remoto de 50 a 1 (Max. 200V). Calibración promedio
+    voltage = ads.computeVolts(adc3)*50.8346;                     // Calibración para PGA de 16x
+    }
+  else if (12 <= voltage && voltage < 25){                        // Si es entre 12 y 25V, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición.
+    ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
+    adc3 = ads.readADC_SingleEnded(vltgmtr);
+    voltage = ads.computeVolts(adc3)*49.6135;                     // Calibración para PGA de 8x
+    }
 
-      if (0 <= voltage && voltage < 12) {                             // Si es entre 0 y 12V, pongo la ganancia en x16 y vuelvo a leer para mejorar la presición.
-        ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV    
-        adc3 = ads.readADC_SingleEnded(vltgmtr);
-        voltage = ads.computeVolts(adc3)*50.8346;                     // Calibración para PGA de 16x
-       }
-      else if (12 <= voltage && voltage < 25){                        // Si es entre 12 y 25V, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición.
-        ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
-        adc3 = ads.readADC_SingleEnded(vltgmtr);
-        voltage = ads.computeVolts(adc3)*49.6135;                     // Calibración para PGA de 8x
-      }
+  else if (25 <= voltage && voltage < 50){                        // Si es entre 12 y 50V, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición.
+    ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
+    adc3 = ads.readADC_SingleEnded(vltgmtr);
+    voltage = ads.computeVolts(adc3)*49.6857;                     // Calibración para PGA de 4x
+    }
 
-      else if (25 <= voltage && voltage < 50){                        // Si es entre 12 y 50V, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición.
-        ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
-        adc3 = ads.readADC_SingleEnded(vltgmtr);
-        voltage = ads.computeVolts(adc3)*49.6857;                     // Calibración para PGA de 4x
-      }
+  ads.setGain(GAIN_ONE);                                            // 1x gain   +/- 4.096V  1 bit = 0.125mV
+  adc1 = ads.readADC_SingleEnded(crrsnsr);                          // Puede ser mas de 10A, pongo la ganancia en x1 por protección
+  current = ads.computeVolts(adc1)*9.6774;                          // Calibración
 
-    ads.setGain(GAIN_ONE);                                            // 1x gain   +/- 4.096V  1 bit = 0.125mV
-    adc1 = ads.readADC_SingleEnded(crrsnsr);                          // Puede ser mas de 10A, pongo la ganancia en x1 por protección
-    current = ads.computeVolts(adc1)*9.6774;                          // Calibración
-
-      if (0.000 <= current && current < 1.900) {                      // x16 y vuelvo a leer para mejorar la presición.
-        ads.setGain(GAIN_SIXTEEN);                                    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV    
-        adc1 = ads.readADC_SingleEnded(crrsnsr);
-        current = ads.computeVolts(adc1)*10.000;                      // Calibración para PGA de 16x
-       }
-      else if (1.900 <= current && current < 4.900){                  // x8 y vuelvo a leer para mejorar la presición.
-        ads.setGain(GAIN_EIGHT);                                      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
-        adc1 = ads.readADC_SingleEnded(crrsnsr);  
-        current = ads.computeVolts(adc1)*9.9941;                      // Calibración para PGA de 8x
-      }
-      else if (4.900 <= current && current < 9.800){                  // x4 y vuelvo a leer para mejorar la presición.
+  if (0.000 <= current && current < 1.900) {                      // x16 y vuelvo a leer para mejorar la presición.
+    ads.setGain(GAIN_SIXTEEN);                                    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV    
+    adc1 = ads.readADC_SingleEnded(crrsnsr);
+    current = ads.computeVolts(adc1)*10.000;                      // Calibración para PGA de 16x
+    }
+  else if (1.900 <= current && current < 4.900){                  // x8 y vuelvo a leer para mejorar la presición.
+    ads.setGain(GAIN_EIGHT);                                      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
+    adc1 = ads.readADC_SingleEnded(crrsnsr);  
+    current = ads.computeVolts(adc1)*9.9941;                      // Calibración para PGA de 8x
+    }
+  else if (4.900 <= current && current < 9.800){                  // x4 y vuelvo a leer para mejorar la presición.
         ads.setGain(GAIN_FOUR);                                       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
         adc1 = ads.readADC_SingleEnded(crrsnsr);
         current = ads.computeVolts(adc1)*9.7621;                      // Calibración para PGA de 4x
-      }
-    ads.setGain(GAIN_TWOTHIRDS);                                      // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV
-
+    }
+  ads.setGain(GAIN_TWOTHIRDS);                                      // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV
+  #else
+  voltage = 30.0;                                                  // Simulo una lectura de tensión de 30V
+  current = setCurrent * 0.99;                                     // Simulo una lectura de corriente con un 1% menos de la seteada
+  #endif
   }  
 
 //-----------------------DAC Control Voltage for Mosfet---------------------------------------
@@ -706,13 +720,17 @@ void dacControlVoltage (void) {
 //--------------------------Set DAC Voltage--------------------------------------------
 void dacControl (void) {
   if (!toggle){
+    #ifndef WOKWI_SIMULATION
     dac.setVoltage(0,false);                                 //set DAC output voltage to 0 if Load Off selected
+    #endif
     if(Mode == "BC" && ActualVoltage >= BatteryCutoffVolts && timer_status() == 1){
     timer_stop();
     }
   
   }else{
+    #ifndef WOKWI_SIMULATION
     dac.setVoltage(controlVoltage,false);                   //set DAC output voltage for Range selected
+    #endif
     if(Mode == "BC" && ActualVoltage >= BatteryCutoffVolts && timer_status() != 1){
     timer_start();
     }
