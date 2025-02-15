@@ -7,13 +7,13 @@
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_MCP4725.h>
 #endif
-#include <Keypad.h>                           //http://playground.arduino.cc/Code/Keypad
-#include <EEPROM.h>                           //include EEPROM library used for storing setup data
+#include <Keypad.h>
+#include <EEPROM.h>
 #include <math.h>                             
 #include <RTClib.h>
 
 
-// put function declarations here:
+// Declaramos las funciones que vamos a utilizar
 void setup();
 void loop();
 void load_ON_status(boolean loadonoff);
@@ -55,6 +55,7 @@ void transientListSetup() ;
 void transientLoadToggle() ;
 void transientSwitch(float current_setting, boolean toggle_status) ;
 
+// Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
 Adafruit_MCP4725 dac;                         // Objeto dac para el MP4725
 Adafruit_ADS1115 ads;                         // Objeto ads para el ADS115
@@ -68,18 +69,14 @@ const byte templm35 = A0;                     // Sensado de Temperatura
 const byte fansctrl = A2;                     // Endendido de Fans 
 const byte ENC_A = 3;                         // Encoder Pin A
 const byte ENC_B = 2;                         // Encoder Pin B 
-const byte encbtn = 4;                        // Encoder button
+const byte encbtn = 4;                        // Encoder Boton
 const byte crrsnsr = 1;                       // Input A1 from ADC
 const byte vltgmtr = 3;                       // Input A3 from ADC
 const byte LoadOnOff = 15;                    // Input A1 used as a digital pin to set Load ON/OFF
 
 //--------------- Variables para Encoder -------------------------------------------------
 
-unsigned long lastButtonPress = 0;            //Use this to store if the encoder button was pressed or not
-unsigned long _lastIncReadTime = micros(); 
-unsigned long _lastDecReadTime = micros(); 
-int _pauseLength = 25000;
-int _fastIncrement = 10;
+unsigned long lastButtonPress = 0;            // Use this to store if the encoder button was pressed or not
 volatile float encoderPosition = 0;           // Antes era volatile float
 volatile float factor = 0;                    // Factor de escala del Encoder
 volatile unsigned long encoderMax = 999000;   // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
@@ -247,12 +244,20 @@ void setup() {
   delay(2000);
   lcd.clear();
   //---------------------------------------Chequea y Muestra los límites configurados----------------------
- if(CurrentCutOff > 10){                // Si es mayor puede que sea un Nano nuevo, llamar a reconfigurar lìmites (EPPROM inicializa con todos 255)
+  #ifndef WOKWI_SIMULATION
+  if(CurrentCutOff > 10){                // Si es mayor puede que sea un Nano nuevo, llamar a reconfigurar lìmites (EPPROM inicializa con todos 255)
     userSetUp();
      }
   setupLimits();
   delay(2000);
   lcd.clear();
+  #else
+  // Simula que se cargan los valores de la EEPROM
+  CurrentCutOff = 10;
+  PowerCutOff = 300;
+  tempCutOff = 80;
+  #endif
+
   //-------------------------------------- Pantalla por Default ------------------------------------------
   load_ON_status(false);               //indicate that LOAD is off at start up
   Current();
@@ -319,20 +324,10 @@ void read_encoder() {
 
   // Update encoderPosition if encoder has rotated a full indent, that is at least 4 steps
   if( encval > 3 ) {        // Four steps forward
-    
-    if((micros() - _lastIncReadTime) < _pauseLength && factor == 1) {
-      encoderPosition = encoderPosition + _fastIncrement;
-    }
-    _lastIncReadTime = micros();
     encoderPosition = encoderPosition + factor;              // Update encoderPosition Up
     encval = 0;
   }
   else if( encval < -3 ) {        // Four steps backward
-    
-    if((micros() - _lastDecReadTime) < _pauseLength) {
-      encoderPosition = encoderPosition - _fastIncrement;
-    }
-    _lastDecReadTime = micros();
     encoderPosition = encoderPosition - factor;              // Update encoderPosition Down
     encval = 0;
   }
@@ -347,96 +342,94 @@ void readKeypadInput (void) {
   // Serial.print("customKey = ");                          //only used for testing keypad
   // Serial.println(customKey);                             //only used for testing keypad
   // }                                                      //only used for testing keypad
-             
-  if(customKey == 'M'){                                     //check if Constant Current button pressed
-    toggle = false;                                         //switch Load OFF
-    load_ON_status(false);                                  //Si hay cambio de Modo, me aseguro de que se desconecte la carga.
-      if (functionIndex == 0) {
-        Current();
-      } else if (functionIndex == 1) {
-        Power();
-      } else if (functionIndex == 2) {
-        Resistance();
-      } else if (functionIndex == 3) {
-            batteryType();
-            if (exitMode == 0){                           // Si se selecciona un tipo de baterìa, continua con la rutina                                   
-              lcd.setCursor(16,2);
-              lcd.print(BatteryType);                     //print battery type on LCD 
-              load_ON_status(false);
-              timer_reset();                              //reset timer
-              BatteryLifePrevious = 0;
-              CP = 9;                                     //set cursor position
-              BatteryCapacity();                          //go to Battery Capacity Routine
+  if (customKey != NO_KEY){            
+    if(customKey == 'M'){                                   //check if Constant Current button pressed
+      toggle = false;                                       //switch Load OFF
+      load_ON_status(false);                                //Si hay cambio de Modo, me aseguro de que se desconecte la carga.
+      if (functionIndex == 0) {Current();}
+      else if (functionIndex == 1) {Power();}
+      else if (functionIndex == 2) {Resistance();}
+      else if (functionIndex == 3) {
+        batteryType();
+        if (exitMode == 0){                           // Si se selecciona un tipo de baterìa, continua con la rutina                                   
+          lcd.setCursor(16,2);
+          lcd.print(BatteryType);                     //print battery type on LCD 
+          load_ON_status(false);
+          timer_reset();                              //reset timer
+          BatteryLifePrevious = 0;
+          CP = 9;                                     //set cursor position
+          BatteryCapacity();                          //go to Battery Capacity Routine
+         }
+        else {
+          transientType();
+          if (exitMode == 1){
+            Current();
+            functionIndex = 0;                        // Para que continue con la funcion siguiente, que será Power ()
             }
-            else {
-              transientType();
-              if (exitMode == 1){
-                Current();
-                functionIndex = 0;                        // Para que continue con la funcion siguiente, que será Power ()
-              }
-             }
-      }  
-    functionIndex = (functionIndex + 1) % 4;                // Incrementar el índice de función y asegurarse de que esté en el rango correcto
-    encoderPosition = 0;                                    //reset encoder reading to zero
-    index = 0;
-    z = 1;                                                  //sets column position for LCD displayed character
-    decimalPoint = (' ');                                   //clear decimal point test character reset
-  }
-          
-  if(customKey == 'C'){                                   //check if CNF button pressed
-    toggle = false;                                         //switch Load OFF
-    userSetUp();
-    encoderPosition = 0;                                    //reset encoder reading to zero
-    index = 0;
-    z = 1;                                                  //sets column position for LCD displayed character
-    decimalPoint = (' ');                                   //clear decimal point text character reset
-  }
-         
-  if(customKey == 'S'){                                   //Uso futuro para el boton "Shift"
-  }
-
-  if (Mode != "BC"){
-    if(customKey >= '0' && customKey <= '9' && index < 6){  //check for keypad number input, no mas de 5 digitos, no es necesario
-       numbers[index++] = customKey;
-       numbers[index] = '\0';
-       lcd.setCursor(z,3);                              
-       lcd.print(customKey);                              //show number input on LCD
-       z = z+1;
-     }
-  
-    if(customKey == '.'){                                   //check if decimal button key pressed
-      if (decimalPoint != ('*')){                         //test if decimal point entered twice - if so skip 
-        numbers[index++] = '.';
-        numbers[index] = '\0';
-        lcd.setCursor(z,3);
-        lcd.print(".");
-        z = z+1;
-        decimalPoint = ('*');                               //used to indicate decimal point has been input
         }
-      }
-
-    if(customKey == 'E') {                                  //Tecla "Enter" carga el valor en el Set
-      x = atof(numbers);     
-      reading = x;
-      encoderPosition = reading*1000;
+      }  
+      functionIndex = (functionIndex + 1) % 4;                // Incrementar el índice de función y asegurarse de que esté en el rango correcto
+      encoderPosition = 0;                                    //reset encoder reading to zero
       index = 0;
-      numbers[index] = '\0';
-      z = 1;                                           //sets column position for LCD displayed character
-      lcd.setCursor(0,3);
-      lcd.print("        ");
-      decimalPoint = (' ');                            //clear decimal point test character reset
+      z = 1;                                                  //sets column position for LCD displayed character
+      decimalPoint = (' ');                                   //clear decimal point test character reset
+    }
+            
+    if(customKey == 'C'){                                   //check if CNF button pressed
+      toggle = false;                                         //switch Load OFF
+      userSetUp();
+      encoderPosition = 0;                                    //reset encoder reading to zero
+      index = 0;
+      z = 1;                                                  //sets column position for LCD displayed character
+      decimalPoint = (' ');                                   //clear decimal point text character reset
+    }
+          
+    if(customKey == 'S'){                                   //Uso futuro para el boton "Shift"
     }
 
-  if(customKey == '<'){                                   //clear entry
-    index = 0;
-    z = 1;
-    lcd.setCursor(z,3);
-    lcd.print("        ");
-    numbers[index] = '\0';                              
-    decimalPoint = (' ');                                 //clear decimal point test character reset
-    } 
+    if (Mode != "BC"){
+      if(customKey >= '0' && customKey <= '9' && index < 6){  //check for keypad number input, no mas de 5 digitos, no es necesario
+        numbers[index++] = customKey;
+        numbers[index] = '\0';
+        lcd.setCursor(z,3);                              
+        lcd.print(customKey);                              //show number input on LCD
+        z = z+1;
+      }
+    
+      if(customKey == '.'){                                   //check if decimal button key pressed
+        if (decimalPoint != ('*')){                         //test if decimal point entered twice - if so skip 
+          numbers[index++] = '.';
+          numbers[index] = '\0';
+          lcd.setCursor(z,3);
+          lcd.print(".");
+          z = z+1;
+          decimalPoint = ('*');                               //used to indicate decimal point has been input
+          }
+        }
+
+      if(customKey == 'E') {                                  //Tecla "Enter" carga el valor en el Set
+        x = atof(numbers);     
+        reading = x;
+        encoderPosition = reading*1000;
+        index = 0;
+        numbers[index] = '\0';
+        z = 1;                                           //sets column position for LCD displayed character
+        lcd.setCursor(0,3);
+        lcd.print("        ");
+        decimalPoint = (' ');                            //clear decimal point test character reset
+      }
+
+      if(customKey == '<'){                                   //clear entry
+      index = 0;
+      z = 1;
+      lcd.setCursor(z,3);
+      lcd.print("        ");
+      numbers[index] = '\0';                              
+      decimalPoint = (' ');                                 //clear decimal point test character reset
+      } 
+    }
   }
-  }
+}
 
 //-----------------------------Toggle Current Load ON or OFF------------------------------
 void Load_Switch_Check(void) {
@@ -681,7 +674,7 @@ void readVoltageCurrent (void) {
     }
   ads.setGain(GAIN_TWOTHIRDS);                                      // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV
   #else
-  voltage = 30.0;                                                  // Simulo una lectura de tensión de 30V
+  voltage = 10.01;                                                 // Simulo una lectura de tensión de 10V
   current = setCurrent * 0.99;                                     // Simulo una lectura de corriente con un 1% menos de la seteada
   #endif
   }  
@@ -807,8 +800,11 @@ void tempcheck(void) {
   
   if ((hldtmp_time - Last_tmpchk) >= tmpchk_time) {
     temp = analogRead(templm35);                                 // Tomar temperatura
+    #ifndef WOKWI_SIMULATION
     temp = temp * 0.48828125;                                    // Convertir a Celsius
-
+    #else
+    temp = temp * 0.09765625;                                    // Hasta 100°C con el pote de 0 a 5V que simula sensosr de temperatura
+    #endif
     Last_tmpchk = hldtmp_time;
 
     if (temp >= 40) {                                           // Controlar el encendido de los fans y el temporizador
@@ -938,7 +934,7 @@ void batteryType (void) {
     }
 
   if (customKey == 'M'){                                  //Exit selection screen
-  customKey = 'NO_KEY';
+  //customKey = 'NO_KEY';
   exitMode = 1;
     }
 
