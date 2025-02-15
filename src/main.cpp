@@ -207,7 +207,7 @@ void setup() {
   lcd.setCursor(0,2);             
   lcd.print("Guy Nardin");
   lcd.setCursor(0,3);
-  lcd.print("v1.63");                   // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
+  lcd.print("v1.64");                   // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
                                         // Vuelvo a configurar que guarde Set Up en EEPROM (solo guarda enteros)
                                         // coloco LM35 
                                         // Cambio de Ops Apms a LM324N alimentado a 9V
@@ -231,7 +231,8 @@ void setup() {
                                         // 1.60 Pruebo agregar Modo Trasient Continuo y Listado.. sin Trigger
                                         // 1.61 Ajustes del còdigo para poner lìmites en modos Trasient
                                         // 1.62 Cambio opciones de Descarga de Baterias
-                                        // 1.63 Bug en Trasient Mode que hace que no chequee los límites de corriente, temperatura o potencia.                                   
+                                        // 1.63 Bug en Trasient Mode que hace que no chequee los límites de corriente, temperatura o potencia.
+                                        // 1.64 Mejoras varias en el código, Guardado en EEPROM, temp de Fans on a 40°C.                                
                                        
                                             
   delay(2000);
@@ -250,38 +251,28 @@ void setup() {
 
 //------------------------------------- Bucle Principal-------------------------------------------------
 void loop() {
-            readKeypadInput();                                     //read Keypad entry
-
-            if (digitalRead(LoadOnOff) == LOW) {
-              LoadSwitch();                                        //Load on/off
-              delay(200);                                          //simple key bounce delay 
-            }
-
-            Transient();                                           //test for Transient Mode
-
-            lcd.setCursor(18,3);                                   //sets display of Mode indicator at bottom right of LCD
-            lcd.print(Mode);                                       //display mode selected on LCD (CC, CP, CR or BC)
-
-            if(Mode != "TC" && Mode != "TL"){                      //if NOT transient mode then Normal Operation
-
-            reading = encoderPosition/1000;                        //read input from rotary encoder
-            LimitsChecks();                                        //Chequea Limites de todos los Modos y resetea a máximo de ser necesario
-            displayEncoderReading();                               //display rotary encoder input reading on LCD
-            CursorPosition();                                      //check and change the cursor position if cursor button pressed
-
-            }else{
-              transientLoadToggle();                               //Start Transient Mode
-            }
-            readVoltageCurrent();                                  //routine for ADC's to read actual Voltage and Current
-            powerLevelCutOff();                                    //Check if Power Limit has been exceeded
-            temperatureCutOff();                                   //check if Maximum Temperature is exceeded
-            ActualReading();                                       //Display actual Voltage, Current readings and Actual Wattage
-            
-            dacControl();
-            dacControlVoltage();                                   //sets the drive voltage to control the MOSFET
-            batteryCapacity();                                     //test if Battery Capacity (BC) mode is selected - if so action
-            tempcheck();                                           //Chequea Temperatura y acciona Coolers en consecuencia
-            }
+  readKeypadInput();                                     //read Keypad entry
+  LoadSwitch();                                        //Load on/off
+  Transient();                                           //test for Transient Mode
+  lcd.setCursor(18,3);                                   //sets display of Mode indicator at bottom right of LCD
+  lcd.print(Mode);                                       //display mode selected on LCD (CC, CP, CR or BC)
+  if(Mode != "TC" && Mode != "TL"){                      //if NOT transient mode then Normal Operation
+    reading = encoderPosition/1000;                        //read input from rotary encoder
+    LimitsChecks();                                        //Chequea Limites de todos los Modos y resetea a máximo de ser necesario
+    displayEncoderReading();                               //display rotary encoder input reading on LCD
+    CursorPosition();                                      //check and change the cursor position if cursor button pressed
+    }
+    else{transientLoadToggle();}                           //Start Transient Mode
+  
+  readVoltageCurrent();                                  //routine for ADC's to read actual Voltage and Current
+  powerLevelCutOff();                                    //Check if Power Limit has been exceeded
+  temperatureCutOff();                                   //check if Maximum Temperature is exceeded
+  ActualReading();                                       //Display actual Voltage, Current readings and Actual Wattage
+  dacControl();
+  dacControlVoltage();                                   //sets the drive voltage to control the MOSFET
+  batteryCapacity();                                     //test if Battery Capacity (BC) mode is selected - if so action
+  tempcheck();                                           //Chequea Temperatura y acciona Coolers en consecuencia
+}
 
 //------------------------------Load ON Status--------------------------------------
 void load_ON_status(boolean loadonoff) {
@@ -435,11 +426,14 @@ void readKeypadInput (void) {
     } 
   }
   }
+
 //-----------------------------Toggle Current Load ON or OFF------------------------------
 void LoadSwitch(void) {
+  if (digitalRead(LoadOnOff) == LOW) {
+    delay(200);                                          //simple key bounce delay 
     if(toggle) {
       load_ON_status(false);
-      setCurrent = 0;                                     //reset setCurrent to zero
+      setCurrent = 0;                                    //reset setCurrent to zero
       toggle = !toggle;
       }
     else {
@@ -447,8 +441,9 @@ void LoadSwitch(void) {
       lcd.setCursor(0,3);
       lcd.print("                    ");                 //clear bottom line of LCD
       toggle = !toggle;
-    }
+      }
   }
+}
 
 //-----------------------------Limit Maximum Current Setting-------------------------------
 void LimitsChecks (void) {
@@ -480,6 +475,7 @@ void LimitsChecks (void) {
       encoderPosition = (MaxBatteryCurrent*1000);            //keep encoder position value at "MaxBatteryCurrent"
   }
   }
+
 //--------------------Calculate Actual Voltage and Current and display on LCD-------------------
 void ActualReading(void) {
 
@@ -555,6 +551,7 @@ void powerLevelCutOff (void) {
   lcd.print("                    ");                      //Limpiamos el último renglón para que no se pise con entradas de teclado.
   }
   }
+
 //------------------------------------------High Temperature Cut-Off--------------------------------------------------------------
 void temperatureCutOff (void) {
   if (temp >= tempCutOff){                                 //if Maximum temperature is exceeded
@@ -571,6 +568,7 @@ void temperatureCutOff (void) {
   lcd.print("                    ");                      //Limpiamos el último renglón para que no se pise con entradas de teclado.
   }
   }
+
 //----------------------Display Rotary Encoder Input Reading on LCD---------------------------
 void displayEncoderReading (void) {
 
@@ -592,6 +590,7 @@ void displayEncoderReading (void) {
     lcd.setCursor (CP, 2);                                   //sets cursor position
     lcd.cursor();                                            //show cursor on LCD
   }
+
 //--------------------------Cursor Position-------------------------------------------------------
 void CursorPosition(void) {
 
@@ -618,6 +617,7 @@ void CursorPosition(void) {
     if (CP == unitPosition +2 ) { factor = 100; }
     if (CP == unitPosition )    { factor = 1000; }
   }
+
 //---------------------------------------------Read Voltage and Current--------------------------------------------------------------
 void readVoltageCurrent (void) {
        
@@ -671,6 +671,7 @@ void readVoltageCurrent (void) {
     ads.setGain(GAIN_TWOTHIRDS);                                      // 2/3x gain +/- 6.144V  1 bit = 3mV      0.1875mV
 
   }  
+
 //-----------------------DAC Control Voltage for Mosfet---------------------------------------
 void dacControlVoltage (void) {
   if (Mode == "CC"){
@@ -701,6 +702,7 @@ void dacControlVoltage (void) {
   controlVoltage = setControlCurrent; 
   }
   }
+
 //--------------------------Set DAC Voltage--------------------------------------------
 void dacControl (void) {
   if (!toggle){
@@ -716,6 +718,7 @@ void dacControl (void) {
     }
   }
   }
+
 //-------------------------------------Battery Capacity Discharge Routine----------------------------------------------------
 void batteryCapacity (void) {
   if (Mode == "BC"){
@@ -779,6 +782,7 @@ void batteryCapacity (void) {
           }
   
   }
+
 //--------------------------------------------------Temperature Check----------------------------------------------------------
 void tempcheck(void) {
   unsigned long hldtmp_time = millis();
@@ -789,8 +793,8 @@ void tempcheck(void) {
 
     Last_tmpchk = hldtmp_time;
 
-    if (temp >= 35) {                                           // Controlar el encendido de los fans y el temporizador
-      digitalWrite(fansctrl, HIGH);                             // Encender los fans si la temperatura es mayor o igual a 35°C
+    if (temp >= 40) {                                           // Controlar el encendido de los fans y el temporizador
+      digitalWrite(fansctrl, HIGH);                             // Encender los fans si la temperatura es mayor o igual a 40°C
       fans_on = true;
       fan_on_time = hldtmp_time;
     } else if (fans_on && (hldtmp_time - fan_on_time) >= fan_on_duration) {
@@ -805,6 +809,7 @@ void tempcheck(void) {
 
   }
   }
+
 //-----------------------Select Constant Current LCD set up--------------------------------
 void Current(void) {
   Mode = ("CC");
@@ -858,6 +863,7 @@ void Resistance(void) {
   lcd.print("                    ");                    //20 spaces so as to allow for Load ON/OFF to still show
   CP = 10;                                               //sets cursor starting position to units.
   }
+
 //----------------------- Select Battery Capacity Testing LCD set up---------------------------------------
 void BatteryCapacity(void) {
   Mode = ("BC");
@@ -1223,8 +1229,6 @@ void setupLimits (void) {
   lcd.setCursor(15,3);
   lcd.print(tempCutOff);
   }
-  
-
 
 //----------------------------------------Transient Mode--------------------------------------------
 void transientMode (void) {
