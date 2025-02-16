@@ -1,4 +1,4 @@
-#define WOKWI_SIMULATION
+//#define WOKWI_SIMULATION
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -56,6 +56,9 @@ void transientLoadToggle();
 void transientSwitch(float current_setting, boolean toggle_status);
 void clearLCDLine(int row);
 void printLCD(int col, int row, const String &message);
+void saveToEEPROM(int address, float value);
+float loadFromEEPROM(int address);
+
 
 // Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
@@ -99,12 +102,12 @@ float reading = 0;                            // Variable para Encoder dividido 
 float setCurrent = 1.000;                     // Variable para setear la corriente de carga
 float setPower = 20;                          // Variable para setear la potencia de carga
 float setResistance = 30;                     // Variable para setear la resistencia de carga
-float setCurrentCalibrationFactor = 0.4095;   // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A
+float Set_Curr_Dsgn_Fact = 0.386894318;       // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
 float setControlCurrent = 0;                  // Variable temporaria para cargar el valor de corriente de control... ver si sirve
 int setReading = 0;                           // Variable usada en la funcion dacControlVoltage() pero nada mas... ver si sirve
-int CurrentCutOff = EEPROM.read(0x00);        // Colocar valores enteros, ya que después del punto decimal no lo guartda.
-int PowerCutOff = EEPROM.read(0x20);          // Colocar valores enteros, ya que después del punto decimal no lo guartda.
-int tempCutOff = EEPROM.read(0x40);           // Colocar valores enteros, ya que después del punto decimal no lo guartda.
+int CurrentCutOff;                            // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
+int PowerCutOff;                              // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
+int tempCutOff;                               // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = 999;                   // Maximo valor de resistencia para el modo CR
 String Mode ="  ";                            // Modo de operación
 
@@ -174,6 +177,11 @@ float transientList [10][2];                  // Array para almacenar los datos 
 int total_instructions;                       // Utilizado en el modo de Transient List Mode
 int current_instruction;                      // Utilizado en el modo de Transient List Mode
 
+//------------------------------ Posiciones reservadas en la EEMPROM --------------------------------------
+const int ADD_CURRENT_CUT_OFF = 0x00;
+const int ADD_POWER_CUT_OFF = 0x20;
+const int ADD_TEMP_CUT_OFF = 0x40;
+
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
 
@@ -212,8 +220,8 @@ void setup() {
   printLCD(1, 0, "DC Electronic Load");
   lcd.setCursor(1,1);
   lcd.print(date +" - "+ time);
-  printLCD(0, 2, "Guy Nardin");
-  printLCD(0, 3, "v1.64");              // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
+  printLCD(1, 2, "Guy Nardin");
+  printLCD(1, 3, "v1.64");              // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
                                         // Vuelvo a configurar que guarde Set Up en EEPROM (solo guarda enteros)
                                         // coloco LM35 
                                         // Cambio de Ops Apms a LM324N alimentado a 9V
@@ -239,15 +247,18 @@ void setup() {
                                         // 1.62 Cambio opciones de Descarga de Baterias
                                         // 1.63 Bug en Trasient Mode que hace que no chequee los límites de corriente, temperatura o potencia.
                                         // 1.64 Mejoras varias en el código, Guardado en EEPROM, temp de Fans on a 40°C.                                
-                                       
-                                            
   delay(2000);
   lcd.clear();
   //---------------------------------------Chequea y Muestra los límites configurados----------------------
   #ifndef WOKWI_SIMULATION
-  if(CurrentCutOff > 10){                // Si es mayor puede que sea un Nano nuevo, llamar a reconfigurar lìmites (EPPROM inicializa con todos 255)
+  CurrentCutOff = loadFromEEPROM(ADD_CURRENT_CUT_OFF);   // Carga CurrentCutOff desde la EEPROM
+  PowerCutOff = loadFromEEPROM(ADD_POWER_CUT_OFF);       // Carga PowerCutOff desde la EEPROM
+  tempCutOff = loadFromEEPROM(ADD_TEMP_CUT_OFF);         // Carga tempCutOff desde la EEPROM
+  if (CurrentCutOff < 1 || CurrentCutOff > 10 ||         // Chequea que los valores de los límites estén en el rango correcto
+    PowerCutOff < 1 || PowerCutOff > 300 || 
+    tempCutOff < 30 || tempCutOff > 99) {
     userSetUp();
-     }
+  } 
   setupLimits();
   delay(2000);
   lcd.clear();
@@ -666,7 +677,7 @@ void dacControlVoltage (void) {
   if (Mode == "CC"){
   setCurrent = reading*1000;                                //set current is equal to input value in Amps
   setReading = setCurrent;                                  //show the set current reading being used
-  setControlCurrent = setCurrent * setCurrentCalibrationFactor;
+  setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
   controlVoltage = setControlCurrent; 
   }
 
@@ -674,7 +685,7 @@ void dacControlVoltage (void) {
   setPower = reading*1000;                                  //in Watts
   setReading = setPower;
   setCurrent = setPower/ActualVoltage;
-  setControlCurrent = setCurrent * setCurrentCalibrationFactor;
+  setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
   controlVoltage = setControlCurrent;                       //
   }
 
@@ -682,12 +693,12 @@ void dacControlVoltage (void) {
   setResistance = reading;                                  //in ohms
   setReading = setResistance;
   setCurrent = (ActualVoltage)/setResistance*1000;
-  setControlCurrent = setCurrent * setCurrentCalibrationFactor;
+  setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
   controlVoltage = setControlCurrent; 
   }
 
   if (Mode == "TC" || Mode == "TL"){                            //Transient Modes
-  setControlCurrent = (setCurrent * 1000) * setCurrentCalibrationFactor;
+  setControlCurrent = (setCurrent * 1000) * Set_Curr_Dsgn_Fact;
   controlVoltage = setControlCurrent; 
   }
   }
@@ -718,7 +729,7 @@ void batteryCapacity (void) {
     
     setCurrent = reading*1000;                             //set current is equal to input value in Amps
     setReading = setCurrent;                               //show the set current reading being used
-    setControlCurrent = setCurrent * setCurrentCalibrationFactor;
+    setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
     controlVoltage = setControlCurrent;
 
     printLCD(0, 3, timer_getTime());                      // Muestra el tiempo 
@@ -935,7 +946,7 @@ void userSetUp (void) {
   inputValue(2);
   CurrentCutOff = x;
   CurrentCutOff = min(CurrentCutOff, 10);   // Asegura que el valor no sea mayor a 10A
-  EEPROM.write(0x00, CurrentCutOff);        //Guarda el valor entero solamente, no ingresar con decimales.
+  saveToEEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);  // Guarda el valor CurrentCutOff en la EEPROM
   printLCD(14, r, String(CurrentCutOff));   // Muestra de corriente de corte 
   z = 14;
   printLCD(0, 2, "Power Limit  =");         // Muestra el mensaje
@@ -944,7 +955,7 @@ void userSetUp (void) {
   inputValue(3);
   PowerCutOff = x;
   PowerCutOff = min(PowerCutOff, 300);      // Asegura que el valor no sea mayor a 300W
-  EEPROM.write(0x20, PowerCutOff);          // Guarda el valor entero solamente, no ingresar con decimales.
+  saveToEEPROM(ADD_POWER_CUT_OFF, PowerCutOff); // Guarda el valor PowerCutOff en la EEPROM
   printLCD(14, r, String (PowerCutOff));    // Muestra de potencia de corte
   z = 14;
 
@@ -953,10 +964,8 @@ void userSetUp (void) {
   r = 3;
   inputValue(2);
   tempCutOff = x;
-    if(tempCutOff > 99){                    //Test and go to user set limits if required
-    tempCutOff = 99;
-     }
-  EEPROM.write(0x40, tempCutOff);           // Guarda el valor entero solamente, no ingresar con decimales.
+  tempCutOff = min(tempCutOff, 99);         // Asegura que el valor no sea mayor a 99°C
+  saveToEEPROM(ADD_TEMP_CUT_OFF, tempCutOff); // Guarda el valor tempCutOff en la EEPROM
   printLCD(14, r, String (tempCutOff));     // Muestra la temperatura de corte 
   setupLimits();                            // Mostrar los limites configurados
   delay(1000);
@@ -1079,21 +1088,21 @@ String timer_getTime() {
 //-----------------------------Show limits Stored Data for Current, Power and Temp-----------------------------
 void setupLimits (void) {
   lcd.clear();
-  printLCD(1, 0, "Maximum Limits Set");       // Muestra el titulo 
+  printLCD(1, 0, "Maximum Limits Set");                 // Muestra el titulo 
   printLCD(0, 1, "Current Limit=");       
   printLCD(18, 1, "A");
-  CurrentCutOff = EEPROM.read(0x00);          // Lee el valor de la corriente de corte desde la EEPROM
-  printLCD(15, 1, String(CurrentCutOff));     // Muestra el valor de la corriente de corte 
+  CurrentCutOff = loadFromEEPROM(ADD_CURRENT_CUT_OFF);  // Lee el valor de la corriente de corte desde la EEPROM
+  printLCD(15, 1, String(CurrentCutOff));               // Muestra el valor de la corriente de corte 
 
   printLCD(0, 2, "Power Limit  =");
   printLCD(19, 2, "W");
-  PowerCutOff = EEPROM.read(0x20);            // Lee el valor de la potencia de corte desde la EEPROM
-  printLCD(15, 2, String(PowerCutOff));       // Muestra el valor de la potencia de corte 
+  PowerCutOff = loadFromEEPROM(ADD_POWER_CUT_OFF);      // Lee el valor de la potencia de corte desde la EEPROM
+  printLCD(15, 2, String(PowerCutOff));                 // Muestra el valor de la potencia de corte 
 
   printLCD(0, 3, "Temp. Limit  =");
   printLCD(17, 3, String((char)0xDF) + "C");
-  tempCutOff = EEPROM.read(0x40);             // Lee el valor de la temperatura de corte desde la EEPROM
-  printLCD(15, 3, String(tempCutOff));        // Muestra el valor de la temperatura de corte 
+  tempCutOff = loadFromEEPROM(ADD_TEMP_CUT_OFF);        // Lee el valor de la temperatura de corte desde la EEPROM
+  printLCD(15, 3, String(tempCutOff));                  // Muestra el valor de la temperatura de corte 
 }
 
 //----------------------------------------Transient Mode--------------------------------------------
@@ -1285,4 +1294,20 @@ void clearLCDLine(int row) {
 void printLCD(int col, int row, const String &message) {
   lcd.setCursor(col, row);
   lcd.print(message);
+}
+
+//-------------------------------- Graba en EEPROM -----------------------------
+void saveToEEPROM(int address, float value) {
+  float PreviousValue;
+  EEPROM.get(address, PreviousValue);
+  
+  if (PreviousValue != value) {  // Solo escribe si el valor ha cambiado
+      EEPROM.put(address, value);
+  }
+}
+//-------------------------------- Lee de EEPROM -----------------------------
+float loadFromEEPROM(int address) {
+  float value;
+  EEPROM.get(address, value);
+  return value;
 }
