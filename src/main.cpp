@@ -15,43 +15,44 @@
 // Declaramos las funciones que vamos a utilizar
 void setup();
 void loop();
-void load_ON_status(boolean loadonoff);
-void read_encoder();
-void readKeypadInput();
-void Load_Switch_Check();
-void UpdateLCD_IVP_values();
-void displayEncoderReading(void);
-void CursorPosition(void);
-void readVoltageCurrent(void);
-void dacControlVoltage(void);
-void dacControl(void);
-void Current(void);
-void Power(void);
-void Resistance(void);
-void batteryCapacity(void);
-void BatteryCapacityMode(void);
-void batteryType(void);
-void userSetUp(void);
-void inputValue(int maxDigits);
+void Load_ON_status(boolean loadonoff);
+void Read_Encoder();
+void Read_Keypad();
+void Read_Load_Button();
+void Update_LCD();
+//void displayEncoderReading(void);
+void Cursor_Position(void);
+void Read_Volts_Current(void);
+void DAC_Control(void);
+void Constant_Current(void);
+void Constant_Power(void);
+void Constant_Resistance(void);
+void BatteryCapacity(void);
+void Battery_Mode(void);
+void Battery_Type_Selec(void);
+void Config_Limits(void);
+void Value_Input(int maxDigits);
 int timer_status();
 void timer_start();
 void timer_stop();
 void timer_reset();
 float timer_getTotalSeconds();
 String timer_getTime();
-void setupLimits(void);
-void transientMode(void);
-void transientType(void);
-void Transient(void);
-void transientListSetup();
-void transientLoadToggle();
-void transientSwitch(float current_setting, boolean toggle_status);
+void Show_Limits();
+void Transient_Mode_Setup();
+void Transient_Mode_Selection();
+void Transient();
+void Transient_List_Setup();
+void Transient_Toggle_Timing();
+void Transient_Toggle_Load(float current_setting, boolean toggle_status);
 void clearLCDLine(int row);
 void printLCD(int col, int row, const String &message);
 void saveToEEPROM(int address, float value);
 float loadFromEEPROM(int address);
-void checkLimits(void);
+void Check_Limits();
 char getKeyPressed();
+void Temp_Control();
+void Reset_Input_Pointers();
 
 // Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
@@ -63,14 +64,14 @@ RTC_DS1307 rtc;                     // Objeto RTC para el DS1307
 
 //-------------------I/O Pins------------------------------------------------------------
 
-const byte templm35 = A0;  // Sensado de Temperatura
-const byte fansctrl = A2;  // Endendido de Fans
+const byte TEMP_SNSR = A0;  // Sensado de Temperatura
+const byte FAN_CTRL = A2;  // Endendido de Fans
 const byte ENC_A = 3;      // Encoder Pin A
 const byte ENC_B = 2;      // Encoder Pin B
-const byte encbtn = 4;     // Encoder Boton
-const byte crrsnsr = 1;    // Input A1 from ADC
-const byte vltgmtr = 3;    // Input A3 from ADC
-const byte LoadOnOff = 15; // Input A1 used as a digital pin to set Load ON/OFF
+const byte ENC_BTN = 4;     // Encoder Boton
+const byte CRR_SNSR = 1;    // Input A1 from ADC
+const byte VLTG_SNSR = 3;    // Input A3 from ADC
+const byte LOADONOFF = 15; // Input A1 used as a digital pin to set Load ON/OFF
 
 //--------------- Variables para Encoder -------------------------------------------------
 
@@ -81,28 +82,24 @@ volatile unsigned long encoderMax = 999000; // sets maximum Rotary Encoder value
 
 //--------------- Variables de operacion y Modos CC, CR y CP----------------------------------------
 
-int16_t adc0, adc1, adc2, adc3;
+int16_t adc1, adc3;                     // ADCs usados, adc0 y adc2 a GND
 unsigned long controlVoltage = 0;       // Voltage de control para el DAC que controlara al MOSFET
 float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
-float ActualVoltage = 0;                // Lectura de Voltage de Carga
-float ActualCurrent = 0;                // Lectura de Corriente de Carga
-float ActualPower = 0;                  // Potencia de Carga
+const float MAX_VOLTAGE = 90;           // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
 int CP = 8;                             // Posicion inicial del cursor
 boolean toggle = false;                 // Conmuta la carga On/Off
-int Load = 0;                           // Load On/Off flag de estado de la carga
+int log_Load_data = 0;                  // Flag de estado de la carga para loguear o cronometrar tiempos
 float reading = 0;                      // Variable para Encoder dividido por 1000
-float setCurrent = 1.000;               // Variable para setear la corriente de carga
+float setCurrent = 0;                   // Variable para setear la corriente de carga
 float setPower = 20;                    // Variable para setear la potencia de carga
 float setResistance = 30;               // Variable para setear la resistencia de carga
 float Set_Curr_Dsgn_Fact = 0.386894318; // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
-float setControlCurrent = 0;            // Variable temporaria para cargar el valor de corriente de control... ver si sirve
-int setReading = 0;                     // Variable usada en la funcion dacControlVoltage() pero nada mas... ver si sirve
 int CurrentCutOff;                      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
 int PowerCutOff;                        // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
 int tempCutOff;                         // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = 999;             // Maximo valor de resistencia para el modo CR
-String Mode = "  ";                     // Modo de operación
+String Mode = "CC";                     // Modo de operación, CC Default
 
 //----------------------------------------Variables para el Keypad-------------------------------------------
 
@@ -141,22 +138,23 @@ float BatteryLifePrevious = 0;  // Variable para la vida de la batería anterior
 float SecondsLog = 0;           // Variable usada para loguear el tiempo en segundos
 float BatteryCutoffVolts;       // Variable usada para indicar a que Voltage se puede descargar la batería
 float BatteryCurrent;           // Variable usada para setear la corriente de descargga de la bateria
-float LoadCurrent;              // Almacena por un momento el ActualCurrent
-float MaxBatteryCurrent = 10.0; // Corriente máxima de descarga de la batería. Ver si no puede definirse como constante
+float LoadCurrent;              // Almacena por un momento  a current
 float LiPoCutOffVoltage = 3.5;  // Voltage mínimo de descarga para baterias LiPo
 float LionCutOffVoltage = 2.8;  // Voltage mínimo de descarga para baterias Lion
 float LiPoStoragVoltage = 3.8;  // Voltage mínimo de almacenamiento para baterias LiPo
 float LionStoragVoltage = 3.7;  // Voltage mínimo de almacenamiento para baterias Liom
 String BatteryType = "    ";    // Para definir el Tipo de Batería
-byte exitMode = 0;              // Para salir de la selección de tipo de batería
+bool exitMode = false;          // Para salir de la selección de tipo de batería
 
 //---------------------------------------Variables para Control de Temperatura-----------------------------
-int temp = 0;                      // Registra temperatura del disipador donde estan los MOSFET
-const int tmpchk_time = 500;       // Perdíodo de control de temperatura (miliseg.)
-unsigned long Last_tmpchk = 0;     // Tiempo desde el ùltimo chequeo de temperatura
-const int fan_on_duration = 30000; // Tiempo en miliseg. para mantener los fans encendidos (30 segundos)
-unsigned long fan_on_time = 0;     // Tiempo que lleva encendido el Fan
-bool fans_on = false;              // Flag para saber si los fans estan encendidos
+const int FAN_ON_DRTN = 30000;  // Tiempo en miliseg. para mantener los fans encendidos (30 segundos)
+const int TMP_CHK_TIME = 800;   // Perdíodo de control de temperatura (miliseg.)
+
+int temp = 0;                   // Registra temperatura del disipador donde estan los MOSFET
+unsigned long Last_tmpchk = 0;  // Tiempo desde el ùltimo chequeo de temperatura
+unsigned long fan_on_time = 0;  // Tiempo que lleva encendido el Fan
+bool fans_on = false;           // Flag de stado del Cooler
+bool new_temp = true;           // flag si hay nuevo valor de temperatura
 
 //---------------------------------------Variables para Modo Transient------------------------------------
 float LowCurrent = 0;                  // Configuración de corriente baja para el modo transitorio
@@ -175,8 +173,7 @@ const int ADD_POWER_CUT_OFF = 0x20;
 const int ADD_TEMP_CUT_OFF = 0x40;
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
-void setup()
-{
+void setup() {
 
   //-------------------------------------Inicializa perifericos-------------------------------------------
   Serial.begin(9600); // Para Debugs y Logs
@@ -197,12 +194,12 @@ void setup()
   //-------------------------------------Inicializa I/O---------------------------------------------------
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
-  pinMode(encbtn, INPUT_PULLUP);
-  pinMode(LoadOnOff, INPUT_PULLUP);
-  pinMode(templm35, INPUT);
-  pinMode(fansctrl, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
+  pinMode(ENC_BTN, INPUT_PULLUP);
+  pinMode(LOADONOFF, INPUT_PULLUP);
+  pinMode(TEMP_SNSR, INPUT);
+  pinMode(FAN_CTRL, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(ENC_A), Read_Encoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_B), Read_Encoder, CHANGE);
 
   //------------------------------------Pantalla Inicio--------------------------------------------------
   DateTime now = rtc.now();                                                                   // Obtiene la fecha y hora actual del RTC
@@ -210,11 +207,10 @@ void setup()
   String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()); // Formatea la hora
   lcd.clear();
   lcd.backlight(); // Turn on the LCD screen backlight
-  printLCD(1, 0, "DC Electronic Load");
-  lcd.setCursor(1, 1);
-  lcd.print(date + " - " + time);
-  printLCD(1, 2, "Guy Nardin");
-  printLCD(1, 3, "v1.65"); // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
+  printLCD(0, 0, "*DC Electronic Load*");
+  lcd.setCursor(0, 1); lcd.print(date + " - " + time);
+  printLCD(0, 2, "Guy Nardin");
+  printLCD(0, 3, "v1.65"); // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
                            // Vuelvo a configurar que guarde Set Up en EEPROM (solo guarda enteros)
                            // coloco LM35
                            // Cambio de Ops Apms a LM324N alimentado a 9V
@@ -240,7 +236,18 @@ void setup()
                            // 1.62 Cambio opciones de Descarga de Baterias
                            // 1.63 Bug en Trasient Mode que hace que no chequee los límites de corriente, temperatura o potencia.
                            // 1.64 Muchas mejoras en el código, en el manejo EEPROM, temp de Fans on a 40°C y ajusto factor de control de corriente.
-                           // 1.65 Nuevas mejoras en el código, tal vez en refresh del display y agregar calibracíón o mejora en la descarga de baterias
+                           // 1.65 Nuevas mejoras en el código, refresh del LCD pte.
+                           //      Mejoras de checklimits Temp Control Muchas mejoras de código.
+                           //      Bugs:
+                           //      - Poca memoria FLASH
+                           //      - Refresh en salida de Config Limits
+                           //      - Refressh de Temp si no cambia
+                           //      - mensajes de exceso de limites afecta renglon 4 en todos los modos
+                           //      - En modo CC, CR y CP: Desaparece indicador ">" en pos. 0, renglon 4, ver si no se pisa por exseso de renglon 3
+                           //      Mejoras ptes.:
+                           //       - Calibracíón (liberar FLASH)
+                           //       - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff (liberar FLASH)
+                           //       - Podes salir de un modo, dentro de los menues de selección
   delay(2000);
   lcd.clear();
 //---------------------------------------Chequea y Muestra los límites configurados----------------------
@@ -252,9 +259,9 @@ void setup()
       PowerCutOff < 1 || PowerCutOff > 300 ||
       tempCutOff < 30 || tempCutOff > 99)
   {
-    userSetUp();
+    Config_Limits();
   }
-  setupLimits();
+  Show_Limits();
   delay(2000);
   lcd.clear();
 #else
@@ -264,49 +271,37 @@ void setup()
   tempCutOff = 80;
 #endif
 
-  //-------------------------------------- Pantalla por Default ------------------------------------------
-  load_ON_status(false); // indicate that LOAD is off at start up
-  Current();
+  //-------------------------------------- Modo por Default ------------------------------------------
+  Constant_Current();
 }
 
 //------------------------------------- Bucle Principal-------------------------------------------------
-void loop()
-{
-  readKeypadInput();   // read Keypad entry
-  Load_Switch_Check(); // Load on/off
-  checkLimits();
-  Transient();         // test for Transient Mode
-  printLCD(18, 3, Mode);
-  if (Mode != "TC" && Mode != "TL")
-  {                                   // if NOT transient mode then Normal Operation
-    reading = encoderPosition / 1000; // read input from rotary encoder
-    displayEncoderReading();          // display rotary encoder input reading on LCD
-    CursorPosition();                 // check and change the cursor position if cursor button pressed
-  }
-  else
-  {
-    transientLoadToggle();            // Start Transient Mode
-  } 
-
-  readVoltageCurrent();      // routine for ADC's to read actual Voltage and Current
-  UpdateLCD_IVP_values();    // Display actual Voltage, Current readings and Actual Wattage
-  dacControl();
-  dacControlVoltage();       // sets the drive voltage to control the MOSFET
-  batteryCapacity();         // test if Battery Capacity (BC) mode is selected - if so action
+void loop() {
+  Temp_Control();
+  Read_Keypad();
+  Read_Load_Button();
+  Cursor_Position();
+  Read_Volts_Current();
+  Check_Limits();
+  Update_LCD();
+  DAC_Control();
+  BatteryCapacity();
+  Transient();
+  Transient_Toggle_Timing(); // 
 }
 
 //------------------------------Load ON Status--------------------------------------
-void load_ON_status(boolean loadonoff)
+void Load_ON_status(boolean loadonoff)
 {
-  printLCD(8, 0, loadonoff ? "ON " : "OFF");
-#ifndef WOKWI_SIMULATION
+  #ifndef WOKWI_SIMULATION
   dac.setVoltage(loadonoff ? controlVoltage : 0, false); // Set DAC voltage based on load status
-#endif
-  Load = loadonoff ? 1 : 0;
+  #endif
+  log_Load_data = loadonoff ? 1 : 0; // 
+  printLCD(8, 0, loadonoff ? "ON " : "OFF");    // Fuerza la indicación del estado de la carga, por las dudas.
 }
 
 //-----------------------------Encoder Decoder--------------------------------------
-void read_encoder()
+void Read_Encoder()
 {
   static uint8_t old_AB = 3;
   static int8_t encval = 0;
@@ -323,63 +318,48 @@ void read_encoder()
     encval = 0;
   }
   encoderPosition = constrain(encoderPosition, 0, encoderMax);
+  reading = encoderPosition / 1000;
 }
 
 //-----------------------------Read Keypad Input------------------------------------
-void readKeypadInput(void) {
-  customKey = customKeypad.getKey();                  // Escanea el teclado   
+void Read_Keypad(void) {
+  customKey = customKeypad.getKey();              // Escanea el teclado   
   
-  if (customKey == NO_KEY) return;                    // Si no hay tecla presionada, sale de la función
+  if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
 
-  switch (customKey) {                                // Si hay una tecla presionada, la procesa
-      case 'M':  // Cambio de Modo                    
-          toggle = false;                             // flag que indica que la carga esta apagada
-          load_ON_status(false);                      // Apaga la carga
-          switch (functionIndex) {                    // Cambia el modo de operación
-              case 0: Current(); break;               // Si el modo actual es Current, cambia a Power
-              case 1: Power(); break;                 // Si el modo actual es Power, cambia a Resistance
-              case 2: Resistance(); break;            // Si el modo actual es Resistance, cambia a Battery Capacity
-              case 3:                                 // Si el modo actual es Battery Capacity, cambia a Current  
-                  batteryType();                      // Selecciona el tipo de batería
-                  if (exitMode == 0) {                // Si no se sale del modo de selección de batería
-                      printLCD(16, 2, BatteryType);   // Muestra el tipo de batería seleccionado
-                      load_ON_status(false);          // Apaga la carga
-                      timer_reset();                  // Resetea el timer
-                      BatteryLifePrevious = 0;        // Resetea la vida de la batería
-                      CP = 9;                         // Posiciona el cursor en la posición 9
-                      BatteryCapacityMode();              // Inicia el modo de capacidad de la batería
-                  } else {
-                      transientType();                // Si se sale del modo de selección de batería, inicia el modo transitorio
-                      if (exitMode == 1) {            // Si se selecciona el modo transitorio continuo
-                          Current();                  // Cambia a Current
-                          functionIndex = 0;          // Cambia el índice de función a 0
-                      }
-                  }
-                  break;                              // Sale del switch
-          }
-          functionIndex = (functionIndex + 1) % 4;    // Incrementa el índice de función
-          encoderPosition = 0;                        // Resetea la posición del encoder
-          index = 0;                                  // Resetea el índice
-          z = 1;                                      // Resetea la posición en el renglón
-          decimalPoint = ' ';                         // Resetea el punto decimal
-          break;                                      // Sale del switch
+  switch (customKey) {                            // Si hay una tecla presionada, la procesa
+    case 'M':                                     // Cambio de Modo                    
+      toggle = false;                             // Flag de carga apagada
+      Load_ON_status(false);                      // Apaga la carga
+      reading = 0; encoderPosition = 0;           // Resetea la posición del encoder y cualquier valor de reading
+      z = 1;                                      // Resetea la posición en el renglón
+      Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
+      switch (functionIndex) {                    // Cambia el modo de operación
+        case 0: Constant_Current(); break;        // Si el modo actual es Current, cambia a Power
+        case 1: Constant_Power(); break;          // Si el modo actual es Power, cambia a Resistance
+        case 2: Constant_Resistance(); break;     // Si el modo actual es Resistance, cambia a Battery Capacity
+        case 3: Battery_Type_Selec();             // Modo Materia
+                if (exitMode) {
+                  Transient_Mode_Selection(); }   // Si se sale del modo de selección de batería, inicia el modo transitorio
+                if (exitMode) {                   // Si se selecciona el modo transitorio continuo
+                  Constant_Current();             // Cambia a modo Constant Current
+                  functionIndex = 0;              // Cambia el índice de función a 0
+                } break;                              
+      }
+      functionIndex = (functionIndex + 1) % 4;    // Incrementa el índice de función
+      break;                                      
+      case 'C':                                       // Configuración de limites
+          Config_Limits();                            // Configuración del usuario
+          break;                                      
 
-      case 'C':  // Configuración del usuario
-          toggle = false;                             // flag que indica que la carga esta apagada
-          userSetUp();                                // Configuración del usuario
-          encoderPosition = 0;                        // Resetea la posición del encoder
-          index = 0;                                  // Resetea el índice
-          z = 1;                                      // Resetea la posición en el renglón
-          decimalPoint = ' ';                         // Resetea el punto decimal
-          break;                                      // Sale del switch
-
-      case 'S':  // Uso futuro para Shift
+      case 'S':                                       // Uso futuro para Shift
           break;
   }
 
-  if (Mode == "BC") return;                                // Si el modo es Battery Capacity, sale de la función
+  // Solo permite entrada de valores en los modos CC, CP y CR
+  if (Mode == "BC" || Mode == "TC" || Mode == "TL") return;
 
-  if (customKey >= '0' && customKey <= '9' && index < 6) { // Si la tecla presionada es un número y el índice es menor a 6
+  if (customKey >= '0' && customKey <= '9' && index < 5) { // Si la tecla presionada es un número, se permiten hasta 5 caracteres
       numbers[index++] = customKey;                        // Almacena el número en la variable numbers
       numbers[index] = '\0';                               // Agrega el caracter nulo al final de la cadena
       printLCD(z++, 3, String(customKey));                 // Muestra el número en el LCD
@@ -396,223 +376,191 @@ void readKeypadInput(void) {
       x = atof(numbers);                  // Convierte la cadena de caracteres en un número
       reading = x;                        // Asigna el valor a la variable reading  
       encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
-      index = 0;                          // Resetea el índice
       numbers[index] = '\0';              // Resetea la cadena de caracteres
       z = 1;                              // Resetea la posición en el renglón
-      printLCD(0, 3, "        ");         // Borra el renglón del LCD
-      decimalPoint = ' ';                 // Resetea el punto decimal
+      printLCD(1, 3, "     ");            // Borra el renglón del LCD
+      Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
   }
 
-  if (customKey == '<') {         // Borrar entrada
-      index = 0;                  // Resetea el índice
-      z = 1;                      // Resetea la posición en el renglón
-      printLCD(0, 3, "        "); // Borra el renglón del LCD
-      numbers[index] = '\0';      // Resetea la cadena de caracteres
-      decimalPoint = ' ';         // Resetea el punto decimal
+  // 🔹 **Manejo de borrado**
+  if (customKey == '<' && index > 0) {  
+    index--;  
+    if (numbers[index] == '.') decimalPoint = ' '; // Si borramos un punto, permitimos otro  
+    numbers[index] = '\0';  
+    z--;  
+    printLCD(z, 3, " "); // Borra visualmente en LCD  
   }
 }
 
 //-----------------------------Toggle Current Load ON or OFF------------------------
-void Load_Switch_Check(void) {
-  if (digitalRead(LoadOnOff) == LOW) {
+void Read_Load_Button(void) {
+  if (digitalRead(LOADONOFF) == LOW) {
       delay(200); // Anti-rebote
       toggle = !toggle;
-      load_ON_status(toggle);
-      
-      if (toggle) {
-          clearLCDLine(3); // Borra el 4to. Renlón del LCD si la carga está encendida
-      } else {
-          setCurrent = 0; // Resetea la corriente de carga si la carga está apagada
-      }
+      Load_ON_status(toggle);
+      if (!toggle) {setCurrent = 0;} // Si la carga se apaga, resetear el valor de corriente
   }
 }
 
 //--------------------Calculate and Display Actual Voltage, Current, and Power-------------------
-void UpdateLCD_IVP_values(void) {
-  static float lastCurrent = -1, lastVoltage = -1, lastPower = -1;
+void Update_LCD(void) {
+  static float lastCurrent = -1, lastVoltage = -1, lastPower = -1, lastTemp = -1, lastReading = -1; 
   static String lastMode = "-1";
-
-  ActualCurrent = current;
-  ActualVoltage = voltage;
-  ActualPower = ActualVoltage * ActualCurrent;
+  float power = 0;                  // Potencia de Carga
+  power = voltage * current;
 
   // Evitar valores negativos por errores de medición
-  if (ActualPower < 0) ActualPower = 0;
-  if (ActualVoltage < 0.0) ActualVoltage = 0.0;
-  if (ActualCurrent < 0.0) ActualCurrent = 0.0;
+  if (power < 0) power = 0;
+  if (voltage < 0.0) voltage = 0.0;
+  if (current < 0.0) current = 0.0;
 
-  // Formateo con 2 decimales, asegurando siempre un ancho fijo
-  String currentStr = (ActualCurrent < 10.0) ? String(ActualCurrent, 3) + "A" : String(ActualCurrent, 2) + "A";
-  String voltageStr = (ActualVoltage < 10.0) ? String(ActualVoltage, 3) + "V" :
-                    (ActualVoltage < 100.0) ? String(ActualVoltage, 2) + "V" :
-                                              String(ActualVoltage, 1) + "V";
-  String powerStr   = (ActualPower < 100) ? String(ActualPower, 2) + "W" : String(ActualPower, 1) + "W";
+  lcd.noCursor();
 
-  // Forzar alineación con 7 caracteres fijos para corriente y voltaje, 5 para potencia
-  while (currentStr.length() < 7) currentStr = currentStr + " ";
-  while (voltageStr.length() < 7) voltageStr = voltageStr + " ";
-  while (powerStr.length() < 7) powerStr = powerStr + " ";
-
-  // Solo actualizar LCD si el valor cambió
-  if (ActualCurrent != lastCurrent || lastMode != Mode) {
+    // Solo actualizar y formatear si el valor cambió
+    if (current != lastCurrent || lastMode != Mode) {
+      String currentStr = (current < 10.0) ? String(current, 3) + "A" : String(current, 2) + "A";
+      while (currentStr.length() < 7) currentStr += " ";
       printLCD(0, 1, currentStr);  // Ej: " 9.99A"
-      lastCurrent = ActualCurrent;
+      lastCurrent = current;
   }
 
-  if (ActualVoltage != lastVoltage || lastMode != Mode) {
+  if (voltage != lastVoltage || lastMode != Mode) {
+      String voltageStr = (voltage < 10.0) ? String(voltage, 3) + "V" :
+                         (voltage < 100.0) ? String(voltage, 2) + "V" :
+                                                   String(voltage, 1) + "V";
+      while (voltageStr.length() < 7) voltageStr += " ";
       printLCD(7, 1, voltageStr);  // Ej: "29.73V"
-      lastVoltage = ActualVoltage;
+      lastVoltage = voltage;
   }
 
-  if (ActualPower != lastPower || lastMode != Mode) {
+  if (power != lastPower || lastMode != Mode) {
+      String powerStr = (power < 100) ? String(power, 2) + "W" : String(power, 1) + "W";
+      while (powerStr.length() < 7) powerStr += " ";
       printLCD(14, 1, powerStr);   // Ej: "300W"
-      lastPower = ActualPower;
+      lastPower = power;
+  }
+
+  // Actualizar modo solo si cambió
+  if (Mode != lastMode) {
+    printLCD(18, 3, Mode);
+  }
+
+  // Solo actualizar LCD si la temperatura cambió
+  if (temp != lastTemp) {
+    printLCD(16, 0, String(temp) + String((char)0xDF) + "C");
+    lastTemp = temp;
+  }
+
+  // Mostrar lectura del encoder o cursor en la posición de la unidad
+  if (Mode != "TC" && Mode != "TL") {  // Evitar mostrar el encoder en modos transitorios
+    if (reading != lastReading || lastMode != Mode) {
+        lcd.setCursor(8, 2);
+        if ((Mode == "CP" || Mode == "CR") && reading < 100) lcd.print("0");
+        if (reading < 10) lcd.print("0");
+        lcd.print((Mode == "CP" || Mode == "CR") ? String(reading, 2) : String(reading, 3));
+        lastReading = reading;
+    }
+    lcd.setCursor(CP, 2); // Cursor en la unidad a modificar
+    lcd.cursor();
   }
   lastMode = Mode;
 }
 
+//---------------------- Temperature Control --------------------------------------------
+void Temp_Control(void) {
+  unsigned long hldtmp_time = millis();
+  
+  if ((hldtmp_time - Last_tmpchk) >= TMP_CHK_TIME) {                           // Si pasaron TMP_CHK_TIME milisegundos, tomará la temperatura
+    int act_temp = analogRead(TEMP_SNSR);                                      // Tomar temperatura del disipador
+    #ifndef WOKWI_SIMULATION
+    act_temp = act_temp * 0.48828125; // Convertir a Celsius
+    #else
+    act_temp = act_temp * 0.09765625; // Hasta 100°C con el pote de 0 a 5V que simula sensor de temperatura
+    #endif
+
+    if (temp != act_temp) {                                                   // Recalcular solo si cambió la temperatura
+      temp = act_temp;
+      new_temp = true;                                                        // Flag de que cambio la temperatura
+    }
+    else {new_temp = false;}                                                  // Si no hubo cambio deja en falso el flag
+
+    Last_tmpchk = hldtmp_time;                                                // Actualiza el momento de chequeo de temperatura
+
+    if (temp >= 40) {                                                         // Si la temperatura es igual o mayor a 40°C enciende el cooler
+      digitalWrite(FAN_CTRL, HIGH);                                           // Encender el cooler si la temperatura es mayor o igual a 35°C
+      fans_on = true;                                                         // Flag de cooler encendido
+      fan_on_time = hldtmp_time;                                              // Actualizo el tiempo de encendido del cooler
+    } else if (fans_on && (hldtmp_time - fan_on_time) >= FAN_ON_DRTN) {       // Si temp es < 40 va a dejar prendido el fan por FAN_ON_DRTN
+        digitalWrite(FAN_CTRL, LOW);                                          // Apaga el cooler si paso el tiempo
+        fans_on = false;                                                      // Flag de cooler encendido
+      }
+  }
+}
+
 //---------------------- Check and Enforce Limits -------------------------------------------
-void checkLimits(void) {
-  bool limitExceeded = false;
-  String message = "";
+void Check_Limits() {
+  char message[20] = "";
+  float power = voltage * current;
+  float maxpwrdis = constrain(140 - 0.80 * temp, 0, 120);
+  float actpwrdis = max(0, power / 4);
 
-  // Verificar límites según el modo
-  if ((Mode == "CC" && reading > CurrentCutOff) ||
-      (Mode == "CP" && reading > PowerCutOff) ||
-      (Mode == "CR" && reading > ResistorCutOff) ||
-      (Mode == "BC" && reading > MaxBatteryCurrent)) {
-      
-      reading = (Mode == "CC") ? CurrentCutOff :
-                (Mode == "CP") ? PowerCutOff :
-                (Mode == "CR") ? ResistorCutOff : MaxBatteryCurrent;
-      
-      encoderPosition = reading * 1000;
-      clearLCDLine(3);
-  }
+  if (voltage < 0 || current < 0) strcpy(message, "Negative Reads");
+  else if (voltage > MAX_VOLTAGE) strcpy(message, "Voltage High");
+  else if (current > CurrentCutOff * 1.05) strcpy(message, "Current High");
+  else if (power > PowerCutOff) strcpy(message, "Power High");
+  else if (temp >= tempCutOff) strcpy(message, "Over Temp");
+  else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Dissip");
+  /*else if ((Mode == "CC" && reading > CurrentCutOff) ||
+          (Mode == "CP" && reading > PowerCutOff) ||
+          (Mode == "CR" && reading > ResistorCutOff) ||
+          (Mode == "BC" && reading > CurrentCutOff)) {
+            reading = (Mode == "CC") ? CurrentCutOff :
+                      (Mode == "CP") ? PowerCutOff :
+                      (Mode == "CR") ? ResistorCutOff : CurrentCutOff;
+            encoderPosition = reading * 1000;
+  }*/  // si pongo esto, me quedo sin memoria FLASH LPM
+  else return;
 
-  // Verificar límite de potencia
-  if (ActualPower > PowerCutOff) {
-      message = "Exceeded Power";
-      limitExceeded = true;
-  }
-
-  // Verificar límite de temperatura
-  unsigned long currentTime = millis();
-  if ((currentTime - Last_tmpchk) >= tmpchk_time) {
-      Last_tmpchk = currentTime;
-      temp = analogRead(templm35); // Tomar temperatura
-      #ifndef WOKWI_SIMULATION
-          temp = temp * 0.48828125; // Convertir a Celsius
-      #else
-          temp = temp * 0.09765625; // Hasta 100°C con el pote de 0 a 5V que simula sensor de temperatura
-      #endif
-
-      printLCD(16, 0, String(temp) + String((char)0xDF) + "C"); // Muestra la temperatura
-
-      if (temp >= 40) { // Encender ventiladores si la temperatura es mayor o igual a 40°C
-          digitalWrite(fansctrl, HIGH);
-          fans_on = true;
-          fan_on_time = currentTime;
-      } else if (fans_on && (currentTime - fan_on_time) >= fan_on_duration) {
-          digitalWrite(fansctrl, LOW); // Apagar los ventiladores después del tiempo especificado
-          fans_on = false;
-      }
-
-      if (temp >= tempCutOff) { // Si se alcanza la temperatura máxima
-          message = "Over Temperature";
-          limitExceeded = true;
-      }
-  }
-
-  // Si se superó algún límite de potencia o temperatura, se apaga la carga
-  if (limitExceeded) {
-      reading = 0;
-      encoderPosition = 0;
-      clearLCDLine(3);
-      printLCD(0, 3, message);
-      load_ON_status(false);
-      toggle = false;
-      delay(3000);
-      clearLCDLine(3);
-  }
+  toggle = false;
+  Load_ON_status(false);
+  reading = 0;
+  encoderPosition = 0;
+  printLCD(1, 3, message);
+  delay(3000);
+  printLCD(0, 3, "                ");
 }
 
-//----------------------Display Rotary Encoder Input Reading on LCD---------------------------
-void displayEncoderReading(void)
+//----------------------- Cursor Position (Optimized)-------------------------------------------------------
+void Cursor_Position(void)
 {
+  // Definir la posición de la unidad en base al modo
+  int unitPosition = (Mode == "CP" || Mode == "CR") ? 10 : 9;
 
-  lcd.setCursor(8, 2); // start position of setting entry
+  // Detectar si el botón del encoder ha sido presionado
+  if (digitalRead(ENC_BTN) == LOW) {
+    delay(200); // Anti-rebote simple
+    CP++;  // Incrementar la posición del cursor
 
-  if ((Mode == "CP" || Mode == "CR") && reading < 100)
-  {
-    lcd.print("0");
-  }
-
-  if (reading < 10)
-  { // add a leading zero to display if reading less than 10
-    lcd.print("0");
-  }
-
-  if (Mode == "CP" || Mode == "CR")
-  {
-    lcd.print(reading, 2); // show input reading from Rotary Encoder on LCD
-  }
-  else
-  {
-    lcd.print(reading, 3);
-  }
-  lcd.setCursor(CP, 2); // sets cursor position
-  lcd.cursor();         // show cursor on LCD
-}
-
-//--------------------------Cursor Position-------------------------------------------------------
-void CursorPosition(void)
-{
-
-  // Defaults for two digits before decimal and 3 after decimal point
-  int unitPosition = 9;
-
-  // Power and Resistance modes can be 3 digit before decimal but only 2 decimals
-  if (Mode == "CP" || Mode == "CR")
-  {
-    unitPosition = 10;
-  }
-
-  if (digitalRead(encbtn) == LOW)
-  {
-
-    delay(100); // simple key bounce delay
-    CP = CP + 1;
-    if (CP == unitPosition + 1)
-    {
-      CP = CP + 1;
+    // Evitar que CP caiga en la posición del punto decimal
+    if (CP == unitPosition + 1) {
+      CP++;
     }
   }
 
-  if (CP > 13)
-  {
+  // Mantener CP dentro del rango permitido
+  if (CP > 13) {
     CP = unitPosition;
-  } // No point in turning tens and hundreds
-  if (CP == unitPosition + 4)
-  {
-    factor = 1;
   }
-  if (CP == unitPosition + 3)
-  {
-    factor = 10;
-  }
-  if (CP == unitPosition + 2)
-  {
-    factor = 100;
-  }
-  if (CP == unitPosition)
-  {
-    factor = 1000;
-  }
+
+  // Asignar el factor de ajuste en base a la posición del cursor
+  if (CP == unitPosition)       factor = 1000;  // Unidades
+  else if (CP == unitPosition + 2) factor = 100;   // Decenas
+  else if (CP == unitPosition + 3) factor = 10;    // Centenas
+  else if (CP == unitPosition + 4) factor = 1;     // milesimas
 }
 
-//---------------------------------------------Read Voltage and Current--------------------------------------------------------------
-void readVoltageCurrent(void)
+//----------------------- Read Voltage and Current--------------------------------------------------------------
+void Read_Volts_Current(void)
 {
 
   // static float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
@@ -648,7 +596,7 @@ void readVoltageCurrent(void)
 
   // Lectura de voltaje
   ads.setGain(GAIN_ONE);                                                // Por 50 por el divisor resistivo y ampl. dif. para sensado remoto de 50 a 1 (Max. 200V). Calibración promedio
-  adc3 = ads.readADC_SingleEnded(vltgmtr);                              // Lee el ADC
+  adc3 = ads.readADC_SingleEnded(VLTG_SNSR);                              // Lee el ADC
   voltage = ads.computeVolts(adc3) * voltageGains[3].calibrationFactor; // Calcula el voltaje
 
   for (const auto &setting : voltageGains)
@@ -656,7 +604,7 @@ void readVoltageCurrent(void)
     if (voltage >= setting.minVoltage && voltage < setting.maxVoltage)
     {                                                               // Encuentra la configuración de ganancia correcta
       ads.setGain(setting.gain);                                    // Configura la ganancia correcta
-      adc3 = ads.readADC_SingleEnded(vltgmtr);                      // Lee el ADC
+      adc3 = ads.readADC_SingleEnded(VLTG_SNSR);                      // Lee el ADC
       voltage = ads.computeVolts(adc3) * setting.calibrationFactor; // Calcula el voltaje
       break;                                                        // Sale del bucle
     }
@@ -664,7 +612,7 @@ void readVoltageCurrent(void)
 
   // Lectura de corriente
   ads.setGain(GAIN_ONE);                                                // Puede ser mas de 10A, pongo la ganancia en x1 por protección
-  adc1 = ads.readADC_SingleEnded(crrsnsr);                              // Lee el ADC
+  adc1 = ads.readADC_SingleEnded(CRR_SNSR);                              // Lee el ADC
   current = ads.computeVolts(adc1) * currentGains[3].calibrationFactor; // Calcula la corriente
 
   for (const auto &setting : currentGains)
@@ -672,7 +620,7 @@ void readVoltageCurrent(void)
     if (current >= setting.minVoltage && current < setting.maxVoltage)
     {                                                               // Encuentra la configuración de ganancia correcta
       ads.setGain(setting.gain);                                    // Configura la ganancia correcta
-      adc1 = ads.readADC_SingleEnded(crrsnsr);                      // Lee el ADC
+      adc1 = ads.readADC_SingleEnded(CRR_SNSR);                      // Lee el ADC
       current = ads.computeVolts(adc1) * setting.calibrationFactor; // Calcula la corriente
       break;                                                        // Sale del bucle
     }
@@ -680,125 +628,180 @@ void readVoltageCurrent(void)
 
   ads.setGain(GAIN_TWOTHIRDS); // Restaurar configuración predeterminada
   #else
-  voltage = 100;                                  // Simulo una lectura de tensión de 10V
-  if (toggle) {current = setCurrent / 1000 * 0.99;} // Simulación de corriente con 1% menos
-  else {current = 0;}
+    voltage = 10;                                  // Simulo una lectura de tensión de 10V
+    if (toggle) {
+      if (Mode == "TC" || Mode == "TL") {         // Transient Modes
+        current = setCurrent * 0.99;
+      } else {
+        current = (setCurrent / 1000) * 0.99;
+      }
+    } else {current = 0;}
   #endif
 }
 
-//-----------------------DAC Control Voltage for Mosfet---------------------------------------
-void dacControlVoltage(void)
-{
-  if (Mode == "CC")
-  {
-    setCurrent = reading * 1000; // set current is equal to input value in Amps
-    setReading = setCurrent;     // show the set current reading being used
-    setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
-    controlVoltage = setControlCurrent;
-  }
-
-  if (Mode == "CP")
-  {
-    setPower = reading * 1000; // in Watts
-    setReading = setPower;
-    setCurrent = setPower / ActualVoltage;
-    setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
-    controlVoltage = setControlCurrent; //
-  }
-
-  if (Mode == "CR")
-  {
-    setResistance = reading; // in ohms
-    setReading = setResistance;
-    setCurrent = (ActualVoltage) / setResistance * 1000;
-    setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
-    controlVoltage = setControlCurrent;
-  }
-
-  if (Mode == "TC" || Mode == "TL")
-  { // Transient Modes
-    setControlCurrent = (setCurrent * 1000) * Set_Curr_Dsgn_Fact;
-    controlVoltage = setControlCurrent;
-  }
-}
-
-//--------------------------Set DAC Voltage--------------------------------------------
-void dacControl(void)
-{
-  if (!toggle)
-  {
-#ifndef WOKWI_SIMULATION
-    dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
-#endif
-    if (Mode == "BC" && ActualVoltage >= BatteryCutoffVolts && timer_status() == 1)
-    {
-      timer_stop();
+//---------------------- DAC Control Voltage for Mosfet---------------------------------------
+void DAC_Control(void) {
+  if (toggle) {
+    if (Mode == "CC") {
+      setCurrent = reading * 1000;      // Al multiplicar por 1000 lo conviente en Amperes, no se bien porque, estudiar
+      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
     }
-  }
-  else
-  {
-#ifndef WOKWI_SIMULATION
+
+    if (Mode == "CP") {
+      setPower = reading * 1000;        // Asi queda en Watts 
+      setCurrent = setPower / voltage;
+      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
+    }
+
+    if (Mode == "CR") {
+      setResistance = reading;          // Asi queda em ohms
+      setCurrent = (voltage / setResistance) * 1000;    // para que setee en Amperes, ver bien porque
+      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
+    }
+
+    if (Mode == "BC") {
+      setCurrent = reading * 1000;
+      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
+    }
+      
+    if (Mode == "TC" || Mode == "TL") { // Transient Modes
+      controlVoltage = setCurrent * 1000 * Set_Curr_Dsgn_Fact;   
+    }
+
+    #ifndef WOKWI_SIMULATION
     dac.setVoltage(controlVoltage, false); // set DAC output voltage for Range selected
-#endif
-    if (Mode == "BC" && ActualVoltage >= BatteryCutoffVolts && timer_status() != 1)
-    {
-      timer_start();
-    }
+    #endif
+  } else {
+    #ifndef WOKWI_SIMULATION
+    dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
+    #endif
   }
 }
 
-//-----------------------Select Constant Current LCD set up--------------------------------
-void Current(void)
-{
-  Mode = ("CC");
+//---------------------- Select Constant Current LCD set up--------------------------------
+void Constant_Current(void) {
+  Mode = "CC";
+  lcd.clear();
   printLCD(0, 0, "DC LOAD");          // Muestra el titulo del modo
-  printLCD(0, 2, "                "); // Borra el 3er. Renlón del LCD
+  printLCD(8, 0, toggle ? "ON " : "OFF");
   printLCD(0, 2, "Set I = ");         // Muestra el mensaje
-  printLCD(16, 2, "    ");            // Borra cualquier valor anterior
   printLCD(14, 2, "A");               // Muestra el mensaje
-  clearLCDLine(3);                    // Borra el 4to. Renlón del LCD
+  printLCD(0, 3, ">");                // Indica la posibilidad de ingresar valores.
   CP = 9;                             // Pone el cursor en la posición de las unidades de Amperes
 }
 
-//----------------------Select Constant Power LCD set up------------------------------------
-void Power(void)
-{
-  Mode = ("CP");
+//--------------------- Select Constant Power LCD set up------------------------------------
+void Constant_Power(void) {
+  Mode = "CP";
+  lcd.clear();
   printLCD(0, 0, "DC LOAD");          // Muestra el titulo del modo
-  printLCD(0, 2, "                "); // Borra el 3er. Renglón del LCD
+  printLCD(8, 0, toggle ? "ON " : "OFF");
+  printLCD(16, 0, String(temp) + String((char)0xDF) + "C");
   printLCD(0, 2, "Set W = ");         // Muestra el mensaje
-  printLCD(16, 2, "    ");            // Borra cualquier valor anterior
   printLCD(14, 2, "W");               // Muestra el mensaje
-  clearLCDLine(3);                    // Borra el 4to. Renlón del LCD
+  printLCD(0, 3, ">");                 // Indica la posibilidad de ingresar valores.
   CP = 10;                            // Pone el cursor en la posición de las unidades de Potecia
 }
 
 //----------------------- Select Constant Resistance LCD set up---------------------------------------
-void Resistance(void)
-{
-  Mode = ("CR");
+void Constant_Resistance(void) {
+  Mode = "CR";
+  lcd.clear();
   printLCD(0, 0, "DC LOAD");           // Muestra el titulo del modo
-  printLCD(0, 2, "                ");  // Borra el 3er. Renlón del LCD
+  printLCD(8, 0, toggle ? "ON " : "OFF");
   printLCD(0, 2, "Set R = ");          // Muestra el mensaje
-  printLCD(16, 2, "    ");             // Borra cualquier valor anterior
   printLCD(14, 2, String((char)0xF4)); // Muestra el Símbolo de Ohms
-  clearLCDLine(3);                     // Borra el 4to. Renlón del LCD
+  printLCD(0, 3, ">");                 // Indica la posibilidad de ingresar valores.
   CP = 10;                             // Pone el cursor en la posición de las unidades de Resistencia
 }
 
+//----------------------- Select Battery Capacity Testing LCD set up---------------------------------------
+void Battery_Mode(void) {
+  Mode = "BC";
+  lcd.clear();
+  printLCD(0, 0, "BATTERY");          // Muestra el titulo del modo
+  printLCD(8, 0, toggle ? "ON " : "OFF");
+  printLCD(0, 2, "Set I = ");         // Muestra el mensaje
+  printLCD(14, 2, "A");               // La unidad de corriente
+}
+
+//---------------------- Battery Type Selection and Cutoff Setup -----------------------------
+void Battery_Type_Selec() {
+  exitMode = false;                       // Resetea EXIT mode
+  lcd.noCursor();                         // Apaga el cursor para este menú
+  lcd.clear();                            // Borra la pantalla del LCD
+  printLCD(0, 0, "Battery Type?");        // Muestra el título
+  printLCD(0, 1, "Stor.: 1=LiPo 2=LiOn");
+  printLCD(0, 2, "Disc.: 3=LiPo 4=LiOn");
+  printLCD(0, 3, "5=Cutoff Voltage");
+
+  while (true) {  // 🔹 Bucle para evitar la salida accidental
+    customKey = getKeyPressed(); 
+
+    switch (customKey) {
+        case '1': BatteryCutoffVolts = LiPoStoragVoltage; BatteryType = "LiPo"; break;
+        case '2': BatteryCutoffVolts = LionStoragVoltage; BatteryType = "Lion"; break;
+        case '3': BatteryCutoffVolts = LiPoCutOffVoltage; BatteryType = "LiPo"; break;
+        case '4': BatteryCutoffVolts = LionCutOffVoltage; BatteryType = "Lion"; break;
+        case '5': BatteryType = "Custom"; break;
+        case 'M': case '<': exitMode = true; return; // 🔹 Salida segura del modo si el usuario decide salir
+        default: continue;  // 🔹 Evita salir si la tecla es inválida
+    }
+    break;  // 🔹 Sale del bucle si se ingresó una tecla válida
+  }
+
+  if (BatteryType == "Custom" && !exitMode ) {
+      // Pedir al usuario ingresar un voltaje de corte personalizado
+      lcd.clear();
+      printLCD(0, 0, "Battery Voltage");
+      printLCD(0, 1, "Cutoff?");
+      printLCD(0, 3, "(0 - 25V)");
+      do {
+        y = 1; z = 1; r = 2;
+        printLCD(z - 1, r, ">");
+        Value_Input(5);
+      } while (x > 25 || x == 0);
+      BatteryCutoffVolts = x;
+  } 
+  if (BatteryType != "Custom" && !exitMode) {
+      // Si no es Custom, preguntar cantidad de celdas
+      lcd.clear();
+      printLCD(2, 0, "Battery: " + BatteryType);
+      //printLCD(8, 1, BatteryType);
+      printLCD(2, 2, "Cells (1-6) ?");
+      
+      customKey = getKeyPressed();
+      if (customKey >= '1' && customKey <= '6') {
+          BatteryCutoffVolts *= (customKey - '0');      // Multiplicar por la cantidad de celdas
+      } else if (customKey == 'M') { exitMode = true;}   //Sale del modo
+    }
+  if (!exitMode){
+      // Mostrar selección final
+      lcd.clear();
+      printLCD(2, 0, "Battery: " + BatteryType);
+      //printLCD(8, 1, BatteryType);
+      printLCD(2, 2, "Cutoff Voltage");
+      printLCD(6, 3, String(BatteryCutoffVolts) + "V");
+      delay(3000); lcd.clear();
+      printLCD(16, 2, BatteryType);   // Muestra el tipo de batería seleccionado
+      timer_reset();                  // Resetea el timer
+      BatteryLifePrevious = 0;        // Resetea la vida de la batería
+      CP = 9;                         // Posiciona el cursor en la posición 9
+      Battery_Mode();                 // Inicia el modo de capacidad de la batería
+  }
+}
+
 //-------------------------------------Battery Capacity Discharge Routine--------------------------------------
-void batteryCapacity(void) {
+void BatteryCapacity(void) {
   if (Mode != "BC") return;  // Solo ejecuta si está en modo Battery Capacity
 
-  setCurrent = reading * 1000;
-  setReading = setCurrent;
-  setControlCurrent = setCurrent * Set_Curr_Dsgn_Fact;
-  controlVoltage = setControlCurrent;
+  if (toggle && voltage >= BatteryCutoffVolts && timer_status() != 1) { timer_start(); }    // Si la carga esta enable y el Timer == 2 (detenido), inicia el timer
+  if (!toggle && voltage >= BatteryCutoffVolts && timer_status() == 1) { timer_stop(); }    // Si la carga esta disable y el Timer == 1 (iniciado), detiene el timer
 
   printLCD(0, 3, timer_getTime()); // Muestra el tiempo transcurrido
 
   Seconds = timer_getTotalSeconds(); // Obtiene el tiempo total en segundos
-  LoadCurrent = (timer_status() == 2) ? BatteryCurrent : ActualCurrent; // Mantiene última corriente si se detiene el timer
+  LoadCurrent = (timer_status() == 2) ? BatteryCurrent : current; // Mantiene última corriente si se detiene el timer
 
   // Calcula capacidad en mAh
   BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600));
@@ -815,134 +818,65 @@ void batteryCapacity(void) {
   }
 
   // Si la batería llega al voltaje de corte, detener descarga
-  if (ActualVoltage <= BatteryCutoffVolts) {
-      BatteryCurrent = ActualCurrent;
-      load_ON_status(false);
+  if (voltage <= BatteryCutoffVolts) {
+      BatteryCurrent = current;
+      Load_ON_status(false);
       toggle = false;
       timer_stop();
   }
 
   // Registro de datos para logging
-  if (Mode == "BC" && Load == 1 && Seconds != SecondsLog) {
+  if (Mode == "BC" && log_Load_data == 1 && Seconds != SecondsLog) {
       SecondsLog = Seconds;
       Serial.print(SecondsLog);
       Serial.print(",");
-      Serial.println(ActualVoltage);
+      Serial.println(voltage);
   }
-}
-
-//----------------------- Select Battery Capacity Testing LCD set up---------------------------------------
-void BatteryCapacityMode(void)
-{
-  Mode = ("BC");
-  printLCD(0, 0, "BATTERY");          // Muestra el titulo del modo
-  printLCD(0, 2, "                "); // Borra el 3er. Renlón del LCD
-  printLCD(0, 2, "Set I = ");         // Muestra el mensaje
-  printLCD(14, 2, "A");               // La unidad de corriente
-  clearLCDLine(3);                    // Borra el 4to. Renlón del LCD
-}
-
-//---------------------- Battery Type Selection and Cutoff Setup -----------------------------
-void batteryType() {
-  exitMode = 0;                           // Resetea EXIT mode
-  lcd.noCursor();                         // Apaga el cursor para este menú
-  lcd.clear();                            // Borra la pantalla del LCD
-  printLCD(0, 0, "Select Battery Type");  // Muestra el título
-  printLCD(0, 1, "Stor.: 1=LiPo 2=LiOn");
-  printLCD(0, 2, "Disc.: 3=LiPo 4=LiOn");
-  printLCD(0, 3, "5=Custom Voltage");
-
-  customKey = getKeyPressed(); // Espera entrada de teclado
-
-  switch (customKey) {
-      case '1': BatteryCutoffVolts = LiPoStoragVoltage; BatteryType = "LiPo"; break;
-      case '2': BatteryCutoffVolts = LionStoragVoltage; BatteryType = "Lion"; break;
-      case '3': BatteryCutoffVolts = LiPoCutOffVoltage; BatteryType = "LiPo"; break;
-      case '4': BatteryCutoffVolts = LionCutOffVoltage; BatteryType = "Lion"; break;
-      case '5': BatteryType = "Custom"; break;
-      case 'M': case '<': exitMode = 1; return; // Salir del modo
-      default: batteryType(); return;  // Si la tecla no es válida, repetir selección
-  }
-
-  if (BatteryType == "Custom" && exitMode != 1) {
-      // Pedir al usuario ingresar un voltaje de corte personalizado
-      lcd.clear();
-      printLCD(0, 0, "   Enter Battery    ");
-      printLCD(0, 1, "   Voltage Cutoff   ");
-      printLCD(0, 3, "    (0 to 25V)      ");
-      do {
-        y = 8; z = 8; r = 2;
-        printLCD(z - 1, r, ">");
-        inputValue(5);
-      } while (x > 25 || x == 0);
-      BatteryCutoffVolts = x;
-  } else {
-      // Si no es Custom, preguntar cantidad de celdas
-      lcd.clear();
-      printLCD(2, 0, "Battery Selected");
-      printLCD(8, 1, BatteryType);
-      printLCD(2, 2, "Cells (1-6) ?");
-      
-      customKey = getKeyPressed();
-      if (customKey >= '1' && customKey <= '6') {
-          BatteryCutoffVolts *= (customKey - '0');  // Multiplicar por la cantidad de celdas
-      }
-  }
-
-  // Mostrar selección final
-  lcd.clear();
-  printLCD(2, 0, "Battery Selected");
-  printLCD(8, 1, BatteryType);
-  printLCD(2, 2, "Cutoff Voltage");
-  printLCD(6, 3, String(BatteryCutoffVolts) + "V");
-  delay(3000); lcd.clear();
 }
 
 //-------------------------------------User set up for limits-------------------------------------------------
-void userSetUp(void)
+void Config_Limits(void)
 {
-  load_ON_status(false); // Apaga la carga
+  toggle = false;
+  Mode = "CF";
+  Load_ON_status(false); // Apaga la carga
   lcd.noCursor(); lcd.clear();
   y = 15;
-  printLCD(4, 0, "User Set-Up");
-  printLCD(0, 1, "Current Limit =");
+  printLCD(4, 0, "Set Limits");
+  printLCD(0, 1, "Max Current:");
   printLCD(19, 1, "A");
   r = 1; z = 15;
-  inputValue(4);
+  Value_Input(4);
   CurrentCutOff = min(x, 10);
-  saveToEEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
   printLCD(y, r, String(CurrentCutOff));
   
-  printLCD(0, 2, "Power Limit  =");
+  printLCD(0, 2, "Max Power:");
   printLCD(19, 2, "W");
   r = 2; z = 15;
-  inputValue(3);
+  Value_Input(3);
   PowerCutOff = min(x, 300);
-  saveToEEPROM(ADD_POWER_CUT_OFF, PowerCutOff);
   printLCD(y, r, String(PowerCutOff));
-  
-  printLCD(0, 3, "Temp. Limit  =");
+ 
+  printLCD(0, 3, "Max Temp.:");
   printLCD(18, 3, String((char)0xDF) + "C");
   r = 3; z = 15;
-  inputValue(2);
+  Value_Input(2);
   tempCutOff = min(x, 99);
-  saveToEEPROM(ADD_TEMP_CUT_OFF, tempCutOff);
   printLCD(y, r, String(tempCutOff));
-  
-  setupLimits();
+
+  saveToEEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
+  saveToEEPROM(ADD_POWER_CUT_OFF, PowerCutOff);
+  saveToEEPROM(ADD_TEMP_CUT_OFF, tempCutOff);
+
+  Show_Limits();
   delay(1000);
   lcd.clear();           // Borra la pantalla del LCD
-  Current();             // Ir a modo Corriente Constante (default)
-  encoderPosition = 0;   // Resetear el encoder
-  customKey = 'M';       // Vuelve a Modos, ver para que, creo que no es necesario
-  load_ON_status(false); // Apaga la carga para que muestre el OFF
+  Constant_Current();    // Ir a modo Corriente Constante (default)
 }
 
 //------------------------Key input used for UserSetUp------------------------
-void inputValue(int maxDigits) {
-  index = 0;         // Reiniciar índice de entrada
-  numbers[0] = '\0'; // Inicializar como cadena vacía
-  decimalPoint = ' '; // Restablecer el estado del punto decimal
+void Value_Input(int maxDigits) {
+  // ojo que no se Resetea el punto decimal y el indice ver si es necesario aca.
 
   while (true) { 
       customKey = getKeyPressed(); // Leer entrada de teclado
@@ -970,10 +904,11 @@ void inputValue(int maxDigits) {
 
           numbers[index] = '\0'; // Eliminar el último carácter
       } 
-      else if (customKey == 'E') { // Confirmar entrada
-          if (index > 0) { // Evitar que se confirme una entrada vacía
-              x = atof(numbers); // Convertir a número
-              break; // Salir del bucle
+      else if (customKey == 'E') {        // Confirmar entrada
+          if (index > 0) {                // Evitar que se confirme una entrada vacía
+              x = atof(numbers);          // Convertir a número
+              Reset_Input_Pointers();     // Resetea el punto decimal y el indice
+              break;                      
           }
       }
 
@@ -985,10 +920,6 @@ void inputValue(int maxDigits) {
       // ✅ Escribe la nueva entrada correctamente
       printLCD(z, r, String(numbers)); 
   }
-
-  // Resetear variables auxiliares después de la entrada
-  index = 0;
-  decimalPoint = ' ';
 }
 
 //-------------------------------------------- Funciones para el Timer ---------------------------------------------------------
@@ -1075,159 +1006,107 @@ String timer_getTime()
 }
 
 //-----------------------------Show limits Stored Data for Current, Power and Temp-----------------------------
-void setupLimits(void)
+void Show_Limits(void)
 {
   lcd.clear();
-  printLCD(1, 0, "Maximum Limits Set"); // Muestra el titulo
-  printLCD(0, 1, "Current Limit=");
+  printLCD(1, 0, "Maximum Limits"); // Muestra el titulo
+  printLCD(0, 1, "Max Current:");
   printLCD(18, 1, "A");
   CurrentCutOff = loadFromEEPROM(ADD_CURRENT_CUT_OFF); // Lee el valor de la corriente de corte desde la EEPROM
   printLCD(15, 1, String(CurrentCutOff));              // Muestra el valor de la corriente de corte
 
-  printLCD(0, 2, "Power Limit  =");
+  printLCD(0, 2, "Max Power:");
   printLCD(19, 2, "W");
   PowerCutOff = loadFromEEPROM(ADD_POWER_CUT_OFF); // Lee el valor de la potencia de corte desde la EEPROM
   printLCD(15, 2, String(PowerCutOff));            // Muestra el valor de la potencia de corte
 
-  printLCD(0, 3, "Temp. Limit  =");
+  printLCD(0, 3, "Max Temp.:");
   printLCD(17, 3, String((char)0xDF) + "C");
   tempCutOff = loadFromEEPROM(ADD_TEMP_CUT_OFF); // Lee el valor de la temperatura de corte desde la EEPROM
   printLCD(15, 3, String(tempCutOff));           // Muestra el valor de la temperatura de corte
 }
 
-//----------------------------------------Transient Mode--------------------------------------------
-void transientMode(void)
-{
-
-  if (Mode != "TL")
-  {
-
-    lcd.noCursor();
-    lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
-
-    printLCD(3, 0, "Transient Mode");
-    printLCD(0, 1, "Set Low  I=");
-    printLCD(19, 1, "A");
-    y = 11; z = 11; r = 1;                  // Setea las posiciones de la pantalla del LCD
-    inputValue(5);                          // Obtiene el valor ingresado por el usuario
-    LowCurrent = min(x, CurrentCutOff);     // Limita la corriente baja al valor de corte de corriente
-    printLCD(11, r, String(LowCurrent, 3)); // Muestra el valor de la corriente baja
-
-    printLCD(0, 2, "Set High I=");
-    printLCD(19, 2, "A");
-    z = 11; r = 2;
-    inputValue(5);                           // Obtiene el valor ingresado por el usuario
-    HighCurrent = min(x, CurrentCutOff);     // Limita la corriente alta al valor de corte de corriente
-    printLCD(11, r, String(HighCurrent, 3)); // Muestra el valor de la corriente alta con tres decimales
-
-    if (Mode == "TC")
-    { // Si el modo es Transitorio Continuo
-      printLCD(0, 3, "Set Time  = ");
-      printLCD(16, 3, "mSec");
-      z = 11;
-      r = 3;         // Setea las posiciones de la pantalla del LCD
-      inputValue(5); // Obtiene el valor ingresado por el usuario
-
-      transientPeriod = x;                      // Guarda el valor del tiempo de transitorio
-      printLCD(11, r, String(transientPeriod)); // Muestra el valor de la duración del transitorio
-    }
-    else
-    {
-      clearLCDLine(3);
-    } // Borra el 4to. Renlón del LCD
-
-    lcd.clear();           // Borra la pantalla del LCD
-    toggle = false;        // Flag para apagar la carga
-    load_ON_status(false); // Apaga la carga
-  }
-  else
-  {
-    transientListSetup();  // Si el modo es Transitorio de Lista, se llama a la función de configuración de la lista
-    lcd.clear();           // Borra la pantalla del LCD
-    toggle = false;        // Flag para apagar la carga
-    load_ON_status(false); // Apaga la carga
-  }
-}
-
 //----------------------------------------Transient Type Selection--------------------------------------------
-void transientType()
-{
+void Transient_Mode_Selection() {
   toggle = false;
-  exitMode = 0;
-  lcd.noCursor();
-  lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
+  exitMode = false;
+  lcd.noCursor(); lcd.clear();                    // Apaga el cursor y borra la pantalla del LCD
 
   printLCD(3, 0, "Transient Mode");
   printLCD(0, 1, "1 = Continuous");
   printLCD(0, 2, "2 = List");
 
-  while (true)
-  { // Bucle para garantizar entrada válida
+  while (true) {                                  // Bucle para garantizar entrada válida
     customKey = getKeyPressed();
 
-    if (customKey == '1' || customKey == '2')
-    {                                          // Si la tecla es válida
-      Mode = (customKey == '1') ? "TC" : "TL"; // Asigna el modo de transitorio
-      break;                                   // Salimos del bucle si la tecla es válida
+    if (customKey == '1' || customKey == '2') {   // Si la tecla es válida
+      Mode = (customKey == '1') ? "TC" : "TL";    // Asigna el modo de transitorio
+      break;
     }
-    else if (customKey == 'M')
-    {               // Si se presiona la tecla de Modos
-      exitMode = 1; // Salimos del modo
-      break;        // También salimos si se cambia de modo
+    else if (customKey == 'M') {                  // Si se presiona la tecla de Modos
+      exitMode = true;                            // Salimos del modo
+      break;
     }
-    else if (!strchr("34567890<CSE.", customKey) && customKey != NO_KEY)
-    {        // Si la tecla no es válida
-      break; // Salimos del bucle si la tecla no es inválida
+    else if (!strchr("34567890<CSE.", customKey) && customKey != NO_KEY) {  // Si la tecla no es válida
+      break;                                                                // Salimos del bucle si la tecla no es inválida
     }
   }
-
-  lcd.clear();
-  if (exitMode == 0)
-  {
-    transientMode();
-  } // Si no se sale del modo, se llama a la función de modo transitorio
+  if (!exitMode) {Transient_Mode_Setup(); }       // Si no se sale del modo, se llama a la función de modo transitorio
 }
 
-//----------------------------------------Transient--------------------------------------------
-void Transient(void)
-{
-  if (Mode == "TC" || Mode == "TL")
-  {
-    lcd.noCursor();            // switch Cursor OFF for this menu
-    printLCD(0, 0, "DC LOAD"); // Muestra el titulo del modo
+//----------------------------------------Transient Mode--------------------------------------------
+void Transient_Mode_Setup(void) {
+  if (Mode == "TC") {
 
-    if (Mode == "TC")
-    {
-      printLCD(0, 2, "Lo=");                   // Muestra el mensaje
-      printLCD(3, 2, String(LowCurrent, 3));   // Muestra el valor de la corriente baja
-      printLCD(8, 2, "A");                     // Muestra la unidad
-      printLCD(11, 2, "Hi=");                  // Muestra el mensaje
-      printLCD(14, 2, String(HighCurrent, 3)); // Muestra el valor de la corriente alta
-      printLCD(19, 2, "A");                    // Muestra la unidad
-      printLCD(0, 3, "Time = ");               // Muestra el mensaje
-      printLCD(7, 3, String(transientPeriod)); // Muestra el valor del tiempo
-      printLCD(12, 3, "mSecs");                // Muestra la unidad
-    }
-    else
-    {
-      printLCD(0, 3, "  "); // Borra el 4to. Renlón del LCD
-    }
+    lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
+
+    printLCD(3, 0, "Transient Cont.");
+    printLCD(0, 1, "Set Low I:");
+    printLCD(19, 1, "A");
+    y = 11; z = 11; r = 1;                  // Setea las posiciones de la pantalla del LCD
+    Value_Input(5);                          // Obtiene el valor ingresado por el usuario
+    LowCurrent = min(x, CurrentCutOff);     // Limita la corriente baja al valor de corte de corriente
+    printLCD(11, r, String(LowCurrent, 3)); // Muestra el valor de la corriente baja
+
+    printLCD(0, 2, "Set High I:");
+    printLCD(19, 2, "A");
+    z = 11; r = 2;
+    Value_Input(5);                           // Obtiene el valor ingresado por el usuario
+    HighCurrent = min(x, CurrentCutOff);     // Limita la corriente alta al valor de corte de corriente
+    printLCD(11, r, String(HighCurrent, 3)); // Muestra el valor de la corriente alta con tres decimales
+
+    printLCD(0, 3, "Set Time:");
+    printLCD(16, 3, "mSec");
+    z = 11; r = 3;                          // Setea las posiciones de la pantalla del LCD
+    Value_Input(5);                            // Obtiene el valor ingresado por el usuario
+    transientPeriod = x;                      // Guarda el valor del tiempo de transitorio
+    printLCD(11, r, String(transientPeriod)); // Muestra el valor de la duración del transitorio
+
+
+    lcd.clear();            // Borra la pantalla del LCD
+    toggle = false;         // Flag para apagar la carga
+    Load_ON_status(false);  // Apaga la carga
+  }
+  if (Mode == "TL")  {
+    Transient_List_Setup(); // Si el modo es Transitorio de Lista, se llama a la función de configuración de la lista
+    toggle = false;         // Flag para apagar la carga
+    Load_ON_status(false);  // Apaga la carga
   }
 }
 
 //-------------------------------------Transcient List Setup-------------------------------------------
-void transientListSetup()
+void Transient_List_Setup()
 {
   lcd.noCursor();
   lcd.clear(); // Apaga el cursor y borra la pantalla
-  printLCD(0, 0, "Setup Transient List");
-  printLCD(0, 1, "Enter Number in List");
-  printLCD(0, 2, "(between 2 to 10)");
+  printLCD(0, 0, "Transient List");
+  printLCD(0, 1, "N° in List?");
+  printLCD(0, 2, "(2 to 10)");
   lcd.cursor();
   do { // Bucle para garantizar entrada válida
     y = 0; z = 1; r = 3;
     printLCD(0, r, ">");
-    inputValue(2);
+    Value_Input(2);
   } while (x < 2 || x > 10); // Si el valor no está entre 2 y 10, se vuelve a pedir
 
   total_instructions = x - 1; // Guarda el número total de instrucciones
@@ -1239,17 +1118,19 @@ void transientListSetup()
     printLCD(7, 1, "A");                            // Muestra la unidad
     do {                                            // Asegura que el valor de corriente no supere 10A
       y = 0; z = 1; r = 1;
-      printLCD(0, r, ">");
-      inputValue(5);                                // Permitir 5 digitos, ej.: 1.234A
+      printLCD(y, r, ">");
+      Value_Input(5);                               // Permitir 5 digitos, ej.: 1.234A
     } while (x > 10 || x <= 0);                     // Si el valor es mayor a 10A o menor/igual a 0, repeti
     transientList[i][0] = x;                        // Guarda el valor de la corriente
+    printLCD(y + 1, r, String(x, 3));                   // Muestra el valor de la corriente
 
     printLCD(0, 2, "Set Time " + String(i + 1));    // Pide el valor de tiempo en milisegundos
     printLCD(7, 3, "mSec");
     y = 0; z = 1; r = 3;
     printLCD(0, r, ">");
-    inputValue(5);
-    transientList[i][1] = x; // Guarda el valor del tiempo
+    Value_Input(5);
+    transientList[i][1] = x;                        // Guarda el valor del tiempo
+    printLCD(y + 1, r, String(x, 3));                   // Muestra el valor de la corriente
 
     lcd.clear(); // Borra la pantalla
   }
@@ -1257,62 +1138,49 @@ void transientListSetup()
 }
 
 //-------------------------------------Transcient Load Toggel-------------------------------------------
-void transientLoadToggle()
-{
-  if (Mode == "TC")
-  { // Si em modo es Transitorio Continuo
+void Transient_Toggle_Timing() {
+  if (Mode == "TC") {           // Si em modo es Transitorio Continuo
     current_time = micros();
-    if (last_time == 0)
-    {
-      last_time = current_time;
-    }
-    else
-    {
-      switch (transient_mode_status)
-      {
-      case (false):
-        if ((current_time - last_time) >= (transientPeriod * 1000.0))
-        {                                    // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-          transientSwitch(LowCurrent, true); // Cambia a la corriente baja
-        }
-        break;
-      case (true):
-        if ((current_time - last_time) >= (transientPeriod * 1000.0))
-        {                                     // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-          transientSwitch(HighCurrent, true); // Cambia a la corriente alta
-        }
-        break;
+    if (last_time == 0) { last_time = current_time; }
+    else {
+      switch (transient_mode_status) {
+        case (false):
+          if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
+            Transient_Toggle_Load(LowCurrent, true);                            // Cambia a la corriente baja
+          }
+          break;
+        case (true):
+          if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
+            Transient_Toggle_Load(HighCurrent, true);                           // Cambia a la corriente alta
+          }
+          break;
       }
     }
   }
 
-  if (Mode == "TL")
-  { // Si el modo es Transitorio de Lista
-    if (Load == 1)
-    { // Solo lo hara si la carga está encendida
+  if (Mode == "TL") {                                            // Si el modo es Transitorio de Lista
+    if (log_Load_data == 1) {                                    // Solo lo hara si la carga está encendida
       current_time = micros();
-      if (last_time == 0)
-      {                                                          // Si es la primera vez que se ejecuta
+      if (last_time == 0) {                                      // Si es la primera vez que se ejecuta
         last_time = current_time;                                // Inicializa el tiempo
         transientPeriod = transientList[current_instruction][1]; // Obtiene el tiempo de transitorio de la lista
-        transientSwitch(transientList[current_instruction][0], false);
+        Transient_Toggle_Load(transientList[current_instruction][0], false);
       }
-      if ((current_time - last_time) >= transientList[current_instruction][1] * 1000)
-      {                        // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio de la lista
-        current_instruction++; // Incrementa el contador de instrucciones
+      if ((current_time - last_time) >= transientList[current_instruction][1] * 1000) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio de la lista
+        current_instruction++;                                                          // Incrementa el contador de instrucciones
         if (current_instruction > total_instructions)
-        {                          // Si el contador es mayor al total de instrucciones
-          current_instruction = 0; // Resetea el contador de instrucciones
+        {                                                                               // Si el contador es mayor al total de instrucciones
+          current_instruction = 0;                                                      // Resetea el contador de instrucciones
         }
-        transientPeriod = transientList[current_instruction][1];       // Obtiene el tiempo de transitorio de la lista
-        transientSwitch(transientList[current_instruction][0], false); // Cambia a la corriente de la lista
+        transientPeriod = transientList[current_instruction][1];                        // Obtiene el tiempo de transitorio de la lista
+        Transient_Toggle_Load(transientList[current_instruction][0], false);                  // Cambia a la corriente de la lista
       }
     }
   }
 }
 
 //-------------------------------------Transcient Switch-------------------------------------------
-void transientSwitch(float current_setting, boolean toggle_status)
+void Transient_Toggle_Load(float current_setting, boolean toggle_status)
 {
   if (toggle_status)
   {
@@ -1322,19 +1190,53 @@ void transientSwitch(float current_setting, boolean toggle_status)
   last_time = current_time;
 }
 
-//------------------------------------- Funciones para el LCD -------------------------------------------
-// Función para limpiar una línea específica
-void clearLCDLine(int row)
-{
-  printLCD(0, row, "                    "); // 20 espacios para borrar la línea
+//----------------------------------------Transient--------------------------------------------
+void Transient(void) {
+
+  static String last_T_Mode = " ";
+
+  if (Mode == "TC") {
+    printLCD(3, 2, String(LowCurrent, 3));   // Muestra el valor de la corriente baja
+    printLCD(14, 2, String(HighCurrent, 3)); // Muestra el valor de la corriente alta
+    if (last_T_Mode != Mode) {
+      lcd.noCursor();            // switch Cursor OFF for this menu
+      printLCD(0, 0, "DC LOAD"); // Muestra el titulo del modo
+      printLCD(0, 2, "Lo=");                   // Muestra el mensaje
+      printLCD(8, 2, "A");                     // Muestra la unidad
+      printLCD(11, 2, "Hi=");                  // Muestra el mensaje
+      printLCD(19, 2, "A");                    // Muestra la unidad
+      printLCD(0, 3, "Time = ");               // Muestra el mensaje
+      printLCD(7, 3, String(transientPeriod)); // Muestra el valor del tiempo
+      printLCD(12, 3, "mSecs");                // Muestra la unidad
+      last_T_Mode = Mode;
+      }
+    }
+
+  if (Mode == "TL") {
+    printLCD(13, 2, String(current_instruction));   // Muestra la instrucción en curso
+    printLCD(7, 3, String(transientPeriod));        // Muestra el valor del tiempo
+    if (last_T_Mode != Mode) {
+      lcd.noCursor();   
+      printLCD(0, 0, "DC LOAD");                    // Muestra el titulo del modo
+      printLCD(0, 2, "Instruccion: ");              // Muestra el mensaje
+      printLCD(0, 3, "Time = ");                    // Muestra el mensaje
+      printLCD(12, 3, "mSecs");                     // Muestra la unidad
+      last_T_Mode = Mode;
+    }
+  }
 }
 
-// Función para imprimir un mensaje en una posición específica
-void printLCD(int col, int row, const String &message)
-{
-  lcd.setCursor(col, row);
-  lcd.print(message);
-}
+//------------------------------------- Funciones para el LCD -------------------------------------------
+
+  // Función para limpiar una línea específica
+  void clearLCDLine(int row) {
+  }
+
+  // Función para imprimir un mensaje en una posición específica
+  void printLCD(int col, int row, const String &message) {
+    lcd.setCursor(col, row);
+    lcd.print(message);
+  }
 
 //-------------------------------- Graba en EEPROM -----------------------------
 void saveToEEPROM(int address, float value)
@@ -1355,6 +1257,7 @@ float loadFromEEPROM(int address)
   EEPROM.get(address, value);
   return value;
 }
+
 //------------------------------- Get Key Presed ---------------------------------
 char getKeyPressed() {
   char key;
@@ -1363,3 +1266,8 @@ char getKeyPressed() {
   } while (key == NO_KEY);  
   return key;
 }
+//------------------------------- Reset Input Pointers ----------------------------
+ void Reset_Input_Pointers (void){
+  index = 0;
+  decimalPoint = ' ';
+ }
