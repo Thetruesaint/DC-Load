@@ -1,4 +1,4 @@
-//#define WOKWI_SIMULATION
+#define WOKWI_SIMULATION
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -15,12 +15,11 @@
 // Declaramos las funciones que vamos a utilizar
 void setup();
 void loop();
-void Load_ON_status(boolean loadonoff);
+void Load_ON_status(bool loadonoff);
 void Read_Encoder();
 void Read_Keypad();
 void Read_Load_Button();
 void Update_LCD();
-//void displayEncoderReading(void);
 void Cursor_Position(void);
 void Read_Volts_Current(void);
 void DAC_Control(void);
@@ -32,7 +31,6 @@ void Battery_Mode(void);
 void Battery_Type_Selec(void);
 void Config_Limits(void);
 void Value_Input(int maxDigits);
-int timer_status();
 void timer_start();
 void timer_stop();
 void timer_reset();
@@ -44,7 +42,7 @@ void Transient_Mode_Selection();
 void Transient();
 void Transient_List_Setup();
 void Transient_Toggle_Timing();
-void Transient_Toggle_Load(float current_setting, boolean toggle_status);
+void Transient_Toggle_Load(float current_setting, bool toggle_status);
 void printLCD_S(int col, int row, const String &message);
 void printLCD(int col, int row, const __FlashStringHelper *message);
 void saveToEEPROM(int address, float value);
@@ -88,8 +86,8 @@ float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
 const float MAX_VOLTAGE = 90;           // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
 int CP = 8;                             // Posicion inicial del cursor
-boolean toggle = false;                 // Conmuta la carga On/Off
-int log_Load_data = 0;                  // Flag de estado de la carga para loguear o cronometrar tiempos
+bool toggle = false;                 // Conmuta la carga On/Off
+bool log_Load_data = false;                  // Flag de estado de la carga para loguear o cronometrar tiempos
 float reading = 0;                      // Variable para Encoder dividido por 1000
 float setCurrent = 0;                   // Variable para setear la corriente de carga
 float setPower = 20;                    // Variable para setear la potencia de carga
@@ -162,7 +160,7 @@ float HighCurrent = 0;                 // Configuración de corriente alta para 
 unsigned long transientPeriod;         // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
 unsigned long current_time;            // Para almacenar el tiempo actual en microsegundos
 unsigned long last_time = 0;           // Para almacenar el tiempo del último cambio transitorio en microsegundos
-boolean transient_mode_status = false; // Para mantener el estado del modo transitorio (false = corriente baja, true = corriente alta)
+bool transient_mode_status = false; // Para mantener el estado del modo transitorio (false = corriente baja, true = corriente alta)
 float transientList[10][2];            // Array para almacenar los datos de la lista transitoria
 int total_instructions;                // Utilizado en el modo de Transient List Mode
 int current_instruction;               // Utilizado en el modo de Transient List Mode
@@ -211,7 +209,8 @@ void setup() {
   //printLCD(0, 0, "*DC Electronic Load*");
   lcd.setCursor(0, 1); lcd.print(date + " - " + time);
   printLCD(0, 2, F("Guy Nardin"));
-  printLCD(0, 3, F("v1.66")); // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
+  printLCD(0, 3, F("v1.67"));
+                           // Modos CC, CP y CR funcionando con Teclado. Ajustes para el Set con Load ON/Off
                            // Vuelvo a configurar que guarde Set Up en EEPROM (solo guarda enteros)
                            // coloco LM35
                            // Cambio de Ops Apms a LM324N alimentado a 9V
@@ -236,30 +235,26 @@ void setup() {
                            // 1.61 Ajustes del còdigo para poner lìmites en modos Trasient
                            // 1.62 Cambio opciones de Descarga de Baterias
                            // 1.63 Bug en Trasient Mode que hace que no chequee los límites de corriente, temperatura o potencia.
-                           // 1.64 Muchas mejoras en el código, en el manejo EEPROM, temp de Fans on a 40°C y ajusto factor de control de corriente.
-                           // 1.65 Nuevas mejoras en el código, refresh del LCD pte.
-                           //      Mejoras de checklimits Temp Control Muchas mejoras de código.
-                           //      Bugs:
-                           //      - Poca memoria FLASH
-                           //      - Refresh en salida de Config Limits
-                           //      - Refressh de Temp si no cambia
-                           //      - mensajes de exceso de limites afecta renglon 4 en todos los modos
-                           //      - En modo CC, CR y CP: Desaparece indicador ">" en pos. 0, renglon 4, ver si no se pisa por exseso de renglon 3
+                           // 1.64 Mejoras en el código, en el manejo EEPROM, temp de Fans on a 40°C y ajusto factor de control de corriente.
+                           // 1.65 Mejoras de código. nuevas funciones Check_limits, Temp Control, Bugs: falta FLASH, Refresh Config_Limits, Temp, modo CC, CR y CP: Desaparece indicador ">
                            // 1.66  Fixs: 
                            //       - Acorte mensajes y genere funcion printLCD con F()ahorrado bastante FLASH 
                            //       - Pude agregar limites a check list
                            //       - Actualiza Temp con new_temp en UpdateLCD 
                            //       - En modo CC, CR y CP ya aparece el indicador ">"
                            //       Bugs:
-                           //       - Refresh cuando salgo de un modo y vuelvo al mismo modo, no refresca la plantilla en el LCD.
+                           //       - Refresh de LCD al salir y volver al mismo modo o luego de un warning de limites excedidos.
                            //       - En TC y TL con ON, no resetea el timming, como que queda corriendo revisar.
-                           //       - Em entorno real hay mediciones negativas de corriente con LOAD OFF
+                           //       - En entorno real hay mediciones negativas de corriente con LOAD OFF
                            //       - En modo CR se puede poner una resistencia 0 (corriente alta, divide por cero)
                            //      Mejoras ptes.:
-                           //       - Calibracíón
-                           //       - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff (liberar FLASH)
+                           //       - Calibracíón incluir external voltage sense
+                           //       - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff
                            //       - Poder salir de un modo, dentro de los menues de selección ¿exitMode = true en void Input_Value y evaluarlo cada vez que se llama?
                            //       - Poder salir del menu de configuración en cualquier momento
+                           // 1.67  Fixs:
+                           //       - Timming de Trasient mode, se inicia correctamente con el estado de la carga
+                           //       - Modo BC: Flickering y refresh de tiempo y mAH por segundo.
 
   delay(2000);
   lcd.clear();
@@ -301,16 +296,16 @@ void loop() {
   DAC_Control();
   Battery_Capacity();
   Transient();
-  Transient_Toggle_Timing(); // 
+  Transient_Toggle_Timing();
 }
 
 //------------------------------Load ON Status--------------------------------------
-void Load_ON_status(boolean loadonoff)
+void Load_ON_status(bool loadonoff)
 {
   #ifndef WOKWI_SIMULATION
   dac.setVoltage(loadonoff ? controlVoltage : 0, false); // Set DAC voltage based on load status
   #endif
-  log_Load_data = loadonoff ? 1 : 0; // 
+  log_Load_data = loadonoff ? true : false; //
   printLCD(8, 0, loadonoff ? F("ON ") : F("OFF"));    // Fuerza la indicación del estado de la carga, por las dudas.
 }
 
@@ -721,6 +716,8 @@ void Battery_Mode(void) {
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));
   printLCD(0, 2, F("Set I = "));         // Muestra el mensaje
   printLCD(14, 2, F("A"));               // La unidad de corriente
+  printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
+  lcd.print(F("mAh"));
 }
 
 //---------------------- Battery Type Selection and Cutoff Setup -----------------------------
@@ -793,28 +790,30 @@ void Battery_Type_Selec() {
 void Battery_Capacity(void) {
   if (Mode != "BC") return;  // Solo ejecuta si está en modo Battery Capacity
 
-  if (toggle && voltage >= BatteryCutoffVolts && timer_status() != 1) { timer_start(); }    // Si la carga esta enable y el Timer == 2 (detenido), inicia el timer
-  if (!toggle && voltage >= BatteryCutoffVolts && timer_status() == 1) { timer_stop(); }    // Si la carga esta disable y el Timer == 1 (iniciado), detiene el timer
+  static unsigned long lastUpdate = 0; // Guarda el tiempo de la última actualización del display
+  unsigned long currentMillis = millis();
+  
+  if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); }    // Si la carga esta enable y el Timer == 2 (detenido), inicia el timer
+  if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }    // Si la carga esta disable y el Timer == 1 (iniciado), detiene el timer
 
-  printLCD_S(0, 3, timer_getTime()); // Muestra el tiempo transcurrido
-
-  Seconds = timer_getTotalSeconds(); // Obtiene el tiempo total en segundos
-  LoadCurrent = (timer_status() == 2) ? BatteryCurrent : current; // Mantiene última corriente si se detiene el timer
-
-  // Calcula capacidad en mAh
-  BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600));
-
-  // Solo actualizar LCD si el valor cambia
-  if (BatteryLife > BatteryLifePrevious) {
-    String capacityStr = (BatteryLife < 1000) ? String(BatteryLife, 1) : String((int)BatteryLife); 
-    capacityStr += "mAh";
+  
+  if (currentMillis - lastUpdate >= 1000) { //  Solo actualizar cada 1 segundo para evitar flickering innecesario
+    lastUpdate = currentMillis;             // Actualizar el tiempo de referencia
     
-    while (capacityStr.length() < 7) capacityStr = "0" + capacityStr; // Agrega ceros a la izquierda
-    
-    printLCD_S(9, 3, capacityStr);
-    BatteryLifePrevious = BatteryLife;
-  }
+    lcd.noCursor();
+    printLCD_S(0, 3, timer_getTime());  // Actualizar y mostrar tiempo transcurrido en el LCD
 
+    Seconds = timer_getTotalSeconds();  // Obtiene el tiempo total en segundos
+    LoadCurrent = (!timerStarted) ? BatteryCurrent : current; // Mantiene última corriente si se detiene el timer
+    BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600));   // Calcula capacidad en mAh (sin decimales)
+
+    if (BatteryLife > BatteryLifePrevious) {     // Solo actualizar LCD si el valor de mAh cambió
+      printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
+      lcd.print(F("mAh"));
+      BatteryLifePrevious = BatteryLife;
+    }
+  }  
+  
   // Si la batería llega al voltaje de corte, detener descarga
   if (voltage <= BatteryCutoffVolts) {
       BatteryCurrent = current;
@@ -823,8 +822,8 @@ void Battery_Capacity(void) {
       timer_stop();
   }
 
-  // Registro de datos para logging
-  if (Mode == "BC" && log_Load_data == 1 && Seconds != SecondsLog) {
+  // Registro de datos para logging cada segundo
+  if (Mode == "BC" && log_Load_data && Seconds != SecondsLog) {
       SecondsLog = Seconds;
       Serial.print(SecondsLog);
       Serial.print(",");
@@ -882,31 +881,16 @@ void Value_Input(int maxDigits) {
 }
 
 //-------------------------------------------- Funciones para el Timer ---------------------------------------------------------
-int timer_status()
-{
-  if (timerStarted)
-  {
-    return 1; // Timer iniciado
-  }
-  else
-  {
-    return 2; // Timer detenido
+
+void timer_start() {
+  if (!timerStarted) {
+    startTime = rtc.now();        // Toma referencia de tiempo
+    timerStarted = true;          // flag de que inició el cronometro
   }
 }
 
-void timer_start()
-{
-  if (!timerStarted)
-  {
-    startTime = rtc.now();
-    timerStarted = true;
-  }
-}
-
-void timer_stop()
-{
-  if (timerStarted)
-  {
+void timer_stop() {
+  if (timerStarted) {
     DateTime now = rtc.now();
     TimeSpan elapsedTime = now - startTime;
     elapsedSeconds += elapsedTime.totalseconds();
@@ -914,28 +898,21 @@ void timer_stop()
   }
 }
 
-void timer_reset()
-{
+void timer_reset() {
   elapsedSeconds = 0.0;
   timerStarted = false;
 }
 
-float timer_getTotalSeconds()
-{
-  if (timerStarted)
-  {
+float timer_getTotalSeconds() {
+  if (timerStarted) {
     DateTime now = rtc.now();
     TimeSpan elapsedTime = now - startTime;
     return elapsedSeconds + elapsedTime.totalseconds();
   }
-  else
-  {
-    return elapsedSeconds;
-  }
+  else { return elapsedSeconds; }
 }
 
-String timer_getTime()
-{
+String timer_getTime() {
   int totalSeconds = static_cast<int>(timer_getTotalSeconds());
 
   int hours = totalSeconds / 3600;
@@ -943,22 +920,14 @@ String timer_getTime()
   int seconds = (totalSeconds % 3600) % 60;
 
   String formattedTime = "";
-  if (hours < 10)
-  {
-    formattedTime += "0";
-  }
+  if (hours < 10) { formattedTime += "0";}
   formattedTime += String(hours) + ":";
 
-  if (minutes < 10)
-  {
-    formattedTime += "0";
-  }
+  if (minutes < 10) {formattedTime += "0";}
+
   formattedTime += String(minutes) + ":";
 
-  if (seconds < 10)
-  {
-    formattedTime += "0";
-  }
+  if (seconds < 10) {formattedTime += "0";}
   formattedTime += String(seconds);
 
   return formattedTime;
@@ -1125,6 +1094,9 @@ void Transient_List_Setup()
 
 //-------------------------------------Transcient Load Toggel-------------------------------------------
 void Transient_Toggle_Timing() {
+
+  if (!toggle) return;
+
   if (Mode == "TC") {           // Si em modo es Transitorio Continuo
     current_time = micros();
     if (last_time == 0) { last_time = current_time; }
@@ -1132,25 +1104,27 @@ void Transient_Toggle_Timing() {
       switch (transient_mode_status) {
         case (false):
           if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-            Transient_Toggle_Load(LowCurrent, true);                            // Cambia a la corriente baja
+            Transient_Toggle_Load(LowCurrent, true);                      // Cambia a la corriente baja
+            Serial.print(0);
           }
           break;
         case (true):
           if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-            Transient_Toggle_Load(HighCurrent, true);                           // Cambia a la corriente alta
+            Transient_Toggle_Load(HighCurrent, true);                     // Cambia a la corriente alta
+            Serial.print(1);
           }
           break;
       }
     }
   }
 
-  if (Mode == "TL") {                                            // Si el modo es Transitorio de Lista
-    if (log_Load_data == 1) {                                    // Solo lo hara si la carga está encendida
+  if (Mode == "TL") {     // Si el modo es Transitorio de Lista
       current_time = micros();
       if (last_time == 0) {                                      // Si es la primera vez que se ejecuta
         last_time = current_time;                                // Inicializa el tiempo
         transientPeriod = transientList[current_instruction][1]; // Obtiene el tiempo de transitorio de la lista
         Transient_Toggle_Load(transientList[current_instruction][0], false);
+        Serial.print(2);
       }
       if ((current_time - last_time) >= transientList[current_instruction][1] * 1000) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio de la lista
         current_instruction++;                                                          // Incrementa el contador de instrucciones
@@ -1159,19 +1133,16 @@ void Transient_Toggle_Timing() {
           current_instruction = 0;                                                      // Resetea el contador de instrucciones
         }
         transientPeriod = transientList[current_instruction][1];                        // Obtiene el tiempo de transitorio de la lista
-        Transient_Toggle_Load(transientList[current_instruction][0], false);                  // Cambia a la corriente de la lista
+        Transient_Toggle_Load(transientList[current_instruction][0], false);            // Cambia a la corriente de la lista
+        Serial.print(current_instruction);
       }
-    }
   }
 }
 
 //-------------------------------------Transcient Switch-------------------------------------------
-void Transient_Toggle_Load(float current_setting, boolean toggle_status)
+void Transient_Toggle_Load(float current_setting, bool toggle_status)
 {
-  if (toggle_status)
-  {
-    transient_mode_status = !transient_mode_status;
-  }
+  if (toggle_status) { transient_mode_status = !transient_mode_status;}
   setCurrent = current_setting;
   last_time = current_time;
 }
@@ -1213,38 +1184,38 @@ void Transient(void) {
 }
 
 //------------------------------------- Funciones para el LCD -------------------------------------------
-
-  // Función para imprimir un mensaje en una posición específica
- void printLCD_S(int col, int row, const String &message) {
+// Función para imprimir un mensaje de texto variable
+void printLCD_S(int col, int row, const String &message) {
     lcd.setCursor(col, row);
     lcd.print(message);
   }
 
+// Función para imprimir un mensaje con texto almacenado en FLASH
 void printLCD(int col, int row, const __FlashStringHelper *message) {
   lcd.setCursor(col, row);
   lcd.print(message);
 }
  
-  // Función para imprimir un numero y su unidad en una posición específica
-  void printLCDNumber(int col, int row, float number, char unit, int decimals) {
-    lcd.setCursor(col, row);
+// Función para imprimir un numero y su unidad en una posición específica
+void printLCDNumber(int col, int row, float number, char unit, int decimals) {
+  lcd.setCursor(col, row);
 
-    // Buffer de 10 caracteres para el número formateado
-    char buffer[10];
+  // Buffer de 10 caracteres para el número formateado
+  char buffer[10];
 
-    // Formato del número con "X.YY" o "XX.Y" dependiendo del valor
-    dtostrf(number, 6, decimals, buffer);
+  // Formato del número con "X.YY" o "XX.Y" dependiendo del valor
+  dtostrf(number, 6, decimals, buffer);
 
-    // Elimina espacios al inicio generados por dtostrf
-    for (int i = 0; i < 6; i++) {
-        if (buffer[i] != ' ') {
-            lcd.print(&buffer[i]);  // Imprime desde la primera posición válida
-            break;
-        }
+  // Elimina espacios al inicio generados por dtostrf
+  for (int i = 0; i < 6; i++) {
+    if (buffer[i] != ' ') {
+      lcd.print(&buffer[i]);  // Imprime desde la primera posición válida
+      break;
     }
-
+  }
     lcd.print(unit);  // Imprime la unidad
 }
+
 //-------------------------------- Graba en EEPROM -----------------------------
 void saveToEEPROM(int address, float value)
 {
