@@ -213,7 +213,8 @@ void setup() {
   printLCD(0, 2, F("Para SIMULACION"));
   #endif
   printLCD(0, 3, F("v1.68"));
-  /*
+  /* 
+        ################## EN PRODUCCION #######################
   Mejoras:
 
     - Value_Input parametrizada con coordenas con variables locales.
@@ -234,7 +235,7 @@ void setup() {
     - Mejora Update LCD, refresca por limits, Limits Checks con adv. intermitentes.
     - Reorganización total de los modos y corrección de bugs en el proceso.
       
-  Bugs:
+  Bugs detectados:
     - En modo CR se puede poner una resistencia 0 (corriente alta, divide por cero)
    
   Posibles Mejoras:
