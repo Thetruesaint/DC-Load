@@ -1,4 +1,4 @@
-#define WOKWI_SIMULATION
+//#define WOKWI_SIMULATION
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -30,7 +30,7 @@ void Battery_Capacity(void);
 void Battery_Mode(void);
 void Battery_Type_Selec(void);
 void Config_Limits(void);
-bool Value_Input(int maxDigits);
+bool Value_Input(int col, int row, int maxDigits);
 void timer_start();
 void timer_stop();
 void timer_reset();
@@ -130,7 +130,6 @@ float x = 0;       // Ver para que se usa
 
 //-----------------------------------Variables de coordenadas para ubicar valores en LCD--------------------
 int z = 1; // Posición en renglón (En CC,CP y CR dejo lugar para poner caracter ">"), aun no lo puse
-int y = 0; // Posición provisoria
 int r = 0; // Renglon
 
 //---------------------------------------Inicializo Variables para Modo Baterias-----------------------------
@@ -190,7 +189,6 @@ void setup() {
   //-------------------------------------Configuraciones iniciales de única vez-----------------------------
   // dac.setVoltage(0,true);                      // reset DAC to zero for no output current set at Switch On, Cambio a "True" para que guarde este valor en la Emprom
 
-
   //-------------------------------------Inicializa I/O---------------------------------------------------
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
@@ -216,12 +214,10 @@ void setup() {
   #endif
   printLCD(0, 3, F("v1.68"));
   /*
-  Trabajando ahora:
-    - Cuando los W son mayores a 10 o a 100 queda una W de mas cuando baja el valor
-    - Ajustar funcion Value_Input para que tome coordenas de donde ingresar el valor y que use variables locales y no modifique las globales y, z o r.
-
   Mejoras:
-    - Ajustes de los menues y seteo de valores de BC, y reingenieria del algoritmo TC y TL.
+
+    - Value_Input parametrizada con coordenas con variables locales.
+    - Ajustes de menues y seteos de BC, y reingenieria del algoritmo TC y TL.
     - Borra la C de la Temperatura a la derecha si fue mayor a 10 y vuelve a menos de 10
     - Cambio de variables String Mode a Enum, costo el cambio, pero ahorro FLASH
     - Organización de llamadas a Funciones con Switch, mucha horas a esto. Mas fácil para hacer cambios o debugs
@@ -229,8 +225,9 @@ void setup() {
     - Config_Limits y Show_Limits ahora se llaman y vuelven al mismo modo. No para TC o TL, para BC, solo despues de Configurar el modo
     - El modo Trasient pasaron a ser dos modos Continuo o de Lista
     - Mejora en los mensajes de Check_Limites para que se muestren bien.
-
+  
   Fixes:
+    - W > 100 borra la W de mas cuando baja el valor
     - TC iniciaba con 0A por el periodo y el timing no se reiniciaba con Load Off
     - Si hay warning por exceso de limites, resetear valores que se estaban ingresando
     - Refresh de LCD al salir y volver al mismo modo
@@ -238,12 +235,11 @@ void setup() {
     - Reorganización total de los modos y corrección de bugs en el proceso.
       
   Bugs:
-
     - En modo CR se puede poner una resistencia 0 (corriente alta, divide por cero)
-    - Sacar decimales en CR y CP y ver que presición quiero tener.
-          
+   
   Posibles Mejoras:
 
+    - Sacar decimales en CR y CP? ver que presición quiero tener.
     - Mostrar el tipo de Baterria en la plantilla de BC
     - printLCD_S(0, 1, "Instruccion " + String(i + 1));  muestre las instrucciones totales tipo "1 de X"
     - Uso para Shift paa ir a un modo directo o a Calibración S+C?
@@ -320,7 +316,6 @@ void Load_ON_status(bool loadonoff)
   dac.setVoltage(loadonoff ? controlVoltage : 0, false); // Set DAC voltage based on load status
   #endif
   log_Load_data = loadonoff ? true : false; //
-  printLCD(8, 0, loadonoff ? F("ON ") : F("OFF"));    // Fuerza la indicación del estado de la carga, por las dudas.
 }
 
 //-----------------------------Encoder Decoder--------------------------------------
@@ -393,7 +388,7 @@ void Read_Keypad(void) {
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
 
-  // 🔹 **Manejo de borrado**
+  // **Manejo de borrado**
   if (customKey == '<' && index > 0) {  
     index--;  
     if (numbers[index] == '.') decimalPoint = ' '; // Si borramos un punto, permitimos otro  
@@ -442,7 +437,7 @@ void Update_LCD(void) {
   // Imprimir los valores actualizados cada 100ms
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
   printLCDNumber(7, 1, voltage, 'V', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
-  printLCDNumber(14, 1, power, 'W', (power < 100) ? 2 : 1);
+  printLCDNumber(14, 1, power, 'W', (power < 100) ? 2 : 1); if (power < 100){lcd.print(" ");}
 
   // Mostrar lectura del encoder o cursor en la posición de la unidad
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
@@ -760,31 +755,29 @@ void Battery_Type_Selec() {
   // Pedir ingresar un voltaje de corte
   if (BatteryType == "Custom") {
     lcd.clear();
-    printLCD(0, 0, F("Custom Voltage"));
-    printLCD(0, 1, F("Cutoff?"));
-    printLCD(0, 3, F("(0 - 25V)"));
+    printLCD_S(3, 0, BatteryType + " BATTERY");
+    printLCD(2, 1, F("Voltage Cutoff?"));
+    printLCD(5, 2, F("(0.1-25)V"));
     do {
-      y = 1; z = 1; r = 2;
+      z = 7; r = 3;
       printLCD(z - 1, r, F(">"));
       printLCD(z, r, F("     "));   // Borra el espacio si hubo un valor fuera de rango
-      lcd.setCursor(y,r);             // Ubica la toma del valor
-      if (!Value_Input(5)) return;    // Sale automáticamente si el usuario presiona 'M'
-    } while (x > 25 || x == 0);       // Solo chequea si `x` está en rango
+      if (!Value_Input(z, r, 5)) return;    // Sale automáticamente si el usuario presiona 'M'
+    } while (x > 25 || x < 0.1);       // Solo chequea si `x` está en rango
       BatteryCutoffVolts = x;
   } 
 
   // Pedir ingresar la cantidad de celdas
   if (BatteryType != "Custom") {
     lcd.clear();
-    printLCD_S(2, 0, BatteryType + " BATTERY");
-    printLCD(2, 2, F("Cells (1-6)S?"));
+    printLCD_S(3, 0, BatteryType + " BATTERY");
+    printLCD(6, 1, F("(1-6)S?"));
 
     do {
-        y = 1; z = 1; r = 3;
+        z = 9; r = 2; //y = 1;
         printLCD(z - 1, r, F(">"));
         printLCD(z, r, F(" "));     // Borra el espacio si hubo un valor fuera de rango
-        lcd.setCursor(y,r);           // Ubica la toma del valor
-        if (!Value_Input(1)) return;  // Sale automáticamente si el usuario presiona 'M'
+        if (!Value_Input(z, r, 1)) return;  // Sale automáticamente si el usuario presiona 'M'
     } while (x < 1 || x > 6);         // Asegura que solo se ingrese un número entre 1 y 6
     BatteryCutoffVolts *= x;          // Multiplica por la cantidad de celdas
   }
@@ -864,7 +857,6 @@ void Transient_Cont_Mode(void) {
     printLCD(0, 3, F("Time = "));               // Muestra el mensaje
     printLCD_S(7, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(12, 3, F("mSecs"));                // Muestra la unidad
-    //transient_cont_toggle = false;              // Reinicio para que empiece por LowCurrent
     modeInitialized = true;                     // Modo inicializado.
   }
   //if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Tiene que estar despues.
@@ -877,23 +869,20 @@ void Transient_Cont_Setup(void) {
 
   printLCD(3, 0, F("TRANSIENT CONT."));
   printLCD(0, 1, F("Low I (A):"));
-  y = 13; z = 13; r = 1;                      // Setea las posiciones de la pantalla del LCD
-  lcd.setCursor(y, r);                        // Ubica la toma del valor de Amperes
-  if (!Value_Input(5)) return;                // Obtiene el valor ingresado por el usuario o sale del modo
+  z = 13; r = 1;                      // Setea las posiciones de la pantalla del LCD
+  if (!Value_Input(z, r, 5)) return;                // Obtiene el valor ingresado por el usuario o sale del modo
   LowCurrent = min(x, CurrentCutOff);         // Limita la corriente baja al valor de corte de corriente
-  printLCDNumber(y, r, LowCurrent, 'A', 3);  // Muestra el valor de la corriente baja
+  printLCDNumber(z, r, LowCurrent, 'A', 3);  // Muestra el valor de la corriente baja
 
   printLCD(0, 2, F("High I (A):"));
   z = 13; r = 2; 
-  lcd.setCursor(y, r);                        // Ubica la toma del valor de Amperes
-  if (!Value_Input(5)) return;                // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r, 5)) return;                // Limita la corriente baja al valor de corte de corriente
   HighCurrent = min(x, CurrentCutOff);        // Limita la corriente alta al valor de corte de corriente
-  printLCDNumber(y, r, HighCurrent, 'A', 3); // Muestra el valor de la corriente alta con tres decimales
+  printLCDNumber(z, r, HighCurrent, 'A', 3); // Muestra el valor de la corriente alta con tres decimales
 
   printLCD(0, 3, F("Delay(mSec):"));
   z = 13; r = 3;                              // Setea las posiciones de la pantalla del LCD
-  lcd.setCursor(y, r);                        // Ubica la toma del valor de Amperes
-  if (!Value_Input(5)) return;                // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r, 5)) return;                // Limita la corriente baja al valor de corte de corriente
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
   lcd.clear();                                // Borra la pantalla del LCD
   Load_ON_status(false);                      // Apaga la carga
@@ -943,7 +932,6 @@ void Transient_List_Mode(void) {
     printLCD(12, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
   }
-  //if(!modeConfigured) {Transient_List_Setup(); return;}
 }
 
 //------------------------------------ Transcient List Setup-------------------------------------------
@@ -953,13 +941,12 @@ void Transient_List_Setup() {
   lcd.clear(); // Apaga el cursor y borra la pantalla
   // Pregunta por cuantos saltos se desean cargar
   printLCD(3, 0, F("TRANSIENT LIST"));
-  printLCD(0, 2, F("Set Q (2 to 10)?"));
+  printLCD(2, 1, F("Set Q (2 to 10)?"));
   do { // Bucle para garantizar entrada válida
-    y = 1; z = 1; r = 3;
+    z = 9; r = 2; //y = 9;
     printLCD(z - 1, r, F(">"));
     printLCD(z, r, F("  "));   // Borra el espacio si hubo un valor fuera de rango
-    lcd.setCursor(y, r);             // Ubica la toma del valor de Amperes
-    if (!Value_Input(2)) return; // Si se presiona 'M', sale del modo
+    if (!Value_Input(z, r, 2)) return; // Si se presiona 'M', sale del modo
   } while (x < 2 || x > 10);
 
   total_instructions = x - 1;   // Guarda el número total de instrucciones
@@ -972,16 +959,14 @@ void Transient_List_Setup() {
     printLCD(0, 2, F("Current (A):"));                // Pide el valor de corriente en Amperes
     printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
 
-    y = 13; z = 13; r = 2;
-    lcd.setCursor(y, r);              // Ubica la toma del valor de Amperes
-    if (!Value_Input(5)) return;      // Permitir 5 digitos, ej.: 1.234 o salir del Modo
+    z = 13; r = 2;
+    if (!Value_Input(z, r, 5)) return;      // Permitir 5 digitos, ej.: 1.234 o salir del Modo
     x = min(x, CurrentCutOff);        // Limita a CutOff
-    printLCDNumber(y, r, x, 'A', 3); // Muestra el valor de la corriente
+    printLCDNumber(z, r, x, 'A', 3); // Muestra el valor de la corriente
     transientList[i][0] = x;          // Lo guarda en la lista
 
-    y = 13; z = 13; r = 3;           // Ubica la toma del valor de mSec
-    lcd.setCursor(y, r);             // Ubica la toma del valor de Amperes
-    if (!Value_Input(5)) return;     // Permitir 5 digitos, ej.: 99999 o salir del Modo
+    z = 13; r = 3;           // Ubica la toma del valor de mSec
+    if (!Value_Input(z, r, 5)) return;     // Permitir 5 digitos, ej.: 99999 o salir del Modo
     transientList[i][1] = x;          // Guarda el valor del tiempo
     lcd.clear();                      // Borra la pantalla, para configurar la siguiente instrucción
   }
@@ -1027,26 +1012,23 @@ void Config_Limits(void)
 
   printLCD(4, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
-  y = 12; z = 12; r = 1;
-  lcd.setCursor(y, r);              // Ubica la toma del valor de Amperes
-  if (!Value_Input(4)) return;      // Permitir 4 digitos, ej.: 1.23 o 123 salir del Modo
+  z = 12; r = 1;
+  if (!Value_Input(z, r, 4)) return;      // Permitir 4 digitos, ej.: 1.23 o 123 salir del Modo
   CurrentCutOff = min(x, 10);
-  printLCDNumber(y, r, CurrentCutOff,' ');
+  printLCDNumber(z, r, CurrentCutOff,' ');
   
   printLCD(0, 2, F("Power(W):"));
   r = 2; z = 12;
-  lcd.setCursor(y, r);              // Ubica la toma del valor de Amperes
-  if (!Value_Input(3)) return;      // Permitir 3 digitos, ej.: 1.2 o 100 salir del Modo
+  if (!Value_Input(z, r, 3)) return;      // Permitir 3 digitos, ej.: 1.2 o 100 salir del Modo
   PowerCutOff = min(x, 300);
-  printLCDNumber(y, r, PowerCutOff, ' ',0);
+  printLCDNumber(r, r, PowerCutOff, ' ',0);
  
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
   z = 12; r = 3;
-  lcd.setCursor(y, r);              // Ubica la toma del valor de Amperes
-  if (!Value_Input(2)) return;      // Permitir 2 digitos, ej.: 10 a 99 o salir del Modo
+  if (!Value_Input(z, r, 2)) return;      // Permitir 2 digitos, ej.: 10 a 99 o salir del Modo
   tempCutOff = min(x, 99);
-  printLCD_S(y, r, String(tempCutOff));
+  printLCD_S(z, r, String(tempCutOff));
 
   saveToEEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
   saveToEEPROM(ADD_POWER_CUT_OFF, PowerCutOff);
@@ -1079,58 +1061,59 @@ void Show_Limits(void) {
 }
 
 //------------------------Key input used for UserSetUp------------------------ 
-bool Value_Input(int maxDigits) {  // Retorna true si se ingresó un valor en x global, false si se salió con 'M'
 
-  Reset_Input_Pointers();  // Resetea el punto decimal y el índice
+bool Value_Input(int col, int row, int maxDigits) {  
+  // Resetea los valores de entrada
+  Reset_Input_Pointers();  
+
+  lcd.setCursor(col, row);  // Ubica el cursor en la posición especificada
+  lcd.cursor();             // Muestra el cursor para la entrada
+  lcd.blink();
 
   while (true) { 
-      lcd.cursor();
       customKey = Wait_Key_Pressed(); // Leer entrada de teclado
-      
+
       if (customKey >= '0' && customKey <= '9') { 
-        if (index < maxDigits) { // Solo agregar si no superó el máximo
+        if (index < maxDigits) { 
           numbers[index++] = customKey;
-          numbers[index] = '\0'; // Mantener terminación de cadena
+          numbers[index] = '\0'; 
         }
       } 
-      else if (customKey == '.' && decimalPoint != '*') { // Punto decimal único permitido
+      else if (customKey == '.' && decimalPoint != '*') { 
         if (index < maxDigits) {
           numbers[index++] = '.';
           numbers[index] = '\0';
-          decimalPoint = '*'; // Marcar que se ha ingresado un punto
+          decimalPoint = '*'; 
         }
       } 
       else if (customKey == '<' && index > 0) { // Borrar último carácter ingresado
           index--;  
-          if (numbers[index] == '.') decimalPoint = ' '; // Restablecer permiso para ingresar punto
-          numbers[index] = '\0'; // Eliminar el último carácter
+          if (numbers[index] == '.') decimalPoint = ' '; 
+          numbers[index] = '\0';
       } 
-      else if (customKey == 'E') {        // Confirmar entrada
-          if (index > 0) {                // Evitar que se confirme una entrada vacía
-              x = atof(numbers);          // Convertir a número
-              Reset_Input_Pointers();     // Resetea el punto decimal y el índice
-              lcd.noCursor();
-              return true;                // Indica que se ingresó un valor válido
+      else if (customKey == 'E') {  // Confirmar entrada
+          if (index > 0) {  
+              x = atof(numbers); 
+              Reset_Input_Pointers();  
+              lcd.noCursor(); lcd.noBlink();
+              return true;  
           }
       }
       else if (customKey == 'M') {   // Salir del modo si se presiona 'M'
         exitMode = true;
-        lcd.noCursor();
-        Mode_Selection(); // Selecciona el Modo a salir
-        return false;     // Indica que se salió sin ingresar un valor
+        lcd.noCursor(); lcd.noBlink();
+        Mode_Selection();  
+        return false;  
+      }  
+      else if (customKey == 'C' || customKey == 'S') {  
+        continue;  // Ignora 'C' y 'S'
       }
 
-      else if (customKey == 'C' || customKey == 'S') {  
-        continue;  // Ignora 'C' y 'S', simplemente no hace nada y espera otra tecla
-      }
-      lcd.noCursor(); // para que no se vea durante las correcciones siguiente:
-      // Borra exactamente `maxDigits` espacios antes de escribir la nueva entrada
-      String clearStr = "";  
-      for (int i = 0; i < maxDigits; i++) clearStr += " "; 
-      printLCD_S(z, r, clearStr);  
+      // Borra la línea antes de reescribir para evitar residuos en pantalla
+      printLCD_S(col, row, String("     ").substring(0, maxDigits));
 
       // Escribe la nueva entrada correctamente
-      printLCD_S(z, r, String(numbers)); 
+      printLCD_S(col, row, String(numbers)); 
   }
 }
 
