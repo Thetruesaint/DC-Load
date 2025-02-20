@@ -44,7 +44,6 @@ void Transient_List_Mode();
 void Transient_List_Setup();
 void Transcient_Cont_Timing();
 void Transient_List_Timing(void);
-void Transient_Toggle_Load(float current_setting, bool toggle_status);
 void printLCD_S(int col, int row, const String &message);
 void printLCD(int col, int row, const __FlashStringHelper *message);
 void saveToEEPROM(int address, float value);
@@ -166,8 +165,6 @@ float LowCurrent = 0;                 // Configuración de corriente baja para e
 float HighCurrent = 0;                // Configuración de corriente alta para el modo transitorio
 unsigned long transientPeriod;        // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
 unsigned long current_time;           // Para almacenar el tiempo actual en microsegundos
-unsigned long last_time = 0;          // Para almacenar el tiempo del último cambio transitorio en microsegundos
-bool transient_mode_status = false;   // Para mantener el estado del modo transitorio (false = corriente baja, true = corriente alta)
 float transientList[10][2];           // Array para almacenar los datos de la lista transitoria
 int total_instructions;               // Utilizado en el modo de Transient List Mode
 int current_instruction;              // Utilizado en el modo de Transient List Mode
@@ -211,7 +208,6 @@ void setup() {
   lcd.clear();
   lcd.backlight(); // Turn on the LCD screen backlight
   printLCD(0, 0, F("*DC Electronic Load*"));
-  //printLCD(0, 0, "*DC Electronic Load*");
   lcd.setCursor(0, 1); lcd.print(date + " - " + time);
   #ifndef WOKWI_SIMULATION
   printLCD(0, 2, F("By Guy Nardin"));
@@ -221,11 +217,11 @@ void setup() {
   printLCD(0, 3, F("v1.68"));
   /*
   Trabajando ahora:
-    - En modos TC y TL si se vuelven a llamar, se muestran valores de la prueba anterior al iniciarlo por 2da vez.
+    - Cuando los W son mayores a 10 o a 100 queda una W de mas cuando baja el valor
     - Ajustar funcion Value_Input para que tome coordenas de donde ingresar el valor y que use variables locales y no modifique las globales y, z o r.
 
   Mejoras:
-    - Ajustes de los menues y seteo de valores de BC, TC y TL
+    - Ajustes de los menues y seteo de valores de BC, y reingenieria del algoritmo TC y TL.
     - Borra la C de la Temperatura a la derecha si fue mayor a 10 y vuelve a menos de 10
     - Cambio de variables String Mode a Enum, costo el cambio, pero ahorro FLASH
     - Organización de llamadas a Funciones con Switch, mucha horas a esto. Mas fácil para hacer cambios o debugs
@@ -235,7 +231,7 @@ void setup() {
     - Mejora en los mensajes de Check_Limites para que se muestren bien.
 
   Fixes:
-
+    - TC iniciaba con 0A por el periodo y el timing no se reiniciaba con Load Off
     - Si hay warning por exceso de limites, resetear valores que se estaban ingresando
     - Refresh de LCD al salir y volver al mismo modo
     - Mejora Update LCD, refresca por limits, Limits Checks con adv. intermitentes.
@@ -245,8 +241,7 @@ void setup() {
 
     - En modo CR se puede poner una resistencia 0 (corriente alta, divide por cero)
     - Sacar decimales en CR y CP y ver que presición quiero tener.
-    - Cuando los W son mayores a 10 o a 100 queda una W de mas cuando baja el valor
-      
+          
   Posibles Mejoras:
 
     - Mostrar el tipo de Baterria en la plantilla de BC
@@ -869,6 +864,7 @@ void Transient_Cont_Mode(void) {
     printLCD(0, 3, F("Time = "));               // Muestra el mensaje
     printLCD_S(7, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(12, 3, F("mSecs"));                // Muestra la unidad
+    //transient_cont_toggle = false;              // Reinicio para que empiece por LowCurrent
     modeInitialized = true;                     // Modo inicializado.
   }
   //if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Tiene que estar despues.
@@ -906,26 +902,26 @@ void Transient_Cont_Setup(void) {
   modeInitialized = false;                    // Pinta la plantilla TL en el LCD
 }
 
-  //------------------------------------ Transcient Continuos Timing-------------------------------------------
+//------------------------------------ Transcient Continuos Timing-------------------------------------------
 void Transcient_Cont_Timing() {
 
-  if (!toggle) return;
+  static unsigned long last_time = 0;
+  static bool transient_cont_toggle = false;
+
+  if (!toggle) {  // Con carga apagada, reseteo estado, porque sino empieza donde quedo, no le veo practicidad, muy inprevisto.
+    last_time = 0;
+    transient_cont_toggle = false;
+    return;} 
 
   current_time = micros();
-  if (last_time == 0) { last_time = current_time; }
-    else {
-    switch (transient_mode_status) {
-      case (false):
-        if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-          Transient_Toggle_Load(LowCurrent, true);                      // Cambia a la corriente baja
-        }
-        break;
-      case (true):
-        if ((current_time - last_time) >= (transientPeriod * 1000.0)) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio
-          Transient_Toggle_Load(HighCurrent, true);                     // Cambia a la corriente alta
-        }
-        break;
-    }
+
+  if ((current_time - last_time) >= (transientPeriod * 1000.0)) { 
+    last_time = current_time; // 🔹 Actualiza tiempo directamente
+
+    if (!transient_cont_toggle) { setCurrent = LowCurrent; }
+     else {setCurrent = HighCurrent;}
+
+    transient_cont_toggle = !transient_cont_toggle; // 🔹 Alterna el estado
   }
 }
 
@@ -980,7 +976,7 @@ void Transient_List_Setup() {
     lcd.setCursor(y, r);              // Ubica la toma del valor de Amperes
     if (!Value_Input(5)) return;      // Permitir 5 digitos, ej.: 1.234 o salir del Modo
     x = min(x, CurrentCutOff);        // Limita a CutOff
-    printLCDNumber(y , r, x, 'A', 3); // Muestra el valor de la corriente
+    printLCDNumber(y, r, x, 'A', 3); // Muestra el valor de la corriente
     transientList[i][0] = x;          // Lo guarda en la lista
 
     y = 13; z = 13; r = 3;           // Ubica la toma del valor de mSec
@@ -992,33 +988,33 @@ void Transient_List_Setup() {
   lcd.noCursor();
   setCurrent = 0;          // por si quedo seteada del modo anterior
   current_instruction = 0; // Resetea el contador de instrucciones porque finalizo la configuración
+  transientPeriod = transientList[current_instruction][1];      // Por las dudas tambien el periodo a mostrar
   modeConfigured = true;   // Se configuro el modo TC
   modeInitialized = false; // Pinta la plantilla TC en el LCD
 }
 
 //------------------------------------ Transcient List Timing-------------------------------------------
 void Transient_List_Timing(void) {
-  if (!toggle) return;
+
+  static unsigned long last_time = 0;
+
+  if (!toggle) {current_instruction = 0; return;}        // Evaluar si en esta situación no es mejor reinicial la lista
+
     current_time = micros();
 
-    if (last_time == 0) {                                                     // Si es la primera vez que se ejecuta
-      last_time = current_time;                                               // Inicializa el tiempo
-      transientPeriod = transientList[current_instruction][1];                // Obtiene el tiempo de transitorio de la lista
-      Transient_Toggle_Load(transientList[current_instruction][0], false); }  // Cambia a la corriente de la lista
+    if (last_time == 0){;
+      setCurrent = transientList[current_instruction][0];
+      transientPeriod = transientList[current_instruction][1];
+      last_time = current_time; 
+    }
 
-    if ((current_time - last_time) >= transientList[current_instruction][1] * 1000) { // Comprueba si el tiempo transcurrido es mayor o igual al tiempo de transitorio de la lista
-      current_instruction++;                                                          // Incrementa el contador de instrucciones
-      if (current_instruction > total_instructions) { current_instruction = 0; }      // Si el contador es mayor al total de instrucciones, lo resetea
-      transientPeriod = transientList[current_instruction][1];                        // Obtiene el tiempo de transitorio de la lista
-      Transient_Toggle_Load(transientList[current_instruction][0], false); }          // Cambia a la corriente de la lista
-}
-
-//------------------------------------ Transcient Toggle Load-------------------------------------------
-void Transient_Toggle_Load(float current_setting, bool toggle_status)
-{
-  if (toggle_status) { transient_mode_status = !transient_mode_status;}
-  setCurrent = current_setting;
-  last_time = current_time;
+  if ((current_time - last_time) >= transientPeriod * 1000) {
+    current_instruction++;
+    if (current_instruction > total_instructions) { current_instruction = 0; }
+    setCurrent = transientList[current_instruction][0];
+    transientPeriod = transientList[current_instruction][1];
+    last_time = current_time;
+  }
 }
 
 //-------------------------------------User set up for limits-------------------------------------------------
