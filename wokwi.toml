@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-firmware = '\.pio\build\nanoatmega328new\firmware.hex'
-elf = '\.pio\build\nanoatmega328new\firmware.elf'
+firmware = ".pio/build/sim/firmware_v1.69.hex"
+elf = ".pio/build/sim/firmware.elf"
