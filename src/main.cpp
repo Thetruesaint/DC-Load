@@ -90,7 +90,7 @@ float voltage = 0;                      // Voltage de Carga
 const float MAX_VOLTAGE = 90;           // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
 int CuPo = 8;                           // Posicion inicial del cursor
 bool toggle = false;                    // Conmuta la carga On/Off
-bool log_Load_data = false;             // Flag de estado de la carga para loguear o cronometrar tiempos
+//bool log_Load_data = false;             // Flag de estado de la carga para loguear o cronometrar tiempos
 float reading = 0;                      // Variable para Encoder dividido por 1000
 float setCurrent = 0;                   // Variable para setear la corriente de carga
 float setPower = 20;                    // Variable para setear la potencia de carga
@@ -215,20 +215,22 @@ void setup() {
   printLCD(0, 3, F("v1.69"));
   /* 
   A trabajar:
-
     - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
     - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
     - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff
+    
 
    Mejoras:
     - en TL ahora muestra la cantidad de instrucciones de la lista
+    - Ajustes de muesta de ctffvltg en BC
 
     Fixes:
     - En TL, para lista de 10, quedaba el cero en el conteo de instrucciones.
+    - En CR ya se puede limitar a 0,1ohms la resistencia.
 
   Bugs detectados:
-    - En modo CR se puede poner una resistencia 0 (divide por cero) En el equipo no le pasa nada.
-    
+    - 
+
   Posibles Mejoras:
 
     - Sacar decimales en CR y CP? ver que presición quiero tener.
@@ -274,7 +276,6 @@ void setup() {
 
 //------------------------------------- Bucle Principal-------------------------------------------------
 void loop() {
-  reading = encoderPosition / 1000;
   Temp_Control();
   Read_Keypad();
   Read_Load_Button();
@@ -302,7 +303,6 @@ void Load_ON_status(bool loadonoff)
   #ifndef WOKWI_SIMULATION
   dac.setVoltage(loadonoff ? controlVoltage : 0, false); // Set DAC voltage based on load status
   #endif
-  log_Load_data = loadonoff ? true : false; //
 }
 
 //-----------------------------Encoder Decoder--------------------------------------
@@ -604,7 +604,7 @@ void Read_Volts_Current(void) {
 
   ads.setGain(GAIN_TWOTHIRDS); // Restaurar configuración predeterminada
   #else
-  voltage = 10;                                  // Simulo una lectura de tensión de 10V
+  voltage = 1;                                  // Simulo una lectura de tensión de 10V
   if (toggle) {
     if (Mode == TC || Mode == TL) { current = setCurrent;}
     else {current = (setCurrent / 1000);}
@@ -615,32 +615,8 @@ void Read_Volts_Current(void) {
 //---------------------- DAC Control Voltage for Mosfet---------------------------------------
 void DAC_Control(void) {
   if (toggle) {
-    if (Mode == CC) {
-      setCurrent = reading * 1000;      // Al multiplicar por 1000 lo conviente en Amperes, no se bien porque, estudiar
-      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
-    }
-
-    if (Mode == CP) {
-      setPower = reading * 1000;        // Asi queda en Watts 
-      setCurrent = setPower / voltage;
-      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
-    }
-
-    if (Mode == CR) {
-      setResistance = reading;                          // Asi queda em ohms, mínimo 1 ohms
-      setCurrent = (voltage / setResistance) * 1000;    // para que setee en Amperes, ver bien porque
-      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
-    }
-
-    if (Mode == BC) {
-      setCurrent = reading * 1000;
-      controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
-    }
-      
-    if (Mode == TC || Mode == TL) { // Transient Modes
-      controlVoltage = setCurrent * 1000 * Set_Curr_Dsgn_Fact;   
-    }
     #ifndef WOKWI_SIMULATION
+    controlVoltage = setCurrent * Set_Curr_Dsgn_Fact; 
     dac.setVoltage(controlVoltage, false); // set DAC output voltage for Range selected
     #endif
   } else {
@@ -661,8 +637,13 @@ void Const_Current_Mode(void) {
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
     CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    modeInitialized = true;               // Modo inicializado
+    modeInitialized = true;                // Modo inicializado
   }
+  reading = encoderPosition / 1000;
+  if (!toggle) return;
+  setCurrent = reading * 1000;             // lo pasa a mA 
+  controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
+  
 }
 
 //--------------------- Select Constant Power LCD set up------------------------------------
@@ -676,8 +657,12 @@ void Const_Power_Mode(void) {
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
     CuPo = 10;                             // Pone el cursor en la posición de las unidades de Potecia
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    modeInitialized = true;               // Modo inicializado
+    modeInitialized = true;                // Modo inicializado
   }
+  reading = encoderPosition / 1000;
+  if (!toggle) return;
+  setPower = reading * 1000;               // Conversión a mW
+  setCurrent = setPower / voltage;         // Conversión a mA 
 }
 
 //----------------------- Select Constant Resistance LCD set up---------------------------------------
@@ -690,9 +675,21 @@ void Const_Resistance_Mode(void) {
     printLCD_S(14, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
     CuPo = 10;                              // Pone el cursor en la posición de las unidades de Resistencia
-    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    modeInitialized = true;               // Modo inicializado
+    reading = 1.0;                          // Valor por default, 1o hm.
+    encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
+    modeInitialized = true;                 // Modo inicializado
   }
+  // Solo actualiza `reading` si el encoder cambió
+  float newReading = encoderPosition / 1000.0;  // Convierte a ohms
+
+  if (newReading != reading) {  
+    reading = max(0.1, newReading);         // Evita resistencia 0, mínimo 0.1Ω
+    encoderPosition = reading * 1000;       // Solo actualiza el encoder si el valor cambió
+  }
+
+  if (!toggle) return;
+  setResistance =  reading;                 // en que unidad de ohms sería?     
+  setCurrent = (voltage / setResistance) * 1000;  // convirte a mA
 }
 
 //----------------------- Select Battery Capacity Testing LCD set up---------------------------------------
@@ -707,10 +704,9 @@ void Battery_Mode(void) {
     printLCD(14, 2, F("A"));               // La unidad de corriente
     printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));                   
-    modeInitialized = true;               // Modo inicializado
-    //delay(3000);
+    modeInitialized = true;                // Modo inicializado
   }
-  //if (!modeConfigured) {Battery_Type_Selec(); return;}    // Tiene que verificarse despues!! 
+  reading = encoderPosition / 1000;        // este modo se controla solo con el encoder.  
 }
 
 //---------------------- Battery Type Selection and Cutoff Setup -----------------------------
@@ -819,12 +815,13 @@ void Battery_Capacity(void) {
   }
 
   // Registro de datos para logging cada segundo
-  if (log_Load_data && Seconds != SecondsLog) {
+  if (toggle && Seconds != SecondsLog) {
     SecondsLog = Seconds;
     Serial.print(SecondsLog);
     Serial.print(",");
     Serial.println(voltage);
   }
+  setCurrent = reading * 1000;      // Toma el valor del encoder 
 }
 
 //------------------------------------ Transcient Continuos Mode----------------------------------------
@@ -894,8 +891,10 @@ void Transcient_Cont_Timing() {
   if ((current_time - last_time) >= (transientPeriod * 1000.0)) { 
     last_time = current_time; // 🔹 Actualiza tiempo directamente
 
-    if (!transient_cont_toggle) { setCurrent = LowCurrent; }
-     else {setCurrent = HighCurrent;}
+    if (!transient_cont_toggle) {
+      setCurrent = LowCurrent * 1000 ; } // lo convierte a mA
+    else {
+      setCurrent = HighCurrent * 1000 ;} // lo convierte a mA
 
     transient_cont_toggle = !transient_cont_toggle; // 🔹 Alterna el estado
   }
@@ -977,16 +976,16 @@ void Transient_List_Timing(void) {
 
     current_time = micros();
 
-    if (last_time == 0){;
-      setCurrent = transientList[current_instruction][0];
-      transientPeriod = transientList[current_instruction][1];
-      last_time = current_time; 
-    }
+  if (last_time == 0){
+    setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
+    transientPeriod = transientList[current_instruction][1];
+    last_time = current_time; 
+  }
 
   if ((current_time - last_time) >= transientPeriod * 1000) {
     current_instruction++;
     if (current_instruction > total_instructions) { current_instruction = 0; }
-    setCurrent = transientList[current_instruction][0];
+    setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
     transientPeriod = transientList[current_instruction][1];
     last_time = current_time;
   }
