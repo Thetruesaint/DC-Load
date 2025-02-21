@@ -1,4 +1,4 @@
-//#define WOKWI_SIMULATION
+#define WOKWI_SIMULATION
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -212,42 +212,28 @@ void setup() {
   #else
   printLCD(0, 2, F("Para SIMULACION"));
   #endif
-  printLCD(0, 3, F("v1.68"));
-  /*
-  Mejoras:
+  printLCD(0, 3, F("v1.69"));
+  /* 
+  A trabajar:
 
-    - Value_Input parametrizada con coordenas con variables locales.
-    - Ajustes de menues y seteos de BC, y reingenieria del algoritmo TC y TL.
-    - Borra la C de la Temperatura a la derecha si fue mayor a 10 y vuelve a menos de 10
-    - Cambio de variables String Mode a Enum, costo el cambio, pero ahorro FLASH
-    - Organización de llamadas a Funciones con Switch, mucha horas a esto. Mas fácil para hacer cambios o debugs
-    - Cbio. printLCDNumber()
-    - Config_Limits y Show_Limits ahora se llaman y vuelven al mismo modo. No para TC o TL, para BC, solo despues de Configurar el modo
-    - El modo Trasient pasaron a ser dos modos Continuo o de Lista
-    - Mejora en los mensajes de Check_Limites para que se muestren bien.
-  
-  Fixes:
-    - W > 100 borra la W de mas cuando baja el valor
-    - TC iniciaba con 0A por el periodo y el timing no se reiniciaba con Load Off
-    - Si hay warning por exceso de limites, resetear valores que se estaban ingresando
-    - Refresh de LCD al salir y volver al mismo modo
-    - Mejora Update LCD, refresca por limits, Limits Checks con adv. intermitentes.
-    - Reorganización total de los modos y corrección de bugs en el proceso.
-      
-  Bugs:
-    - En modo CR se puede poner una resistencia 0 (corriente alta, divide por cero)
-   
+    - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
+    - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
+    - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff
+
+   Mejoras:
+    - en TL ahora muestra la cantidad de instrucciones de la lista
+
+    Fixes:
+    - En TL, para lista de 10, quedaba el cero en el conteo de instrucciones.
+
+  Bugs detectados:
+    - En modo CR se puede poner una resistencia 0 (divide por cero) En el equipo no le pasa nada.
+    
   Posibles Mejoras:
 
     - Sacar decimales en CR y CP? ver que presición quiero tener.
-    - Mostrar el tipo de Baterria en la plantilla de BC
-    - printLCD_S(0, 1, "Instruccion " + String(i + 1));  muestre las instrucciones totales tipo "1 de X"
     - Uso para Shift paa ir a un modo directo o a Calibración S+C?
     - Activar el LOAD ON OFF por interrupción?, desactivar el mosfet con el procesador directamente?
-    - Poder salir de un modo, dentro de los menues de selección. (Requiere reorganización del algorinmo de modos)
-    - Poder salir del menu de configuración en cualquier momento. (Requiere reorganización del algorinmo de modos)
-    - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
-    - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff
     - Calibracíón incluir external voltage sense
     - Ver la frecuencia máxima de conmutación de los Trasient y limitarla a esa
     - Setear hora y fecha del RTC y poder mirarla boton Shift?. Por ahora lo hago asi:
@@ -255,6 +241,7 @@ void setup() {
     - Recalcular los limites de W y R en funcion de la DC presente?..
     - Ajustar timing con encoder en TC mode?
     - Ver de agregar Heald Checks antes de inicializar e informar error de detectarse.
+    - En modos TC y TS mostrar mSec decresientes?
   */
 
   #ifndef WOKWI_SIMULATION
@@ -350,12 +337,12 @@ void Read_Keypad(void) {
   switch (customKey) {                            // Si hay una tecla presionada, la procesa
     case 'M':                                     // Cambio de Modo                    
       Load_ON_status(false);                      // Apaga la carga
-      zl = 1;                                      // Resetea la posición en el renglón
+      zl = 1;                                     // Resetea la posición en el renglón
       Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
       Mode_Selection();
         break;                                      
       case 'C':                                   // Configuración de limites
-        if (Mode != TC || Mode !=TL){           // Por ahora solo durante modos CC, CP y CR.
+        if (Mode != TC || Mode !=TL){             // Por ahora solo durante modos CC, CP y CR.
           Config_Limits(); }
         break;                                      
       case 'S':  // Uso futuro para Shift paa ir a un modo directo o a Calibración S+C?
@@ -365,25 +352,25 @@ void Read_Keypad(void) {
   // Solo permite entrada de valores en los modos CC, CP y CR
   if (Mode == BC || Mode == TC || Mode == TL) return;
 
-  if (customKey >= '0' && customKey <= '9' && index < 5) { // Si la tecla presionada es un número, se permiten hasta 5 caracteres
-    numbers[index++] = customKey;                        // Almacena el número en la variable numbers
-    numbers[index] = '\0';                               // Agrega el caracter nulo al final de la cadena
+  if (customKey >= '0' && customKey <= '9' && index < 5) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
+    numbers[index++] = customKey;                           // Almacena el número en la variable numbers
+    numbers[index] = '\0';                                  // Agrega el caracter nulo al final de la cadena
     printLCD_S(zl++, 3, String(customKey));                 // Muestra el número en el LCD
   }
 
-  if (customKey == '.' && decimalPoint != '*') {           // Si la tecla presionada es un punto decimal y no se ha ingresado uno antes
-    numbers[index++] = '.';                              // Almacena el punto decimal en la variable numbers
-    numbers[index] = '\0';                               // Agrega el caracter nulo al final de la cadena
-    printLCD(zl++, 3, F("."));                               // Muestra el punto decimal en el LCD
-    decimalPoint = '*';                                  // Marca que se ingresó un punto decimal
+  if (customKey == '.' && decimalPoint != '*') {   // Si la tecla presionada es un punto decimal y no se ha ingresado uno antes
+    numbers[index++] = '.';                        // Almacena el punto decimal en la variable numbers
+    numbers[index] = '\0';                         // Agrega el caracter nulo al final de la cadena
+    printLCD(zl++, 3, F("."));                     // Muestra el punto decimal en el LCD
+    decimalPoint = '*';                            // Marca que se ingresó un punto decimal
   }
 
-  if (customKey == 'E') {                 // Confirmar entrada
+  if (customKey == 'E') {               // Confirmar entrada
     x = atof(numbers);                  // Convierte la cadena de caracteres en un número
     reading = x;                        // Asigna el valor a la variable reading  
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     numbers[index] = '\0';              // Resetea la cadena de caracteres
-    zl = 1;                              // Resetea la posición en el renglón
+    zl = 1;                             // Resetea la posición en el renglón
     printLCD(1, 3, F("     "));         // Borra el renglón del LCD
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
@@ -761,9 +748,9 @@ void Battery_Type_Selec() {
     do {
       z = 7; r = 3;
       printLCD(z - 1, r, F(">"));
-      printLCD(z, r, F("     "));   // Borra el espacio si hubo un valor fuera de rango
-      if (!Value_Input(z, r, 5)) return;    // Sale automáticamente si el usuario presiona 'M'
-    } while (x > 25 || x < 0.1);       // Solo chequea si `x` está en rango
+      printLCD(z, r, F("     "));         // Borra el espacio si hubo un valor fuera de rango
+      if (!Value_Input(z, r, 5)) return;  // Sale automáticamente si el usuario presiona 'M'
+    } while (x > 25 || x < 0.1);          // Solo chequea si `x` está en rango
       BatteryCutoffVolts = x;
   } 
 
@@ -776,17 +763,17 @@ void Battery_Type_Selec() {
     do {
         z = 9; r = 2; //y = 1;
         printLCD(z - 1, r, F(">"));
-        printLCD(z, r, F(" "));     // Borra el espacio si hubo un valor fuera de rango
+        printLCD(z, r, F(" "));             // Borra el espacio si hubo un valor fuera de rango
         if (!Value_Input(z, r, 1)) return;  // Sale automáticamente si el usuario presiona 'M'
-    } while (x < 1 || x > 6);         // Asegura que solo se ingrese un número entre 1 y 6
-    BatteryCutoffVolts *= x;          // Multiplica por la cantidad de celdas
+    } while (x < 1 || x > 6);               // Asegura que solo se ingrese un número entre 1 y 6
+    BatteryCutoffVolts *= x;                // Multiplica por la cantidad de celdas
   }
 
   // Mostrar selección final
   lcd.clear();
-  printLCD_S(2, 0, BatteryType + " BATTERY");
-  printLCD(2, 2, F("Cutoff Voltage"));
-  printLCDNumber(6, 3, BatteryCutoffVolts, 'V');
+  printLCD_S(3, 0, BatteryType + " BATTERY");
+  printLCD(3, 1, F("Cutoff Voltage"));
+  printLCDNumber(7, 2, BatteryCutoffVolts, 'V');
   delay(3000); lcd.clear();
   printLCD_S(16, 2, BatteryType); // Muestra el tipo de batería seleccionado
   timer_reset();                  // Resetea el timer
@@ -918,8 +905,9 @@ void Transcient_Cont_Timing() {
 void Transient_List_Mode(void) {
   
   if(modeConfigured) {
-    printLCD_S(13, 2, String(current_instruction + 1));   // Muestra la instrucción en curso
-    printLCD_S(7, 3, String(transientPeriod));        // Muestra el valor del tiempo
+    printLCD_S(13, 2, String(current_instruction + 1));     // Muestra la instrucción en curso
+    if ((current_instruction + 1) < 10){lcd.print(F(" "));} // si quedo el cero del 10, lo borra
+    printLCD_S(7, 3, String(transientPeriod));              // Muestra el valor del tiempo
   }
 
   if(!modeConfigured) {Transient_List_Setup(); return;} // Si no esta configurado, lo configura. Sale si no se configuro
@@ -928,6 +916,8 @@ void Transient_List_Mode(void) {
     lcd.noCursor();
     printLCD(0, 0, F("DC LOAD"));         // Muestra el titulo del modo
     printLCD(0, 2, F("Instruccion: "));   // Muestra el mensaje
+    printLCD(15, 2, F("/"));   // Muestra el mensaje
+    printLCD_S(16, 2, String(total_instructions + 1));
     printLCD(0, 3, F("Time = "));         // Muestra el mensaje
     printLCD(12, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
