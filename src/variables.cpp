@@ -23,7 +23,6 @@ int16_t adc1, adc3;                     // ADCs usados, adc0 y adc2 a GND
 unsigned long controlVoltage = 0;       // Voltage de control para el DAC que controlara al MOSFET
 float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
-//const float MAX_VOLTAGE = 90;           // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
 int CuPo = 8;                           // Posicion inicial del cursor
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
@@ -95,6 +94,6 @@ float LowCurrent = 0;                 // Configuración de corriente baja para e
 float HighCurrent = 0;                // Configuración de corriente alta para el modo transitorio
 unsigned long transientPeriod;        // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
 unsigned long current_time;           // Para almacenar el tiempo actual en microsegundos
-float transientList[10][2];           // Array para almacenar los datos de la lista transitoria
+unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_instructions;               // Utilizado en el modo de Transient List Mode
 int current_instruction;              // Utilizado en el modo de Transient List Mode

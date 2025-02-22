@@ -42,23 +42,31 @@ printLCD(0, 2, F("Para SIMULACION"));
 #endif
 printLCD(0, 3, F("v1.69"));
 /* 
+Trabajando:
+   - cambiar el flag de decimal a bool
+
 A trabajar:
   - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
   - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
-  - Descarga de baterias con corriente decreciente al llegar a batteryvoltagecutoff
-  
 
   Mejoras:
-  - en TL ahora muestra la cantidad de instrucciones de la lista
-  - Ajustes de muesta de ctffvltg en BC
+  - En TL ahora muestra la cantidad de instrucciones de la lista
+  - En BC, reog. de print de Voltage Cutoff
+  - Descarga de baterias, con current dinámico decreciente al llegar a batteryvoltagecutoff
+  - Agrego simulacion de volage con pote externo y en BC descarga de bateria
+  - Nuevo diagram.json para Wokwi
 
   Fixes:
   - En TL, para lista de 10, quedaba el cero en el conteo de instrucciones.
   - En CR ya se puede limitar a 0,1ohms la resistencia.
+  - Read_Encoder, encoderMax = 10000 (salvo TC y TL) para que no supere los 10A de ninguna manera ya que se llama por interrupción
+  - En TL el periodo de la instrucción anterior no se borraba. Reingenieria de TL
+  - En TL o TC, la T de Time desaparecia. No se porque, por el cambie "Time = " a " Time:"
 
 Bugs detectados:
-  - 
-
+  - Al setear BC, 00:00:00 aparece un segundo despues
+  - en TL la T de Time desaparece
+  
 Posibles Mejoras:
 
   - Sacar decimales en CR y CP? ver que presición quiero tener.

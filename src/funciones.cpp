@@ -29,6 +29,9 @@ void Read_Encoder()
     encval = 0;
   }
   encoderPosition = constrain(encoderPosition, 0, encoderMax);
+  if (Mode != TC || Mode != TL) {
+    encoderPosition = constrain(encoderPosition, 0, 10000); 
+  }
 }
 
 //-----------------------------Read Keypad Input------------------------------------
@@ -310,11 +313,36 @@ void Read_Volts_Current(void) {
 
   ads.setGain(GAIN_TWOTHIRDS); // Restaurar configuración predeterminada
   #else
-  voltage = 1;                                  // Simulo una lectura de tensión de 10V
+
+  // Simulación de Voltaje sensado
+
+  int potValue = analogRead(A2);  // Leer el potenciómetro en A2
+  static float simulatedVoltage = 0;  // Variable persistente para almacenar el voltage simulado
+  static unsigned long lastDecreaseTime = 0;  // Variable para medir el tiempo del último decremento
+  unsigned long currentMillis = millis();
+  
+  if (Mode != BC){                                             // Para todos los demas modos
+    simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
+    voltage = simulatedVoltage;                                // Asigna el valor de v simulado
+  } else { 
+      // En modo BC Si toggle es true, reduce el voltaje simulado en 0.01V. Luego ver si puede ser proporcional a la corriente
+      // ## SETEAR ANTES DE ENTRAR AL MODO##
+      if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
+      lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
+      simulatedVoltage -= 0.01;                       // Reducir el voltaje
+      simulatedVoltage = max(simulatedVoltage, 0.0);  // Asegurar que no sea negativo
+      voltage = simulatedVoltage;                     // Asigna el valor de v simulado
+      }
+    }
+  
+  // Simulación de corriente sensada.
+
   if (toggle) {
-    if (Mode == TC || Mode == TL) { current = setCurrent;}
-    else {current = (setCurrent / 1000);}
-    } else {current = 0;}
+    current = setCurrent / 1000;   // Lo pasa a Amperes.
+  } else {
+    current = 0;
+    }
+
   #endif
 }
 
@@ -412,7 +440,14 @@ void Battery_Mode(void) {
     lcd.print(F("mAh"));                   
     modeInitialized = true;                // Modo inicializado
   }
-  reading = encoderPosition / 1000;        // este modo se controla solo con el encoder.  
+  lcd.noCursor();
+  if (BatteryLife > BatteryLifePrevious) { // Actualizar LCD solo si cambia el valor
+    printLCDNumber(9, 3, BatteryLife, ' ', 0);
+    lcd.print(F("mAh"));
+    BatteryLifePrevious = BatteryLife;
+  }
+  if (toggle && (voltage > BatteryCutoffVolts)){printLCD(16,2, F("    "));} // Borra "Done " si quedo de antes.
+  else if (!toggle && (voltage <= BatteryCutoffVolts)) {printLCD(16,2, F("Done"));}
 }
 
 //---------------------- Battery Type Selection and Cutoff Setup -----------------------------
@@ -485,49 +520,53 @@ void Battery_Type_Selec() {
   modeInitialized = false;        // Pinta la plantilla BC en el LCD
 }
 
-//-------------------------------------Battery Capacity Discharge Routine--------------------------------------
+//------------------------------ Battery Capacity Discharge Routine ------------------------------//
 void Battery_Capacity(void) {
-
-  static float SecondsLog = 0;            // loguea el tiempo en segundos
+  
+  static float SecondsLog = 0;            // Loguea el tiempo en segundos
   static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
   unsigned long currentMillis = millis();
-  
-  if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); }    // Si la carga esta enable y el Timer == 2 (detenido), inicia el timer
-  if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }    // Si la carga esta disable y el Timer == 1 (iniciado), detiene el timer
+  float reductionFactor;
 
-  
-  if (currentMillis - lastUpdate >= 1000) { //  Solo actualizar cada 1 segundo para evitar flickering innecesario
-    lastUpdate = currentMillis;             // Actualizar el tiempo de referencia
-    
+  if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); } // Inicia el timer si la carga está activa
+  if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }  // Detiene el timer si la carga está inactiva
+
+  if (currentMillis - lastUpdate >= 1000) { // Actualizar cada 1 segundo para evitar flickering
+    lastUpdate = currentMillis;
+
     lcd.noCursor();
-    printLCD_S(0, 3, timer_getTime());  // Actualizar y mostrar tiempo transcurrido en el LCD
+    printLCD_S(0, 3, timer_getTime()); // Mostrar tiempo en LCD
 
-    Seconds = timer_getTotalSeconds();  // Obtiene el tiempo total en segundos
-    LoadCurrent = (!timerStarted) ? BatteryCurrent : current; // Mantiene última corriente si se detiene el timer
-    BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600));   // Calcula capacidad en mAh (sin decimales)
+    Seconds = timer_getTotalSeconds();
+    LoadCurrent = (!timerStarted) ? BatteryCurrent : current;
+    BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600)); // Calcula capacidad en mAh
+  }
 
-    if (BatteryLife > BatteryLifePrevious) {     // Solo actualizar LCD si el valor de mAh cambió
-      printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
-      lcd.print(F("mAh"));
-      BatteryLifePrevious = BatteryLife;
-    }
-  }  
-  
-  // Si la batería llega al voltaje de corte, detener descarga
-  if (voltage <= BatteryCutoffVolts) {
-    BatteryCurrent = current;
+  reading = encoderPosition / 1000;   // este modo se controla solo con el encoder.
+
+  if (!toggle) return;  //Si esta desconectada, salir, el resto solo si esta conectada
+
+  setCurrent = reading * 1000; // Toma el valor del encoder y lo setea en la carga en mA
+
+  // 🔽 Reducción progresiva de corriente cuando el voltaje se acerca al corte
+  if (voltage <= (BatteryCutoffVolts + VoltageDropMargin)) {
+    reductionFactor = constrain((voltage - BatteryCutoffVolts) / VoltageDropMargin, 0, 1);  // Factor de reducción (0 a 1)
+    setCurrent *= reductionFactor; // Limitar entre 0 y 1
+    encoderPosition = reading * 1000;          // Sincroniza al encoder 
+  }
+  // Si la corriente de descarga es menor a la mínima, o el voltaje es menor, detener descarga
+  if (setCurrent <= MinDischargeCurrent || voltage <= BatteryCutoffVolts) { 
     Load_ON_status(false);
     timer_stop();
   }
 
-  // Registro de datos para logging cada segundo
+  // Registro de datos para logging
   if (toggle && Seconds != SecondsLog) {
     SecondsLog = Seconds;
     Serial.print(SecondsLog);
     Serial.print(",");
     Serial.println(voltage);
   }
-  setCurrent = reading * 1000;      // Toma el valor del encoder 
 }
 
 //------------------------------------ Transcient Continuos Mode----------------------------------------
@@ -544,7 +583,7 @@ void Transient_Cont_Mode(void) {
     printLCD(8, 2, F("A"));                     // Muestra la unidad
     printLCD(11, 2, F("Hi="));                  // Muestra el mensaje
     printLCD(19, 2, F("A"));                    // Muestra la unidad
-    printLCD(0, 3, F("Time = "));               // Muestra el mensaje
+    printLCD(0, 3, F(" Time: "));                // Muestra el mensaje
     printLCD_S(7, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(12, 3, F("mSecs"));                // Muestra la unidad
     modeInitialized = true;                     // Modo inicializado.
@@ -608,11 +647,17 @@ void Transcient_Cont_Timing() {
 
 //------------------------------------ Transcient List Mode----------------------------------------
 void Transient_List_Mode(void) {
-  
+  static unsigned int last_transientPeriod = -1;
+
   if(modeConfigured) {
     printLCD_S(13, 2, String(current_instruction + 1));     // Muestra la instrucción en curso
     if ((current_instruction + 1) < 10){lcd.print(F(" "));} // si quedo el cero del 10, lo borra
-    printLCD_S(7, 3, String(transientPeriod));              // Muestra el valor del tiempo
+    // ✅ Actualiza `transientPeriod` solo si cambió, evitando flickering innecesario
+    if (transientPeriod != last_transientPeriod) {
+      printLCD(7, 3, F("     "));  // Borra los caracteres anteriores antes de imprimir
+      printLCD_S(7, 3, String(transientPeriod)); // Imprime nuevo valor con espacio extra
+      last_transientPeriod = transientPeriod;  // Actualiza el último valor mostrado
+    }
   }
 
   if(!modeConfigured) {Transient_List_Setup(); return;} // Si no esta configurado, lo configura. Sale si no se configuro
@@ -623,7 +668,7 @@ void Transient_List_Mode(void) {
     printLCD(0, 2, F("Instruccion: "));   // Muestra el mensaje
     printLCD(15, 2, F("/"));   // Muestra el mensaje
     printLCD_S(16, 2, String(total_instructions + 1));
-    printLCD(0, 3, F("Time = "));         // Muestra el mensaje
+    printLCD(0, 3, F(" Time: "));         // Muestra el mensaje
     printLCD(12, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
   }
@@ -655,15 +700,15 @@ void Transient_List_Setup() {
     printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
 
     z = 13; r = 2;
-    if (!Value_Input(z, r, 5)) return;      // Permitir 5 digitos, ej.: 1.234 o salir del Modo
-    x = min(x, CurrentCutOff);        // Limita a CutOff
-    printLCDNumber(z, r, x, 'A', 3); // Muestra el valor de la corriente
-    transientList[i][0] = x;          // Lo guarda en la lista
+    if (!Value_Input(z, r, 5)) return;  // Permitir 5 digitos, ej.: 1.234 o salir del Modo
+    x = min(x, CurrentCutOff);          // Limita a CutOff
+    printLCDNumber(z, r, x, 'A', 3);    // Muestra el valor de la corriente
+    transientList[i][0] = x * 1000;     // Lo guarda en la lista en mA
 
-    z = 13; r = 3;           // Ubica la toma del valor de mSec
-    if (!Value_Input(z, r, 5)) return;     // Permitir 5 digitos, ej.: 99999 o salir del Modo
-    transientList[i][1] = x;          // Guarda el valor del tiempo
-    lcd.clear();                      // Borra la pantalla, para configurar la siguiente instrucción
+    z = 13; r = 3;                      // Ubica la toma del valor de mSec
+    if (!Value_Input(z, r, 5)) return;  // Permitir 5 digitos, ej.: 99999 o salir del Modo
+    transientList[i][1] = x;            // Guarda el valor del tiempo en ms
+    lcd.clear();                        // Borra la pantalla, para configurar la siguiente instrucción
   }
   lcd.noCursor();
   setCurrent = 0;          // por si quedo seteada del modo anterior
@@ -678,12 +723,17 @@ void Transient_List_Timing(void) {
 
   static unsigned long last_time = 0;
 
-  if (!toggle) {current_instruction = 0; return;}        // Evaluar si en esta situación no es mejor reinicial la lista
+  if (!toggle) {
+    current_instruction = 0;
+    last_time = 0;
+    transientPeriod = transientList[current_instruction][1];
+    return;} // Reinicio la lista
 
     current_time = micros();
 
   if (last_time == 0){
-    setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
+    //setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
+    setCurrent = transientList[current_instruction][0];       // Ya esta en mA
     transientPeriod = transientList[current_instruction][1];
     last_time = current_time; 
   }
@@ -691,7 +741,8 @@ void Transient_List_Timing(void) {
   if ((current_time - last_time) >= transientPeriod * 1000) {
     current_instruction++;
     if (current_instruction > total_instructions) { current_instruction = 0; }
-    setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
+    //setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
+    setCurrent = transientList[current_instruction][0];       // Ya esta en mA
     transientPeriod = transientList[current_instruction][1];
     last_time = current_time;
   }
