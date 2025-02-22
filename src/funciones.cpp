@@ -548,9 +548,9 @@ void Battery_Capacity(void) {
   setCurrent = reading * 1000; // Toma el valor del encoder y lo setea en la carga en mA
 
   // 🔽 Reducción progresiva de corriente cuando el voltaje se acerca al corte
-  if (voltage <= (BatteryCutoffVolts + VoltageDropMargin)) {
+  if (voltage <= BatteryCutoffVolts) {
     setCurrent = setCurrent - CRR_STEP_RDCTN;     // Reducir la corriente en 2mA
-    setCurrent = max(setCurrent, 0);  // Evita valores negativos
+    setCurrent = max(setCurrent, 0);              // Evita valores negativos
     reading = setCurrent / 1000;
     encoderPosition = reading * 1000; // Sincroniza con el encoder
   }

@@ -60,9 +60,9 @@ extern ModeType Mode;                      // Modo de operación, CC Default
 extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
 extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
-const float VoltageDropMargin = 0.15;      // ⚡ Margen de voltaje donde empieza a reducir corriente (parametrizable)
+const float VoltageDropMargin = 0.1;       // ⚡ Margen de voltaje donde empieza a reducir corriente (parametrizable)
 const float MinDischargeCurrent = 90;      // 🔋 Corriente mínima antes de desconectar la carga (en mA)
-const unsigned long CRR_STEP_RDCTN = 2;   // Reducción de corriente en 100mA
+const unsigned long CRR_STEP_RDCTN = 5;    // Reducción de corriente en 100mA
 
 //----------------------------------------Variables para el Keypad-------------------------------------------
 

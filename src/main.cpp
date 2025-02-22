@@ -42,18 +42,10 @@ printLCD(0, 2, F("Para SIMULACION"));
 #endif
 printLCD(0, 3, F("v1.69"));
 /* 
-Trabajando:
-   - cambiar el flag de decimal a bool
-   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
-
-A trabajar:
-  - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
-  - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
-
-  Mejoras:
+ Mejoras:
+  - ##Descarga de baterias, automatico##
   - En TL ahora muestra la cantidad de instrucciones de la lista
   - En BC, reog. de print de Voltage Cutoff
-  - Descarga de baterias, con current dinámico decreciente al llegar a batteryvoltagecutoff
   - Agrego simulacion de voltage con pote externo y en BC descarga de bateria
   - Nuevo diagram.json para Wokwi
 
@@ -64,13 +56,22 @@ A trabajar:
   - En TL el periodo de la instrucción anterior no se borraba. Reingenieria de TL
   - En TL o TC, la T de Time desaparecia. No se porque, por el cambie "Time = " a " Time:"
 
-Bugs detectados:
+  Bugs detectados:
   - Al setear BC, 00:00:00 aparece un segundo despues
-    
-Posibles Mejoras:
+  
+  Trabajando:
+   - cambiar el flag de decimal a bool
+   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
+
+  En Cola:
+  - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
+  - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
+  - Sacar decimales en CR y CP? ver que presición quiero tener.
+  - En modos TC y TS mostrar mSec decrecientes?
+
+  Posibles Mejoras:
   - Modo Calibracíón incluir external voltage sense?
   - Con anuncio de limite exedido, actualizar el limite excedido y parpadearlo
-  - Sacar decimales en CR y CP? ver que presición quiero tener.
   - Uso para Shift paa ir a un modo directo o a Calibración S+C?
   - Activar el LOAD ON OFF por interrupción?, desactivar el mosfet con el procesador directamente?
   - Ver la frecuencia máxima de conmutación de los Trasient y limitarla a esa
@@ -79,8 +80,7 @@ Posibles Mejoras:
   - Recalcular los limites de W y R en funcion de la DC presente?..
   - Ajustar timing con encoder en TC mode?
   - Ver de agregar Heald Checks antes de inicializar e informar error de detectarse.
-  - En modos TC y TS mostrar mSec decresientes?
-*/
+  */
 
 #ifndef WOKWI_SIMULATION
 delay (2000);
