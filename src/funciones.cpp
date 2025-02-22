@@ -526,8 +526,7 @@ void Battery_Capacity(void) {
   static float SecondsLog = 0;            // Loguea el tiempo en segundos
   static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
   unsigned long currentMillis = millis();
-  float reductionFactor;
-
+ 
   if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); } // Inicia el timer si la carga está activa
   if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }  // Detiene el timer si la carga está inactiva
 
@@ -550,12 +549,13 @@ void Battery_Capacity(void) {
 
   // 🔽 Reducción progresiva de corriente cuando el voltaje se acerca al corte
   if (voltage <= (BatteryCutoffVolts + VoltageDropMargin)) {
-    reductionFactor = constrain((voltage - BatteryCutoffVolts) / VoltageDropMargin, 0, 1);  // Factor de reducción (0 a 1)
-    setCurrent *= reductionFactor; // Limitar entre 0 y 1
-    encoderPosition = reading * 1000;          // Sincroniza al encoder 
+    setCurrent = setCurrent - CRR_STEP_RDCTN;     // Reducir la corriente en 2mA
+    setCurrent = max(setCurrent, 0);  // Evita valores negativos
+    reading = setCurrent / 1000;
+    encoderPosition = reading * 1000; // Sincroniza con el encoder
   }
-  // Si la corriente de descarga es menor a la mínima, o el voltaje es menor, detener descarga
-  if (setCurrent <= MinDischargeCurrent || voltage <= BatteryCutoffVolts) { 
+  // Si la corriente de descarga es menor a la mínima, o el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
+  if (setCurrent <= MinDischargeCurrent || voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
     Load_ON_status(false);
     timer_stop();
   }

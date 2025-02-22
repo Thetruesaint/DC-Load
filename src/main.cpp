@@ -44,6 +44,7 @@ printLCD(0, 3, F("v1.69"));
 /* 
 Trabajando:
    - cambiar el flag de decimal a bool
+   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
 
 A trabajar:
   - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
@@ -53,7 +54,7 @@ A trabajar:
   - En TL ahora muestra la cantidad de instrucciones de la lista
   - En BC, reog. de print de Voltage Cutoff
   - Descarga de baterias, con current dinámico decreciente al llegar a batteryvoltagecutoff
-  - Agrego simulacion de volage con pote externo y en BC descarga de bateria
+  - Agrego simulacion de voltage con pote externo y en BC descarga de bateria
   - Nuevo diagram.json para Wokwi
 
   Fixes:
@@ -65,14 +66,13 @@ A trabajar:
 
 Bugs detectados:
   - Al setear BC, 00:00:00 aparece un segundo despues
-  - en TL la T de Time desaparece
-  
+    
 Posibles Mejoras:
-
+  - Modo Calibracíón incluir external voltage sense?
+  - Con anuncio de limite exedido, actualizar el limite excedido y parpadearlo
   - Sacar decimales en CR y CP? ver que presición quiero tener.
   - Uso para Shift paa ir a un modo directo o a Calibración S+C?
   - Activar el LOAD ON OFF por interrupción?, desactivar el mosfet con el procesador directamente?
-  - Calibracíón incluir external voltage sense
   - Ver la frecuencia máxima de conmutación de los Trasient y limitarla a esa
   - Setear hora y fecha del RTC y poder mirarla boton Shift?. Por ahora lo hago asi:
       rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Para ajsutar la hora al momento de compilar el código pero luego se debe comentar para que reloj siga corriendo

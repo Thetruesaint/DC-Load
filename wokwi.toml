@@ -1,4 +1,4 @@
 [wokwi]
 version = 1
-firmware = ".pio/build/sim/firmware_v1.69.hex"
+firmware = ".pio/build/sim/DCLoad_v1.69_sim.hex"
 elf = ".pio/build/sim/firmware.elf"
