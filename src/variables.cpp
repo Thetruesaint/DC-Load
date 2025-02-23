@@ -74,7 +74,6 @@ float BatteryLife = 0;          // Variable para la vida de la batería
 float BatteryLifePrevious = 0;  // Variable para la vida de la batería anterior
 float BatteryCutoffVolts;       // Variable usada para indicar a que Voltage se puede descargar la batería
 float BatteryCurrent;           // Variable usada para setear la corriente de descargga de la bateria
-float LoadCurrent;              // Almacena por un momento  a current
 float LiPoCutOffVoltage = 3.6;  // Voltage mínimo de descarga para baterias LiPo
 float LionCutOffVoltage = 3.5;  // Voltage mínimo de descarga para baterias Lion
 float LiPoStoragVoltage = 3.8;  // Voltage mínimo de almacenamiento para baterias LiPo

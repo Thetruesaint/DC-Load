@@ -83,7 +83,7 @@ extern float x;                     // Auxiliar para carga de valores.
 //---------------- Variables LCD -----------------------------------------
 extern int z; // Posición en renglón
 extern int r; // Renglon
-const unsigned long LCD_RFSH_TIME = 200; // Tiempo de refresco del LCD en ms
+const unsigned long LCD_RFSH_TIME = 300; // Tiempo de refresco del LCD en ms
 
 //---------------- Variables para Modo BC --------------------------------
 extern float Seconds;               // Segundos usada en Battery Capacity Mode (BC)
@@ -94,7 +94,6 @@ extern float BatteryLife;           // Vida de la batería en mAh
 extern float BatteryLifePrevious;   // Vida de la batería anterior
 extern float BatteryCutoffVolts;    // Voltage de corte de descarga de batería
 extern float BatteryCurrent;        // Corriente máxima de descargga de bateria
-extern float LoadCurrent;           // Registra ultimo corriente seteada
 extern float LiPoCutOffVoltage;     // Voltage mínimo de descarga para baterias LiPo
 extern float LionCutOffVoltage;     // Voltage mínimo de descarga para baterias Lion
 extern float LiPoStoragVoltage;     // Voltage mínimo de almacenamiento para baterias LiPo

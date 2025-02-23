@@ -132,17 +132,19 @@ void Update_LCD(void) {
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
   printLCDNumber(7, 1, voltage, 'V', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
-  lcd.setCursor(14,1);
-  if (power < 10) { lcd.print(F(" ")); lcd.print(power, 2);} 
-  else if (power < 100) {lcd.print(power, 2);} 
-  else {lcd.print(power, 1);}
-  lcd.setCursor(19,1);
-  lcd.print(F("W"));
+  if (Mode != BC) {   // lo reemplazo por BatteryCutoffVolts
+    lcd.setCursor(14,1);
+    if (power < 10) { lcd.print(F(" ")); lcd.print(power, 2);} 
+    else if (power < 100) {lcd.print(power, 2);} 
+    else {lcd.print(power, 1);}
+    lcd.setCursor(19,1);
+    lcd.print(F("W"));
+  }
 
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
     lcd.setCursor(8, 2);
-    if ((Mode == CP || Mode == CR) && reading < 100) lcd.print("0");        // Mejorar esto para los modos CC, CP y CR
-    if (reading < 10) lcd.print("0");
+    if ((Mode == CP || Mode == CR) && reading < 100) lcd.print(" ");
+    if (reading < 10) lcd.print(" ");
     lcd.print((Mode == CP || Mode == CR) ? String(reading, 2) : String(reading, 3));
     
     lcd.setCursor(CuPo, 2); // Cursor en la unidad a modificar
@@ -437,9 +439,11 @@ void Battery_Mode(void) {
   if (!modeInitialized){
     lcd.clear();
     printLCD(0, 0, F("BATTERY"));          // Muestra el titulo del modo
+    lcd.setCursor(13,1);lcd.print(F(">")); 
+    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Mostrar sin decimales
     printLCD(0, 2, F("Adj I-> "));         // Muestra el mensaje
     printLCD(14, 2, F("A"));               // La unidad de corriente
-    printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
+    printLCDNumber(10, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
@@ -528,21 +532,22 @@ void Battery_Type_Selec() {
 //------------------------------ Battery Capacity Discharge Routine ------------------------------//
 void Battery_Capacity(void) {
   
+  float LoadCurrent = 0;
   unsigned long currentMillis = millis();
   static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
- 
+
   if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); } // Inicia el timer si la carga está activa
   if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }  // Detiene el timer si la carga está inactiva
-
-  if (currentMillis - lastUpdate >= 1000) { // Actualizar cada 1 segundo para evitar flickering
+ 
+  if (currentMillis - lastUpdate >= 500) { // Actualizar cada 1 segundo para evitar flickering
     lastUpdate = currentMillis;
 
     lcd.noCursor();
     printLCD_S(0, 3, timer_getTime()); // Mostrar tiempo en LCD
 
     Seconds = timer_getTotalSeconds();
-    LoadCurrent = (!timerStarted) ? BatteryCurrent : current;
-    BatteryLife = round((LoadCurrent * 1000) * (Seconds / 3600)); // Calcula capacidad en mAh
+    LoadCurrent = (!timerStarted) ? 0 : current;
+    BatteryLife += (LoadCurrent * 1000) / 7200; // LoadCurrent A, por horas, por 1000 = mAh
   }
 
   reading = encoderPosition / 1000;   // este modo se controla solo con el encoder.
@@ -561,6 +566,7 @@ void Battery_Capacity(void) {
 
   // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
   if (voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
+    BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo?
     Load_ON_status(false);
     timer_stop();
   }

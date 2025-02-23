@@ -40,23 +40,25 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.70"));
+printLCD(0, 3, F("v1.70b"));
 /* 
  Mejoras:
-
+  - En BC reemplazo los W por voltageCuttOff, es mas útil.
+  - Subo a 300ms el Refresh del LCD para liberarlo de carga un poco
 
   Fixes:
-  - Cambie limite del Read_Encoder, encoderMax = 10000 para CC y BC, antes afectaba a CP y CR
+  - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
+  - La formula de los mAh asumia que la corriente de descarga era cte. Pase a hacer una integración
 
   Bugs detectados:
-  - Tal vez falte ajustar un poco mejor a la descarga de BC, pero esta funcional
+  
      
   Trabajando:
-   - cambiar el flag de decimal a bool
-   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
+   
+  - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
+  - Seguir probando descarga de BC y medir mAh
   
   En Cola:
-  - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
   - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
   - Sacar decimales en CR y CP? ver que presición quiero tener.
   - En modos TC y TS mostrar mSec decrecientes?
@@ -68,8 +70,8 @@ printLCD(0, 3, F("v1.70"));
   - Uso para Shift paa ir a un modo directo o a Calibración S+C?
   - Activar el LOAD ON OFF por interrupción?, desactivar el mosfet con el procesador directamente?
   - Ver la frecuencia máxima de conmutación de los Trasient y limitarla a esa
-  - Setear hora y fecha del RTC y poder mirarla boton Shift?. Por ahora lo hago asi:
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // Para ajsutar la hora al momento de compilar el código pero luego se debe comentar para que reloj siga corriendo
+  - Setear hora y fecha del RTC y poder mirarla boton Shift?.
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // El módulo está basado en el RTC DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. ver uso posible
   - Recalcular los limites de W y R en funcion de la DC presente?..
   - Ajustar timing con encoder en TC mode?
   - Ver de agregar Heald Checks antes de inicializar e informar error de detectarse.
