@@ -40,23 +40,25 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.70b"));
+printLCD(0, 3, F("v1.70"));
 /* 
  Mejoras:
   - En BC reemplazo los W por voltageCuttOff, es mas útil.
-  - Subo a 300ms el Refresh del LCD para liberarlo de carga un poco
+  - En BC dejo min y seg. Agrego tipo de lipo y elimino el pantallazo de Cuttoff Voltage
+  - Optim.: Temp Control
 
   Fixes:
   - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
   - La formula de los mAh asumia que la corriente de descarga era cte. Pase a hacer una integración
-
+ 
   Bugs detectados:
-  
-     
+       
   Trabajando:
-   
+  - Optim.: Update solo A,V,W  resto el modo. 
+  - Optim: Funcion reset index sumas encoder y reading.
+  - Optim: Limitan a reading/encoder por modo por variable global en cada set mode.
   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
-  - Seguir probando descarga de BC y medir mAh
+  - Probe descarga de BC y medir mAh: Descargo 1126mAh cargo luego 1180mAh 
   
   En Cola:
   - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio

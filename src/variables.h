@@ -83,7 +83,7 @@ extern float x;                     // Auxiliar para carga de valores.
 //---------------- Variables LCD -----------------------------------------
 extern int z; // Posición en renglón
 extern int r; // Renglon
-const unsigned long LCD_RFSH_TIME = 300; // Tiempo de refresco del LCD en ms
+const unsigned long LCD_RFSH_TIME = 200; // Tiempo de refresco del LCD en ms
 
 //---------------- Variables para Modo BC --------------------------------
 extern float Seconds;               // Segundos usada en Battery Capacity Mode (BC)
@@ -105,12 +105,8 @@ const unsigned long CRR_STEP_RDCTN = 5;    // Reducción de corriente en 100mA
 
 //----------------- Variables para Control de Temperatura -------------------
 extern int temp;                    // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
-extern unsigned long Last_tmpchk;   // Tiempo desde el ùltimo chequeo de temperatura
-extern unsigned long fan_on_time;   // Tiempo que lleva encendido el Fan
-extern bool fans_on;                // Flag de stado del Cooler
-extern bool new_temp;               // flag si hay nuevo valor de temperatura
-const int FAN_ON_DRTN = 30000;  // Tiempo en miliseg. para mantener los fans encendidos (30 segundos)
-const int TMP_CHK_TIME = 800;   // Perdíodo de control de temperatura (miliseg.)
+const int FAN_ON_DRTN = 30000;      // Tiempo en miliseg. para mantener los fans encendidos (30 segundos)
+const int TMP_CHK_TIME = 1000;      // Perdíodo de control de temperatura (miliseg.)
 
 //----------------- Variables para Modos TC y TL Transient -------------------
 extern float LowCurrent;                    // Configuración de corriente baja para el modo transitorio

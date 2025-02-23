@@ -109,17 +109,12 @@ void Update_LCD(void) {
   if(!modeInitialized) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
   lcd.noCursor();
 
-  // Actualiza la Temperatura
-  printLCDNumber(16, 0, temp, ' ', 0);
-  lcd.print(char(0xDF)); lcd.print("C");
-  if (temp < 10){lcd.print(" ");}
-
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
 
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
   
-  printLCD_S(18, 3, ModeNames[Mode]); // Actualiza el Modo, lo hace seguido porque a veces se sale y se entra al mismo modo
+  //printLCD_S(18, 3, ModeNames[Mode]); // Actualiza el Modo, lo hace seguido porque a veces se sale y se entra al mismo modo
 
   // Evitar valores negativos por errores de medición
   float power = voltage * current;
@@ -154,33 +149,40 @@ void Update_LCD(void) {
 
 //---------------------- Temperature Control --------------------------------------------
 void Temp_Control(void) {
-  unsigned long hldtmp_time = millis();
+
+  static unsigned long fan_on_time = 0;  // Tiempo de encendido del ventilador
+  static unsigned long last_tmpchk = 0;  // Última vez que se chequeó la temperatura
+  static bool fans_on = false;           // Estado del ventilador
+
+  unsigned long currentMillis = millis(); 
+  if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) return; // Solo cada TMP_CHK_TIME milisegundos
   
-  if ((hldtmp_time - Last_tmpchk) >= TMP_CHK_TIME) {                           // Si pasaron TMP_CHK_TIME milisegundos, tomará la temperatura
-    int act_temp = analogRead(TEMP_SNSR);                                      // Tomar temperatura del disipador
-    #ifndef WOKWI_SIMULATION
-    act_temp = act_temp * 0.48828125; // Convertir a Celsius
-    #else
-    act_temp = act_temp * 0.09765625; // Hasta 100°C con el pote de 0 a 5V que simula sensor de temperatura
-    #endif
+  last_tmpchk = currentMillis;                              // Actualizar el momento de chequeo de temperatura
 
-    if (temp != act_temp) {                                                   // Recalcular solo si cambió la temperatura
-      temp = act_temp;
-      new_temp = true;                                                        // Flag de que cambio la temperatura
+  #ifndef WOKWI_SIMULATION
+  #define TEMP_CONVERSION_FACTOR 0.48828125 // Convierte lectura de LM35
+  #else
+  #define TEMP_CONVERSION_FACTOR 0.09765625 // Hasta 100°C con el pote de 0 a 5V que simula sensor de temperatura
+  #endif
+
+  temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR;    // Convertir a Celsius
+
+  if (temp >= 40) {
+    if (!fans_on) { // Solo encender si está apagado
+      digitalWrite(FAN_CTRL, HIGH);
+      fans_on = true;
     }
-    else {new_temp = false;}                                                  // Si no hubo cambio deja en falso el flag
-
-    Last_tmpchk = hldtmp_time;                                                // Actualiza el momento de chequeo de temperatura
-
-    if (temp >= 40) {                                                         // Si la temperatura es igual o mayor a 40°C enciende el cooler
-      digitalWrite(FAN_CTRL, HIGH);                                           // Encender el cooler si la temperatura es mayor o igual a 35°C
-      fans_on = true;                                                         // Flag de cooler encendido
-      fan_on_time = hldtmp_time;                                              // Actualizo el tiempo de encendido del cooler
-    } else if (fans_on && (hldtmp_time - fan_on_time) >= FAN_ON_DRTN) {       // Si temp es < 40 va a dejar prendido el fan por FAN_ON_DRTN
-        digitalWrite(FAN_CTRL, LOW);                                          // Apaga el cooler si paso el tiempo
-        fans_on = false;                                                      // Flag de cooler encendido
-      }
+    fan_on_time = currentMillis; // Actualizar el tiempo de encendido
+  } else if (fans_on && (currentMillis - fan_on_time) >= FAN_ON_DRTN) { // lo mantiene encendido por un tiempo, sino flickea el cooler
+    digitalWrite(FAN_CTRL, LOW);
+    fans_on = false;
   }
+
+  // Actualiza la Temperatura solo cuando la chequea
+  printLCDNumber(16, 0, temp, ' ', 0);
+  lcd.print(char(0xDF)); lcd.print("C");
+  if (temp < 10){lcd.print(" ");}
+  
 }
 
 //---------------------- Check and Enforce Limits -------------------------------------------
@@ -370,7 +372,7 @@ void Const_Current_Mode(void) {
 
   if (!modeInitialized) {
     lcd.clear();
-    printLCD(0, 0, F("DC LOAD"));          // Muestra el titulo del modo
+    printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
     printLCD(0, 2, F("Set I = "));         // Muestra el mensaje
     printLCD(14, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
@@ -390,7 +392,7 @@ void Const_Power_Mode(void) {
 
   if (!modeInitialized) {
     lcd.clear();
-    printLCD(0, 0, F("DC LOAD"));          // Muestra el titulo del modo
+    printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
     printLCD(0, 2, F("Set W = "));         // Muestra el mensaje
     printLCD(14, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
@@ -409,7 +411,7 @@ void Const_Resistance_Mode(void) {
 
  if (!modeInitialized) {
     lcd.clear();
-    printLCD(0, 0, F("DC LOAD"));           // Muestra el titulo del modo
+    printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
     printLCD(0, 2, F("Set R = "));          // Muestra el mensaje
     printLCD_S(14, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
@@ -438,13 +440,14 @@ void Battery_Mode(void) {
 
   if (!modeInitialized){
     lcd.clear();
-    printLCD(0, 0, F("BATTERY"));          // Muestra el titulo del modo
+    printLCD(0, 0, F("BC LOAD"));          // Muestra el titulo del modo
     lcd.setCursor(13,1);lcd.print(F(">")); 
-    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Mostrar sin decimales
+    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Muestro el Cutoff Voltage
     printLCD(0, 2, F("Adj I-> "));         // Muestra el mensaje
     printLCD(14, 2, F("A"));               // La unidad de corriente
-    printLCDNumber(10, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
+    printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
+    printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
     CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                // Modo inicializado
@@ -464,7 +467,7 @@ void Battery_Type_Selec() {
   exitMode = false;                       // Resetea EXIT mode
   lcd.noCursor();                         // Apaga el cursor para este menú
   lcd.clear();                            // Borra la pantalla del LCD
-  printLCD(1, 0, F("Set Task & BATTERY"));   // Muestra el título
+  printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
   printLCD(0, 1, F("Stor. 1)LiPo 2)LiIOn"));
   printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
   printLCD(2, 3, F("5)Cutoff Voltage"));
@@ -488,7 +491,7 @@ void Battery_Type_Selec() {
   // Pedir ingresar un voltaje de corte
   if (BatteryType == "Custom") {
     lcd.clear();
-    printLCD_S(3, 0, BatteryType + " BATTERY");
+    printLCD_S(3, 0, BatteryType + " Batt");
     printLCD(2, 1, F("Voltage Cutoff?"));
     printLCD(5, 2, F("(0.1-25)V"));
     do {
@@ -503,7 +506,7 @@ void Battery_Type_Selec() {
   // Pedir ingresar la cantidad de celdas
   if (BatteryType != "Custom") {
     lcd.clear();
-    printLCD_S(3, 0, BatteryType + " BATTERY");
+    printLCD_S(3, 0, BatteryType + " Batt");
     printLCD(6, 1, F("(1-6)S?"));
 
     do {
@@ -515,13 +518,6 @@ void Battery_Type_Selec() {
     BatteryCutoffVolts *= x;                // Multiplica por la cantidad de celdas
   }
 
-  // Mostrar selección final
-  lcd.clear();
-  printLCD_S(3, 0, BatteryType + " BATTERY");
-  printLCD(3, 1, F("Cutoff Voltage"));
-  printLCDNumber(7, 2, BatteryCutoffVolts, 'V');
-  delay(3000); lcd.clear();
-  printLCD_S(16, 2, BatteryType); // Muestra el tipo de batería seleccionado
   timer_reset();                  // Resetea el timer
   BatteryLifePrevious = 0;        // Resetea la vida de la batería
   CuPo = 9;                       // Posiciona el cursor en la posición 9
@@ -900,19 +896,15 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   int totalSeconds = static_cast<int>(timer_getTotalSeconds());
 
-  int hours = totalSeconds / 3600;
-  int minutes = (totalSeconds % 3600) / 60;
-  int seconds = (totalSeconds % 3600) % 60;
+  int minutes = (totalSeconds / 60);
+  int seconds = (totalSeconds % 60);
 
   String formattedTime = "";
-  if (hours < 10) { formattedTime += "0";}
-  formattedTime += String(hours) + ":";
 
-  if (minutes < 10) {formattedTime += "0";}
-
+  if (minutes < 10) { formattedTime += "0"; }
   formattedTime += String(minutes) + ":";
 
-  if (seconds < 10) {formattedTime += "0";}
+  if (seconds < 10) { formattedTime += "0"; }
   formattedTime += String(seconds);
 
   return formattedTime;

@@ -82,10 +82,6 @@ String BatteryType = "    ";    // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------
 int temp = 1;                   // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
-unsigned long Last_tmpchk = 0;  // Tiempo desde el ùltimo chequeo de temperatura
-unsigned long fan_on_time = 0;  // Tiempo que lleva encendido el Fan
-bool fans_on = false;           // Flag de stado del Cooler
-bool new_temp = true;           // flag si hay nuevo valor de temperatura
 
 //----------------- Variables para Modos TC y TL Transient -------------------
 float LowCurrent = 0;                 // Configuración de corriente baja para el modo transitorio
