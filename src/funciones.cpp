@@ -129,12 +129,16 @@ void Update_LCD(void) {
 
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));  // Indica el estado de la carga
 
-  // Imprimir los valores actualizados TIENE UN BUG en  BC, TC y TL revisar
+  // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
   printLCDNumber(7, 1, voltage, 'V', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
-  printLCDNumber(14, 1, power, 'W', (power < 100) ? 2 : 1); if (power < 100){lcd.print(" ");}
+  lcd.setCursor(14,1);
+  if (power < 10) { lcd.print(F(" ")); lcd.print(power, 2);} 
+  else if (power < 100) {lcd.print(power, 2);} 
+  else {lcd.print(power, 1);}
+  lcd.setCursor(19,1);
+  lcd.print(F("W"));
 
-  // Mostrar lectura del encoder o cursor en la posición de la unidad
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
     lcd.setCursor(8, 2);
     if ((Mode == CP || Mode == CR) && reading < 100) lcd.print("0");        // Mejorar esto para los modos CC, CP y CR
@@ -328,7 +332,7 @@ void Read_Volts_Current(void) {
       // ## SETEAR ANTES DE ENTRAR AL MODO##
       if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
       lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
-      simulatedVoltage -= 0.01;                       // Reducir el voltaje
+      simulatedVoltage -= 0.005;                      // Reducir el voltaje a medida que pasa el tiempo
       simulatedVoltage = max(simulatedVoltage, 0.0);  // Asegurar que no sea negativo
       voltage = simulatedVoltage;                     // Asigna el valor de v simulado
       }
@@ -524,8 +528,6 @@ void Battery_Type_Selec() {
 //------------------------------ Battery Capacity Discharge Routine ------------------------------//
 void Battery_Capacity(void) {
   
-  static float SecondsLog = 0;            // Loguea el tiempo en segundos
-  static float lastReductionVoltage = BatteryCutoffVolts + VoltageThreshold; 
   unsigned long currentMillis = millis();
   static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
  
@@ -547,37 +549,20 @@ void Battery_Capacity(void) {
 
   if (!toggle) return;  //Si esta desconectada, salir, el resto solo si esta conectada
 
-  setCurrent = reading * 1000; // Toma el valor del encoder y lo setea en la carga en mA
+  setCurrent = reading * 1000; // Toma el valor del encoder, por si quise hacer un ajuste, y lo setea en la carga en mA
 
-  // 🔽 Reducción progresiva de corriente cuando el voltaje se acerca al corte
+  // Reducción progresiva de corriente cuando el voltaje alcanza al de corte
 
-  if (voltage > BatteryCutoffVolts && voltage <= lastReductionVoltage) { //Fase 1 : Permite comenzar a desdender la corriente desde antes y mas rápido
-    if (voltage < lastReductionVoltage) { // Solo reducir si el voltaje baja aún más
-        setCurrent = max(setCurrent - 10 * CRR_STEP_RDCTN, MinDischargeCurrent);  
-        lastReductionVoltage = voltage;  // Actualizar el voltaje de referencia
-    }
-  } 
-  else if (voltage <= BatteryCutoffVolts) {  // Fase 2: Estabilización
+  if (voltage <= BatteryCutoffVolts) {  // Fase 2: Estabilización
     setCurrent = max(setCurrent - CRR_STEP_RDCTN, MinDischargeCurrent);
+    reading = setCurrent / 1000;
+    encoderPosition = reading * 1000;
   }
-
-  // 🔽 Sincroniza el encoder con la corriente ajustada
-  reading = setCurrent / 1000;
-  encoderPosition = reading * 1000;
 
   // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
   if (voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
     Load_ON_status(false);
     timer_stop();
-    lastReductionVoltage = BatteryCutoffVolts + 3 * VoltageDropMargin; // Reseteo el margen
-  }
-
-  // Registro de datos para logging
-  if (toggle && Seconds != SecondsLog) {
-    SecondsLog = Seconds;
-    Serial.print(SecondsLog);
-    Serial.print(",");
-    Serial.println(voltage);
   }
 }
 
@@ -590,17 +575,16 @@ void Transient_Cont_Mode(void) {
     lcd.noCursor();                             // switch Cursor OFF for this menu
     printLCD_S(3, 2, String(LowCurrent, 3));    // Muestra el valor de la corriente baja
     printLCD_S(14, 2, String(HighCurrent, 3));  // Muestra el valor de la corriente alta
-    printLCD(0, 0, F("DC LOAD"));               // Muestra el titulo del modo
+    printLCD(0, 0, F("TC LOAD"));               // Muestra el titulo del modo
     printLCD(0, 2, F("Lo="));                   // Muestra el mensaje
     printLCD(8, 2, F("A"));                     // Muestra la unidad
     printLCD(11, 2, F("Hi="));                  // Muestra el mensaje
     printLCD(19, 2, F("A"));                    // Muestra la unidad
-    printLCD(0, 3, F(" Time: "));                // Muestra el mensaje
-    printLCD_S(7, 3, String(transientPeriod));  // Muestra el valor del tiempo
-    printLCD(12, 3, F("mSecs"));                // Muestra la unidad
+    printLCD(0, 3, F("Time: "));                // Muestra el mensaje
+    printLCD_S(6, 3, String(transientPeriod));  // Muestra el valor del tiempo
+    printLCD(11, 3, F("mSecs"));                // Muestra la unidad
     modeInitialized = true;                     // Modo inicializado.
   }
-  //if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Tiene que estar despues.
 }
 
 //------------------------------------ Transient Mode--------------------------------------------
@@ -666,8 +650,8 @@ void Transient_List_Mode(void) {
     if ((current_instruction + 1) < 10){lcd.print(F(" "));} // si quedo el cero del 10, lo borra
     // ✅ Actualiza `transientPeriod` solo si cambió, evitando flickering innecesario
     if (transientPeriod != last_transientPeriod) {
-      printLCD(7, 3, F("     "));  // Borra los caracteres anteriores antes de imprimir
-      printLCD_S(7, 3, String(transientPeriod)); // Imprime nuevo valor con espacio extra
+      printLCD(6, 3, F("     "));  // Borra los caracteres anteriores antes de imprimir
+      printLCD_S(6, 3, String(transientPeriod)); // Imprime nuevo valor con espacio extra
       last_transientPeriod = transientPeriod;  // Actualiza el último valor mostrado
     }
   }
@@ -676,12 +660,12 @@ void Transient_List_Mode(void) {
 
   if (!modeInitialized) {                 // Si es falso, prepara el LCD
     lcd.noCursor();
-    printLCD(0, 0, F("DC LOAD"));         // Muestra el titulo del modo
+    printLCD(0, 0, F("TL LOAD"));         // Muestra el titulo del modo
     printLCD(0, 2, F("Instruccion: "));   // Muestra el mensaje
     printLCD(15, 2, F("/"));   // Muestra el mensaje
     printLCD_S(16, 2, String(total_instructions + 1));
-    printLCD(0, 3, F(" Time: "));         // Muestra el mensaje
-    printLCD(12, 3, F("mSecs"));          // Muestra la unidad
+    printLCD(0, 3, F("Time: "));         // Muestra el mensaje
+    printLCD(11, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
   }
 }

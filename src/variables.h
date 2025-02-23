@@ -100,7 +100,6 @@ extern float LionCutOffVoltage;     // Voltage mínimo de descarga para baterias
 extern float LiPoStoragVoltage;     // Voltage mínimo de almacenamiento para baterias LiPo
 extern float LionStoragVoltage;     // Voltage mínimo de almacenamiento para baterias Liom
 extern String BatteryType;          // Para definir el Tipo de Batería
-const float VoltageThreshold = 0.2;        // Adic. a BatteryCutoffVolts para comenzar a bajar la corriente
 const float VoltageDropMargin = 0.02;      // ⚡ Margen por debajo de BatteryCutoffVolts para cortar
 const float MinDischargeCurrent = 100;     // 🔋 Corriente mínima antes de desconectar la carga (en mA)
 const unsigned long CRR_STEP_RDCTN = 5;    // Reducción de corriente en 100mA
