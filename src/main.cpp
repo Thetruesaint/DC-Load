@@ -40,29 +40,17 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.69"));
+printLCD(0, 3, F("v1.70"));
 /* 
  Mejoras:
-  - ##Descarga de baterias, automatico## MileStone!
-  - En TL ahora muestra la cantidad de instrucciones de la lista
-  - En BC, reog. de print de Voltage Cutoff
-  - Agrego simulacion de voltage con pote externo y en BC descarga de bateria
-  - Nuevo diagram.json para Wokwi
-  - Ajuste de tiempo de refresh del LCD a 200ms
-  - Saco del Loop a Cursor_Position() y lo dejo solo para CC, CR, CP y BC
-  - En BC saco Registro de datos por Serial, no lo uso la verdad
+
 
   Fixes:
-  - En TL, para lista de 10, quedaba el cero en el conteo de instrucciones.
-  - En CR ya se puede limitar a 0,1ohms la resistencia.
-  - Read_Encoder, encoderMax = 10000 (salvo TC y TL) para que no supere los 10A de ninguna manera ya que se llama por interrupción
-  - En TL el periodo de la instrucción anterior no se borraba. Reingenieria de TL
-  - En BC, traia el valor de Set del Modo CR, se resetea reading y encoder
-  - Update_LCD corria la W y borraba col 0 row 3, afectando modos BC, TC y TL
+  - Cambie limite del Read_Encoder, encoderMax = 10000 para CC y BC, antes afectaba a CP y CR
 
   Bugs detectados:
   - Tal vez falte ajustar un poco mejor a la descarga de BC, pero esta funcional
-   
+     
   Trabajando:
    - cambiar el flag de decimal a bool
    - Shift + Modo, resetea el modo? o shift + < va para atras en la config?

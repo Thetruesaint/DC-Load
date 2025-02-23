@@ -29,7 +29,7 @@ void Read_Encoder()
     encval = 0;
   }
   encoderPosition = constrain(encoderPosition, 0, encoderMax);
-  if (Mode != TC || Mode != TL) {
+  if (Mode == CC || Mode == BC) {
     encoderPosition = constrain(encoderPosition, 0, 10000); 
   }
 }
