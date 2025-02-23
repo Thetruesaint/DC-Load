@@ -43,11 +43,13 @@ printLCD(0, 2, F("Para SIMULACION"));
 printLCD(0, 3, F("v1.69"));
 /* 
  Mejoras:
-  - ##Descarga de baterias, automatico##
+  - ##Descarga de baterias, automatico## MileStone!
   - En TL ahora muestra la cantidad de instrucciones de la lista
   - En BC, reog. de print de Voltage Cutoff
   - Agrego simulacion de voltage con pote externo y en BC descarga de bateria
   - Nuevo diagram.json para Wokwi
+  - Ajuste de tiempo de refresh del LCD a 200ms
+  - Saco del Loop a Cursor_Position() y lo dejo solo para CC, CR, CP y BC
 
   Fixes:
   - En TL, para lista de 10, quedaba el cero en el conteo de instrucciones.
@@ -55,14 +57,16 @@ printLCD(0, 3, F("v1.69"));
   - Read_Encoder, encoderMax = 10000 (salvo TC y TL) para que no supere los 10A de ninguna manera ya que se llama por interrupción
   - En TL el periodo de la instrucción anterior no se borraba. Reingenieria de TL
   - En TL o TC, la T de Time desaparecia. No se porque, por el cambie "Time = " a " Time:"
+  - En BC, 00:00:00 cuando esta en ON algo hace que quede 0:00:00 y trae el valor de Set del Modo CR
 
   Bugs detectados:
-  - Al setear BC, 00:00:00 aparece un segundo despues
-  
+  - En BC, TC o TL 00:00:00 cuando esta en ON algo hace que quede 0:00:00. en Update LCD lo borra al adaptar a reading para mostrarlo
+   
   Trabajando:
+   - En BC, TC o TL el 0,3 desaparece en ON. En TL o TC, la T de Time desaparecia. Cambie "Time = " a " Time:" pero es Update LCD lo borra al adaptar a reading para mostrarlo
    - cambiar el flag de decimal a bool
    - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
-
+  
   En Cola:
   - Mostrar el tipo de Baterria en la plantilla de BC? o los ctffV?
   - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
@@ -70,6 +74,7 @@ printLCD(0, 3, F("v1.69"));
   - En modos TC y TS mostrar mSec decrecientes?
 
   Posibles Mejoras:
+  - Ponerle un Buzzer?
   - Modo Calibracíón incluir external voltage sense?
   - Con anuncio de limite exedido, actualizar el limite excedido y parpadearlo
   - Uso para Shift paa ir a un modo directo o a Calibración S+C?
@@ -115,15 +120,14 @@ void loop() {
   Temp_Control();
   Read_Keypad();
   Read_Load_Button();
-  Cursor_Position();
   Read_Volts_Current();
   Check_Limits();
   DAC_Control();
   switch (Mode) {
-    case CC:  Const_Current_Mode(); break;
-    case CP:  Const_Power_Mode(); break;
-    case CR:  Const_Resistance_Mode(); break;
-    case BC:  Battery_Mode(); Battery_Capacity(); break;
+    case CC:  Const_Current_Mode(); Cursor_Position(); break;
+    case CP:  Const_Power_Mode(); Cursor_Position(); break;
+    case CR:  Const_Resistance_Mode(); Cursor_Position(); break;
+    case BC:  Battery_Mode(); Battery_Capacity(); Cursor_Position(); break;
     case TC:  Transient_Cont_Mode(); Transcient_Cont_Timing(); break;
     case TL:  Transient_List_Mode(); Transient_List_Timing(); break;
     case UNKNOWN: 

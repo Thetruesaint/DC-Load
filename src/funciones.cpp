@@ -75,8 +75,7 @@ void Read_Keypad(void) {
   }
 
   if (customKey == 'E') {               // Confirmar entrada
-    x = atof(numbers);                  // Convierte la cadena de caracteres en un número
-    reading = x;                        // Asigna el valor a la variable reading  
+    reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     numbers[index] = '\0';              // Resetea la cadena de caracteres
     zl = 1;                             // Resetea la posición en el renglón
@@ -116,7 +115,7 @@ void Update_LCD(void) {
   if (temp < 10){lcd.print(" ");}
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
-  if (millis() - lastUpdateTime < 100) return;
+  if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
 
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
   
@@ -130,7 +129,7 @@ void Update_LCD(void) {
 
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));  // Indica el estado de la carga
 
-  // Imprimir los valores actualizados cada 100ms
+  // Imprimir los valores actualizados TIENE UN BUG en  BC, TC y TL revisar
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
   printLCDNumber(7, 1, voltage, 'V', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
   printLCDNumber(14, 1, power, 'W', (power < 100) ? 2 : 1); if (power < 100){lcd.print(" ");}
@@ -434,10 +433,12 @@ void Battery_Mode(void) {
   if (!modeInitialized){
     lcd.clear();
     printLCD(0, 0, F("BATTERY"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set I = "));         // Muestra el mensaje
+    printLCD(0, 2, F("Adj I-> "));         // Muestra el mensaje
     printLCD(14, 2, F("A"));               // La unidad de corriente
     printLCDNumber(9, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
-    lcd.print(F("mAh"));                   
+    lcd.print(F("mAh"));
+    CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
+    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                // Modo inicializado
   }
   lcd.noCursor();
@@ -524,8 +525,9 @@ void Battery_Type_Selec() {
 void Battery_Capacity(void) {
   
   static float SecondsLog = 0;            // Loguea el tiempo en segundos
-  static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
+  static float lastReductionVoltage = BatteryCutoffVolts + VoltageThreshold; 
   unsigned long currentMillis = millis();
+  static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
  
   if (toggle && voltage >= BatteryCutoffVolts && !timerStarted) { timer_start(); } // Inicia el timer si la carga está activa
   if (!toggle && voltage >= BatteryCutoffVolts && timerStarted) { timer_stop(); }  // Detiene el timer si la carga está inactiva
@@ -548,16 +550,26 @@ void Battery_Capacity(void) {
   setCurrent = reading * 1000; // Toma el valor del encoder y lo setea en la carga en mA
 
   // 🔽 Reducción progresiva de corriente cuando el voltaje se acerca al corte
-  if (voltage <= BatteryCutoffVolts) {
-    setCurrent = setCurrent - CRR_STEP_RDCTN;     // Reducir la corriente en 2mA
-    setCurrent = max(setCurrent, 0);              // Evita valores negativos
-    reading = setCurrent / 1000;
-    encoderPosition = reading * 1000; // Sincroniza con el encoder
+
+  if (voltage > BatteryCutoffVolts && voltage <= lastReductionVoltage) { //Fase 1 : Permite comenzar a desdender la corriente desde antes y mas rápido
+    if (voltage < lastReductionVoltage) { // Solo reducir si el voltaje baja aún más
+        setCurrent = max(setCurrent - 10 * CRR_STEP_RDCTN, MinDischargeCurrent);  
+        lastReductionVoltage = voltage;  // Actualizar el voltaje de referencia
+    }
+  } 
+  else if (voltage <= BatteryCutoffVolts) {  // Fase 2: Estabilización
+    setCurrent = max(setCurrent - CRR_STEP_RDCTN, MinDischargeCurrent);
   }
-  // Si la corriente de descarga es menor a la mínima, o el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
-  if (setCurrent <= MinDischargeCurrent || voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
+
+  // 🔽 Sincroniza el encoder con la corriente ajustada
+  reading = setCurrent / 1000;
+  encoderPosition = reading * 1000;
+
+  // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
+  if (voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
     Load_ON_status(false);
     timer_stop();
+    lastReductionVoltage = BatteryCutoffVolts + 3 * VoltageDropMargin; // Reseteo el margen
   }
 
   // Registro de datos para logging
