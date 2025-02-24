@@ -140,6 +140,73 @@ void Read_Load_Button(void) {
   }
 }
 
+//----------------------- Key input used for UserSetUp ------------------------------- 
+bool Value_Input(int col, int row, int maxDigits) {  
+  
+  static bool shiftPressed = false;
+
+  Reset_Input_Pointers();   // Resetea los valores de entrada
+  lcd.setCursor(col, row);  // Ubica el cursor en la posición especificada
+  lcd.cursor();             // Muestra el cursor para la entrada
+  lcd.blink();
+
+  while (true) { 
+      customKey = Wait_Key_Pressed(); // Leer entrada de teclado
+
+      if (customKey == 'S') { // Detectar Shift
+        shiftPressed = true;
+        continue; // Espera la próxima tecla
+      }
+
+      if (shiftPressed) {
+        shiftPressed = false;
+        Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
+        lcd.noCursor();
+        lcd.noBlink();
+        return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
+      }
+
+      if (customKey >= '0' && customKey <= '9') { 
+        if (index < maxDigits) { 
+          numbers[index++] = customKey;
+          numbers[index] = '\0'; 
+        }
+      } 
+      else if (customKey == '.' && decimalPoint != '*') { 
+        if (index < maxDigits) {
+          numbers[index++] = '.';
+          numbers[index] = '\0';
+          decimalPoint = '*'; 
+        }
+      } 
+      else if (customKey == '<' && index > 0) { // Borrar último carácter ingresado
+          index--;  
+          if (numbers[index] == '.') decimalPoint = ' '; 
+          numbers[index] = '\0';
+      } 
+      else if (customKey == 'E') {  // Confirmar entrada
+          if (index > 0) {  
+              x = atof(numbers); 
+              Reset_Input_Pointers();  
+              lcd.noCursor(); lcd.noBlink();
+              return true;  
+          }
+      }
+      else if (customKey == 'M') {   // Salir del modo si se presiona 'M'
+        lcd.noCursor(); lcd.noBlink();
+        Mode_Selection(false);  
+        return false;
+      }  
+      else if (customKey == 'C') {  
+        continue;  // Ignora 'C' ver de darle un uso
+      }
+
+      // Borra para evitar residuos en pantalla
+      printLCD_S(col, row, String("     ").substring(0, maxDigits));
+      printLCD_S(col, row, String(numbers)); 
+  }
+}
+
 //------------ Calculate and Display Actual Voltage, Current, and Power ------------
 void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
@@ -491,7 +558,9 @@ void Battery_Mode(void) {
 
 //-------------------- Battery Type Selection and Cutoff Setup ----------------------
 void Battery_Type_Selec() {
-  exitMode = false;                       // Resetea EXIT mode
+
+  static bool shiftPressed = false;
+
   lcd.noCursor();                         // Apaga el cursor para este menú
   lcd.clear();                            // Borra la pantalla del LCD
   printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
@@ -508,8 +577,8 @@ void Battery_Type_Selec() {
         case '3': BatteryCutoffVolts = LiPoCutOffVoltage; BatteryType = "Li-Po"; break;
         case '4': BatteryCutoffVolts = LionCutOffVoltage; BatteryType = "Li-Ion"; break;
         case '5': BatteryType = "Custom"; break;
-        //case 'C': Config_Limits(); Battery_Type_Selec(); break; Fo funciona bien, se deshabilita por ahora
-        case 'M': case '<': Mode_Selection(); return; // Salida del Modo y salta al proximo, ver como queda el functionIndex
+        case 'S': shiftPressed = true; continue; // solo marca el flag y no sale.
+        case 'M': case '<': Mode_Selection(shiftPressed); return; // Salida del Modo y salta al proximo, ver como queda el functionIndex
         default: continue;  // Evita salir si la tecla es inválida
     }
     break;  //  Sale del bucle si se ingresó una tecla válida
@@ -525,8 +594,8 @@ void Battery_Type_Selec() {
       z = 7; r = 3;
       printLCD(z - 1, r, F(">"));
       printLCD(z, r, F("     "));         // Borra el espacio si hubo un valor fuera de rango
-      if (!Value_Input(z, r, 5)) return;  // Sale automáticamente si el usuario presiona 'M'
-    } while (x > 25 || x < 0.1);          // Solo chequea si `x` está en rango
+      if (!Value_Input(z, r)) return;  // Sale si hubo selección de nuevo modo o reset de modo
+    } while (x > 25 || x < 0.1);          // Mintras este fuera de rango, repite
       BatteryCutoffVolts = x;
   } 
 
@@ -539,10 +608,10 @@ void Battery_Type_Selec() {
     do {
         z = 9; r = 2; //y = 1;
         printLCD(z - 1, r, F(">"));
-        printLCD(z, r, F(" "));             // Borra el espacio si hubo un valor fuera de rango
-        if (!Value_Input(z, r, 1)) return;  // Sale automáticamente si el usuario presiona 'M'
-    } while (x < 1 || x > 6);               // Asegura que solo se ingrese un número entre 1 y 6
-    BatteryCutoffVolts *= x;                // Multiplica por la cantidad de celdas
+        printLCD(z, r, F(" "));            // Borra el espacio si hubo un valor fuera de rango
+        if (!Value_Input(z, r, 1)) return; // Sale si hubo selección de nuevo modo o reset de modo
+    } while (x < 1 || x > 6);              // Asegura que solo se ingrese un número entre 1 y 6
+    BatteryCutoffVolts *= x;               // Multiplica por la cantidad de celdas
   }
 
   timer_reset();                  // Resetea el timer
@@ -618,26 +687,26 @@ void Transient_Cont_Mode(void) {
 
 //--------------------------------- Transient Mode ----------------------------------
 void Transient_Cont_Setup(void) {
-  exitMode = false;
   lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
 
   printLCD(3, 0, F("TRANSIENT CONT."));
   printLCD(0, 1, F("Low I (A):"));
   z = 13; r = 1;                      // Setea las posiciones de la pantalla del LCD
-  if (!Value_Input(z, r, 5)) return;                // Obtiene el valor ingresado por el usuario o sale del modo
+  if (!Value_Input(z, r)) return;                // Obtiene el valor ingresado por el usuario o sale del modo
   LowCurrent = min(x, CurrentCutOff);         // Limita la corriente baja al valor de corte de corriente
   printLCDNumber(z, r, LowCurrent, 'A', 3);  // Muestra el valor de la corriente baja
 
   printLCD(0, 2, F("High I (A):"));
   z = 13; r = 2; 
-  if (!Value_Input(z, r, 5)) return;                // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r)) return;           // Limita la corriente baja al valor de corte de corriente
   HighCurrent = min(x, CurrentCutOff);        // Limita la corriente alta al valor de corte de corriente
-  printLCDNumber(z, r, HighCurrent, 'A', 3); // Muestra el valor de la corriente alta con tres decimales
+  printLCDNumber(z, r, HighCurrent, 'A', 3);  // Muestra el valor de la corriente alta con tres decimales
 
   printLCD(0, 3, F("Delay(mSec):"));
   z = 13; r = 3;                              // Setea las posiciones de la pantalla del LCD
-  if (!Value_Input(z, r, 5)) return;                // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r)) return;          // Limita la corriente baja al valor de corte de corriente
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
+
   lcd.clear();                                // Borra la pantalla del LCD
   Load_ON_status(false);                      // Apaga la carga
   setCurrent = 0;                             // por si quedo seteada del modo anterior
@@ -699,7 +768,6 @@ void Transient_List_Mode(void) {
 
 //------------------------------ Transcient List Setup -------------------------------
 void Transient_List_Setup() {
-  exitMode = false;
   lcd.noCursor();
   lcd.clear(); // Apaga el cursor y borra la pantalla
   // Pregunta por cuantos saltos se desean cargar
@@ -723,13 +791,13 @@ void Transient_List_Setup() {
     printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
 
     z = 13; r = 2;
-    if (!Value_Input(z, r, 5)) return;  // Permitir 5 digitos, ej.: 1.234 o salir del Modo
+    if (!Value_Input(z, r)) return;  // Permitir 5 digitos, ej.: 1.234 o salir del Modo
     x = min(x, CurrentCutOff);          // Limita a CutOff
     printLCDNumber(z, r, x, 'A', 3);    // Muestra el valor de la corriente
     transientList[i][0] = x * 1000;     // Lo guarda en la lista en mA
 
     z = 13; r = 3;                      // Ubica la toma del valor de mSec
-    if (!Value_Input(z, r, 5)) return;  // Permitir 5 digitos, ej.: 99999 o salir del Modo
+    if (!Value_Input(z, r)) return;  // Permitir 5 digitos, ej.: 99999 o salir del Modo
     transientList[i][1] = x;            // Guarda el valor del tiempo en ms
     lcd.clear();                        // Borra la pantalla, para configurar la siguiente instrucción
   }
@@ -825,62 +893,6 @@ void Show_Limits(void) {
   printLCD(0, 3, F("Temp.:"));
   printLCDNumber(9, 3, tempCutOff, ' ', 0);
   lcd.print(char(0xDF)); lcd.print("C");
-}
-
-//----------------------- Key input used for UserSetUp ------------------------------- 
-bool Value_Input(int col, int row, int maxDigits) {  
-  // Resetea los valores de entrada
-  Reset_Input_Pointers();  
-
-  lcd.setCursor(col, row);  // Ubica el cursor en la posición especificada
-  lcd.cursor();             // Muestra el cursor para la entrada
-  lcd.blink();
-
-  while (true) { 
-      customKey = Wait_Key_Pressed(); // Leer entrada de teclado
-
-      if (customKey >= '0' && customKey <= '9') { 
-        if (index < maxDigits) { 
-          numbers[index++] = customKey;
-          numbers[index] = '\0'; 
-        }
-      } 
-      else if (customKey == '.' && decimalPoint != '*') { 
-        if (index < maxDigits) {
-          numbers[index++] = '.';
-          numbers[index] = '\0';
-          decimalPoint = '*'; 
-        }
-      } 
-      else if (customKey == '<' && index > 0) { // Borrar último carácter ingresado
-          index--;  
-          if (numbers[index] == '.') decimalPoint = ' '; 
-          numbers[index] = '\0';
-      } 
-      else if (customKey == 'E') {  // Confirmar entrada
-          if (index > 0) {  
-              x = atof(numbers); 
-              Reset_Input_Pointers();  
-              lcd.noCursor(); lcd.noBlink();
-              return true;  
-          }
-      }
-      else if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-        exitMode = true;
-        lcd.noCursor(); lcd.noBlink();
-        Mode_Selection();  
-        return false;  
-      }  
-      else if (customKey == 'C' || customKey == 'S') {  
-        continue;  // Ignora 'C' y 'S'
-      }
-
-      // Borra la línea antes de reescribir para evitar residuos en pantalla
-      printLCD_S(col, row, String("     ").substring(0, maxDigits));
-
-      // Escribe la nueva entrada correctamente
-      printLCD_S(col, row, String(numbers)); 
-  }
 }
 
 //-------------------------- Funciones para el Timer (RTC) ---------------------------

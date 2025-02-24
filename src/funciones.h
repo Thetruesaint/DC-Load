@@ -22,7 +22,7 @@ void Battery_Capacity(void);
 void Battery_Mode(void);
 void Battery_Type_Selec(void);
 void Config_Limits(void);
-bool Value_Input(int col, int row, int maxDigits);
+bool Value_Input(int col, int row, int maxDigits = 5);
 void timer_start();
 void timer_stop();
 void timer_reset();

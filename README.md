@@ -4,7 +4,10 @@
     - En BC reemplace W por voltageCuttOff, es mas útil y elimino el pantallazo de Cuttoff Voltage
     - En BC dejo min y seg. Agrego tipo de bateria
     - Optimizo Temp Control y el disp. de TEmperatura, Cbio. a "Set X>", realineando el input de I, W y R.
-    - Uso de Shift: + <, resetea el modo, +1 a 6 salto directo al modo.
+    - Shift +1 a 6 salto directo al modo. Shift + < o tecla no valida, resetea el modo. 
+    - En menus de Setup o Config, Value_Input, shift + tecla no valida, reinicia el mismo modo también. 
+    - Value_Imput ahora es default con 5 digitos.
+    - elimino exitMode global, ya no se necesita.
     - En TC y TL: usar instrucciones del 0 al 9, mas simple
 
   Fixes:
@@ -13,10 +16,9 @@
     - Calculo mAh era erroneo, asumia que la corriente era cte. Pase a hacer una integración con la I en curso
  
   Bugs:
-    - No detectados
+    - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
        
   Trabajando:
-    - En menus de Setup de modos, poder salir con shift, ver función Value_Input.
     - Optim: Limitar a reading/encoder por modo por variable global en cada set mode.
   
   En Cola:

@@ -34,7 +34,6 @@ ModeType Mode = CC;                     // Modo de operación, CC Default
 const char* ModeNames[] = { "CC", "CP", "CR", "BC", "TC", "TL", "NA" };
 bool modeInitialized = false;           // Para reimplirmir la plantilla del modo y/o inicializar valores
 bool modeConfigured = false;            // Para BC, TC o TL, indica que hay que seterarlos
-bool exitMode = false;                  // Flag de salida temprana de menues de configuración
 int functionIndex = 0;                  // Para seleccionar los Modos.
 
 //--------------- Modos CC, CR y CP --------------------------------------

@@ -56,7 +56,6 @@ extern ModeType Mode;                      // Modo de operación, CC Default
 extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
 extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
-extern bool exitMode;                      // Flag de salida temprana de menues de configuración
 extern int functionIndex;                  // Para seleccionar los Modos.
 
 //--------------- Modos CC, CR y CP --------------------------------------
