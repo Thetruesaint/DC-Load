@@ -1,21 +1,19 @@
-## v1.70(beta) 23/02/2025
+## v1.70 23/02/2025
 
  Mejoras:
-  - En BC reemplazo los W por voltageCuttOff, es mas útil.
-  - En BC dejo min y seg. Agrego tipo de lipo y elimino el pantallazo de Cuttoff Voltage
-  - Optim.: Temp Control, dis 
+  - En BC reemplace W por voltageCuttOff, es mas útil y elimino el pantallazo de Cuttoff Voltage
+  - En BC dejo min y seg. Agrego tipo de bateria
+  - Optimizo Temp Control y el disp. de TEmperatura, Cbio. a "Set X>", realineando el input de I, W y R.
 
   Fixes:
   - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
-  - La formula de los mAh asumia que la corriente de descarga era cte. Pase a hacer una integración
+  - Calculo mAh era erroneo, asumia que la corriente era cte. Pase a hacer una integración con la I en curso
  
   Bugs detectados:
+  - Ningunos por el momento
        
   Trabajando:
-  - Acorte "Set I = " a "Set I>" que esta en todos los modos y ocupa mucho espacio
-  - Sacar decimales en CR y CP? ver que presición quiero tener.
-  - Optim: Funcion reset index sumas encoder y reading.
-  - Optim: Limitan a reading/encoder por modo por variable global en cada set mode.
+  - Optim: Limitar a reading/encoder por modo por variable global en cada set mode?
   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
   - Probe descarga de BC y medir mAh: Descargo 1126mAh cargo luego 1180mAh 
   
