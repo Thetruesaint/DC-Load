@@ -38,24 +38,33 @@ void Read_Encoder()
 void Read_Keypad(void) {
 
   static int zl = 1;
+  static bool shiftPressed = false; // Bandera para detectar Shift
 
   customKey = customKeypad.getKey();              // Escanea el teclado   
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
 
-  switch (customKey) {                            // Si hay una tecla presionada, la procesa
+  if (customKey == 'S') {
+    shiftPressed = true;
+    return; // Espera la próxima tecla
+  }
+
+  if (shiftPressed) {
+    shiftPressed = false;
+    Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
+    return;
+  }
+
+  switch (customKey) {                            
     case 'M':                                     // Cambio de Modo                    
-      Load_ON_status(false);                      // Apaga la carga
       zl = 1;                                     // Resetea la posición en el renglón
-      Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
+      //Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
       Mode_Selection();
         break;                                      
-      case 'C':                                   // Configuración de limites
-        if (Mode != TC || Mode !=TL){             // Por ahora solo durante modos CC, CP y CR.
-          Config_Limits(); }
-        break;                                      
-      case 'S':  // Uso futuro para Shift paa ir a un modo directo o a Calibración S+C?
-        break;
+    case 'C':                                   // Configuración de limites
+     if (Mode != TC || Mode !=TL){             // Por ahora solo durante modos CC, CP y CR.
+      Config_Limits(); }
+      break;                                      
   }
 
   // Solo permite entrada de valores en los modos CC, CP y CR
@@ -77,7 +86,6 @@ void Read_Keypad(void) {
   if (customKey == 'E') {               // Confirmar entrada
     reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
-    numbers[index] = '\0';              // Resetea la cadena de caracteres
     zl = 1;                             // Resetea la posición en el renglón
     printLCD(1, 3, F("     "));         // Borra el renglón del LCD
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
@@ -90,6 +98,36 @@ void Read_Keypad(void) {
     numbers[index] = '\0';  
     zl--;  
     printLCD(zl, 3, F(" ")); // Borra visualmente en LCD  
+  }
+}
+
+// ------------------------------ Mode Selection --------------------------------------
+void Mode_Selection(bool shiftPressed, char key) {
+  Load_ON_status(false);      // Apaga la carga siempre al cambiar o resetear modo
+  Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
+  modeInitialized = false;    // Fuerza reinicialización del modo
+
+  if (!shiftPressed) {        // Cambio cíclico con tecla 'M'
+    functionIndex = (functionIndex + 1) % 6;
+    switch (functionIndex) {
+      case 0: Mode = CC; break;
+      case 1: Mode = CP; break;
+      case 2: Mode = CR; break;
+      case 3: Mode = BC; modeConfigured = false; break; // BC necesita reconfiguración
+      case 4: Mode = TC; modeConfigured = false; break; // TC necesita reconfiguración
+      case 5: Mode = TL; modeConfigured = false; break; // TL necesita reconfiguración
+    }
+  } else {                    // Shift está activo
+    switch (key) {
+      case '1': functionIndex = 0; Mode = CC; break;
+      case '2': functionIndex = 1; Mode = CP; break;
+      case '3': functionIndex = 2; Mode = CR; break;
+      case '4': functionIndex = 3; Mode = BC; modeConfigured = false; break;
+      case '5': functionIndex = 4; Mode = TC; modeConfigured = false; break;
+      case '6': functionIndex = 5; Mode = TL; modeConfigured = false; break;
+      case '<': modeConfigured = false; break; // Solo resetea el modo actual
+      default: return; // Ignora otras teclas con Shift
+    }
   }
 }
 
@@ -352,6 +390,7 @@ void DAC_Control(void) {
     #ifndef WOKWI_SIMULATION
     dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
     #endif
+    setCurrent = 0;           // ##IMPORTANTE#  Que el modo se encargue de resetearlo si lo necesita.
   }
 }
 
@@ -636,13 +675,11 @@ void Transient_List_Mode(void) {
   static unsigned int last_transientPeriod = -1;
 
   if(modeConfigured) {
-    printLCD_S(13, 2, String(current_instruction + 1));     // Muestra la instrucción en curso
-    if ((current_instruction + 1) < 10){lcd.print(F(" "));} // si quedo el cero del 10, lo borra
-    // ✅ Actualiza `transientPeriod` solo si cambió, evitando flickering innecesario
-    if (transientPeriod != last_transientPeriod) {
-      printLCD(6, 3, F("     "));  // Borra los caracteres anteriores antes de imprimir
-      printLCD_S(6, 3, String(transientPeriod)); // Imprime nuevo valor con espacio extra
-      last_transientPeriod = transientPeriod;  // Actualiza el último valor mostrado
+    printLCD_S(13, 2, String(current_instruction));     // Muestra la instrucción en curso de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
+        if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
+      printLCD(6, 3, F("     "));                       // Borra anteriores
+      printLCD_S(6, 3, String(transientPeriod));        // Nuevo valor con espacio extra
+      last_transientPeriod = transientPeriod;
     }
   }
 
@@ -652,8 +689,8 @@ void Transient_List_Mode(void) {
     lcd.noCursor();
     printLCD(0, 0, F("TL LOAD"));         // Muestra el titulo del modo
     printLCD(0, 2, F("Instruccion: "));   // Muestra el mensaje
-    printLCD(15, 2, F("/"));   // Muestra el mensaje
-    printLCD_S(16, 2, String(total_instructions + 1));
+    printLCD(14, 2, F("/"));   // Muestra el mensaje
+    printLCD_S(15, 2, String(total_instructions));
     printLCD(0, 3, F("Time: "));         // Muestra el mensaje
     printLCD(11, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
@@ -681,7 +718,7 @@ void Transient_List_Setup() {
   lcd.clear();                // Borra la pantalla del LCD
   for (int i = 0; i <= total_instructions; i++) {     // Bucle para obtener los valores de la lista
     printLCD(3, 0, F("TRANSIENT LIST"));              // Mantengo el titulo para que se vea bien el modo que se está configurando
-    printLCD_S(0, 1, "Instruccion " + String(i + 1)); // Muestra la instrucción a configurar
+    printLCD_S(0, 1, "Instruccion " + String(i));     // Muestra la instrucción a configurar
     printLCD(0, 2, F("Current (A):"));                // Pide el valor de corriente en Amperes
     printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
 
@@ -718,7 +755,6 @@ void Transient_List_Timing(void) {
     current_time = micros();
 
   if (last_time == 0){
-    //setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
     setCurrent = transientList[current_instruction][0];       // Ya esta en mA
     transientPeriod = transientList[current_instruction][1];
     last_time = current_time; 
@@ -727,7 +763,6 @@ void Transient_List_Timing(void) {
   if ((current_time - last_time) >= transientPeriod * 1000) {
     current_instruction++;
     if (current_instruction > total_instructions) { current_instruction = 0; }
-    //setCurrent = transientList[current_instruction][0] * 1000; // La convierte a mA
     setCurrent = transientList[current_instruction][0];       // Ya esta en mA
     transientPeriod = transientList[current_instruction][1];
     last_time = current_time;
@@ -954,20 +989,4 @@ void Reset_Input_Pointers (void){
   index = 0;
   numbers[index] = '\0';
   decimalPoint = ' ';
-}
-
-// ------------------------------ Mode Selection --------------------------------------
-void Mode_Selection(void){
-
-  functionIndex = (functionIndex + 1) % 6;    // Incrementa el índice de función 
-  modeInitialized = false;                    // Indica a los Modos que es la 1era vez que se los llama y deben Inicializarse.
-  modeConfigured = false;                     // El modo se debe configurar si corresponde
-  switch (functionIndex) {                    // Cambia el modo de operación
-    case 0: Mode = CC; break;                 // Selecciona Const. current Mode
-    case 1: Mode = CP; break;                 // Selecciona Const. Power Mode
-    case 2: Mode = CR; break;                 // Selecciona Const. Resistance Mode
-    case 3: Mode = BC; break;
-    case 4: Mode = TC; break;
-    case 5: Mode = TL; break;
-  }
 }

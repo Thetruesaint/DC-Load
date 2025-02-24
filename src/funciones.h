@@ -45,6 +45,6 @@ void Check_Limits();
 char Wait_Key_Pressed();
 void Temp_Control();
 void Reset_Input_Pointers();
-void Mode_Selection(void);
+void Mode_Selection(bool shiftPressed = false, char key = '\0');
 
 #endif
