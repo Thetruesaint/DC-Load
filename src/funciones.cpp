@@ -137,7 +137,7 @@ void Update_LCD(void) {
   }
 
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
-    lcd.setCursor(8, 2);
+    lcd.setCursor(6, 2);
     if ((Mode == CP || Mode == CR) && reading < 100) lcd.print(" ");
     if (reading < 10) lcd.print(" ");
     lcd.print((Mode == CP || Mode == CR) ? String(reading, 2) : String(reading, 3));
@@ -228,7 +228,7 @@ void Check_Limits() {
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
   
-  int unitPosition = (Mode == CP || Mode == CR) ? 10 : 9; // Definir la posición de la unidad en base al modo
+  int unitPosition = (Mode == CP || Mode == CR) ? 8 : 7; // Definir la posición de la unidad en base al modo
   if (digitalRead(ENC_BTN) == LOW) { delay(200); CuPo++;} // Corre el cursor un lugar a la derecha
   if (CuPo == unitPosition + 1) { CuPo++;}          // Salta el punto decimal
   if (CuPo > 13) {CuPo = unitPosition;}             // vuelve a las unidades
@@ -361,10 +361,10 @@ void Const_Current_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set I> "));         // Muestra el mensaje
-    printLCD(14, 2, F("A"));               // Muestra el mensaje
+    printLCD(0, 2, F("Set I>"));           // Muestra el mensaje
+    printLCD(12, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
+    CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                // Modo inicializado
   }
@@ -381,10 +381,10 @@ void Const_Power_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set W> "));         // Muestra el mensaje
-    printLCD(14, 2, F("W"));               // Muestra el mensaje
+    printLCD(0, 2, F("Set W>"));           // Muestra el mensaje
+    printLCD(12, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 10;                             // Pone el cursor en la posición de las unidades de Potecia
+    CuPo = 8;                             // Pone el cursor en la posición de las unidades de Potecia
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                // Modo inicializado
   }
@@ -400,10 +400,10 @@ void Const_Resistance_Mode(void) {
  if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
-    printLCD(0, 2, F("Set R> "));          // Muestra el mensaje
-    printLCD_S(14, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
+    printLCD(0, 2, F("Set R>"));            // Muestra el mensaje
+    printLCD_S(12, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-    CuPo = 10;                              // Pone el cursor en la posición de las unidades de Resistencia
+    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Resistencia
     reading = 1.0;                          // Valor por default, 1o hm.
     encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                 // Modo inicializado
@@ -431,18 +431,18 @@ void Battery_Mode(void) {
     printLCD(0, 0, F("BC LOAD"));          // Muestra el titulo del modo
     lcd.setCursor(13,1);lcd.print(F(">")); 
     printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Muestro el Cutoff Voltage
-    printLCD(0, 2, F("Adj I> "));         // Muestra el mensaje
-    printLCD(14, 2, F("A"));               // La unidad de corriente
+    printLCD(0, 2, F("Adj I>"));           // Muestra el mensaje
+    printLCD(12, 2, F("A"));               // La unidad de corriente
     printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
-    CuPo = 9;                              // Pone el cursor en la posición de las unidades de Amperes
+    CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                // Modo inicializado
   }
   lcd.noCursor();
   if (BatteryLife > BatteryLifePrevious) { // Actualizar LCD solo si cambia el valor
-    printLCDNumber(9, 3, BatteryLife, ' ', 0);
+    printLCDNumber(6, 3, BatteryLife, ' ', 0);
     lcd.print(F("mAh"));
     BatteryLifePrevious = BatteryLife;
   }

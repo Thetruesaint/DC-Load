@@ -3,7 +3,7 @@
  Mejoras:
   - En BC reemplazo los W por voltageCuttOff, es mas útil.
   - En BC dejo min y seg. Agrego tipo de lipo y elimino el pantallazo de Cuttoff Voltage
-  - Optim.: Temp Control
+  - Optim.: Temp Control, dis 
 
   Fixes:
   - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
@@ -12,15 +12,15 @@
   Bugs detectados:
        
   Trabajando:
-  - Optim.: Update solo A,V,W  resto el modo. 
+  - Acorte "Set I = " a "Set I>" que esta en todos los modos y ocupa mucho espacio
+  - Sacar decimales en CR y CP? ver que presición quiero tener.
   - Optim: Funcion reset index sumas encoder y reading.
   - Optim: Limitan a reading/encoder por modo por variable global en cada set mode.
   - Shift + Modo, resetea el modo? o shift + < va para atras en la config?
   - Probe descarga de BC y medir mAh: Descargo 1126mAh cargo luego 1180mAh 
   
   En Cola:
-  - Ver de Cambiar "Set I =" que esta en todos los modos y ocupa mucho espacio
-  - Sacar decimales en CR y CP? ver que presición quiero tener.
+
   - En modos TC y TS mostrar mSec decrecientes?
 
   Posibles Mejoras:
