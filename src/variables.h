@@ -20,14 +20,14 @@ extern RTC_DS1307 rtc;
 
 //---------------- I/O Pins ----------------------------------------------
 
-const byte TEMP_SNSR = A0;  // Sensado de Temperatura
-const byte FAN_CTRL = A2;   // Endendido de Fans
-const byte ENC_A = 3;       // Encoder Pin A
-const byte ENC_B = 2;       // Encoder Pin B
-const byte ENC_BTN = 4;     // Encoder Boton
-const byte CRR_SNSR = 1;    // Input A1 from ADC
-const byte VLTG_SNSR = 3;   // Input A3 from ADC
-const byte LOADONOFF = 15;  // Input A1 used as a digital pin to set Load ON/OFF
+const uint8_t TEMP_SNSR = A0;  // Sensado de Temperatura
+const uint8_t FAN_CTRL = A2;   // Endendido de Fans
+const uint8_t ENC_A = 3;       // Encoder Pin A
+const uint8_t ENC_B = 2;       // Encoder Pin B
+const uint8_t ENC_BTN = 4;     // Encoder Boton
+const uint8_t CRR_SNSR = 1;    // Input A1 from ADC
+const uint8_t VLTG_SNSR = 3;   // Input A3 from ADC
+const uint8_t LOADONOFF = 15;  // Input A1 used as a digital pin to set Load ON/OFF
 
 //--------------- Variables Encoder --------------------------------------
 
@@ -67,11 +67,11 @@ extern float setResistance;                // Variable para setear la resistenci
 
 //--------------- Variables para Keypad ----------------------------------
 
-const byte ROWS = 4; // Cuatro filas
-const byte COLS = 4; // Cuatro columnas
+const uint8_t ROWS = 4; // Cuatro filas
+const uint8_t COLS = 4; // Cuatro columnas
 
-extern byte rowPins[ROWS];          // Pineado de las filas del teclado
-extern byte colPins[COLS];          // Pineado de las columnas del teclado
+extern uint8_t rowPins[ROWS];          // Pineado de las filas del teclado
+extern uint8_t colPins[COLS];          // Pineado de las columnas del teclado
 extern char hexaKeys[ROWS][COLS];   // Distribución de Teclas
 extern Keypad customKeypad;         // Mapeo de teclas
 extern char customKey;              // Auxiliar para tomar la tecla presionada

@@ -52,8 +52,8 @@ char hexaKeys[ROWS][COLS] = {
     {'7', '8', '9', 'S'},
     {'<', '0', '.', 'E'}};
 
-byte rowPins[ROWS] = {5, 6, 7, 8};    // Pineado de las filas del teclado
-byte colPins[COLS] = {9, 10, 11, 12}; // Pineado de las columnas del teclado
+uint8_t rowPins[ROWS] = {5, 6, 7, 8};    // Pineado de las filas del teclado
+uint8_t colPins[COLS] = {9, 10, 11, 12}; // Pineado de las columnas del teclado
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 char customKey;
 char decimalPoint; // Variable para el punto decimal en la entrada de teclado
