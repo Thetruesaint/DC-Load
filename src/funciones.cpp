@@ -239,15 +239,20 @@ void Update_LCD(void) {
   }
 
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
+
     lcd.setCursor(6, 2);
-    if ((Mode == CP || Mode == CR) && reading < 100) lcd.print(" ");
-    if (reading < 10) lcd.print(" ");
-    lcd.print((Mode == CP || Mode == CR) ? String(reading, 2) : String(reading, 3));
-    
+    if (Mode == CC || Mode == BC){
+      if (reading < 100) lcd.print(" ");
+      if (reading < 10) lcd.print(" ");
+      lcd.print(reading, 3);
+    } else {
+      if (reading < 100) lcd.print("0");
+      if (reading < 10) lcd.print("0");
+      lcd.print(reading, 1);
+    }
     lcd.setCursor(CuPo, 2); // Cursor en la unidad a modificar
     lcd.cursor();
   }
-
 }
 
 //---------------------------- Temperature Control ----------------------------------
@@ -320,18 +325,24 @@ void Check_Limits() {
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
 
-  int unitPosition = (Mode == CP || Mode == CR) ? 8 : 7;
-  if (digitalRead(ENC_BTN) == LOW) { delay(200); CuPo++;} // Corre el cursor un lugar a la derecha
-  if (CuPo == unitPosition + 1) { CuPo++;}          // Salta el punto decimal
-  if (CuPo > 11) {CuPo = unitPosition;}             // vuelve a las unidades
-  if (CuPo == unitPosition)       factor = 1000;    // Unidades
-  else if (CuPo == unitPosition + 2) factor = 100;  // Decenas
-  else if (CuPo == unitPosition + 3) factor = 10;   // Centenas
-  else if (CuPo == unitPosition + 4) factor = 1;    // milesimas
+  int unitPosition = 8;
 
+  if (digitalRead(ENC_BTN) == LOW) { delay(200); CuPo++;} // Corre el cursor un lugar a la derecha
+
+  if (CuPo == unitPosition + 1) { CuPo++;}          // Salta el punto decimal
+  if ((Mode == CC || Mode == BC) && CuPo > 12)  CuPo = unitPosition;      // vuelve a las unidades
+  if ((Mode == CP || Mode == CR) && CuPo > 10 ) CuPo = unitPosition - 2;  // vuelve a las centenas
+  if (CuPo == unitPosition)       factor = 1000;    // Unidades
+  if (CuPo == unitPosition + 2)   factor = 100;     // Decimas
+  if (Mode == CP || Mode == CR){                    // Solo para CP y CR:
+    if (CuPo == unitPosition - 1) factor = 10000;   // Decenas
+    if (CuPo == unitPosition - 2) factor = 100000;} // Centemas  
+  if (Mode == CC || Mode == BC){                    // Solo para CC y BC:
+    if (CuPo == unitPosition + 3) factor = 10;      // Centenas
+    if (CuPo == unitPosition + 4) factor = 1;}      // Milesimas
+  
   lcd.setCursor(CuPo, 2);
   lcd.cursor();
-
 }
 
 //--------------------------- Read Voltage and Current ------------------------------
@@ -459,7 +470,7 @@ void Const_Current_Mode(void) {
     printLCD(0, 2, F("Set I>"));           // Muestra el mensaje
     printLCD(12, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
+    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
     maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
@@ -538,7 +549,7 @@ void Battery_Mode(void) {
     printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
-    CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
+    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
     maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
