@@ -83,7 +83,7 @@ void Read_Keypad(void) {
     decimalPoint = '*';                            // Marca que se ingresó un punto decimal
   }
 
-  if (customKey == 'E') {               // Confirmar entrada
+  if (customKey == 'E' && index != 0) { // Confirmar entrada solo si hay un valor cargado.
     reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     zl = 1;                             // Resetea la posición en el renglón
@@ -294,11 +294,11 @@ void Temp_Control(void) {
 void Check_Limits() {
   char message[20] = "";
   float power = voltage * current;
-  float maxpwrdis = constrain(140 - 0.80 * temp, 0, 120);
-  float actpwrdis = max(0, power / 4);
+  float maxpwrdis = constrain(140 - 0.80 * temp, 0, 120);     // Limite por MOSFET IRF540
+  float actpwrdis = max(0, power / 4);                        // Por los 4 MOSFET IRF540
 
   if (voltage > MAX_VOLTAGE) strcpy(message, "Max Voltage!      ");
-  else if (current > CurrentCutOff * 1.05) strcpy(message, "Current Cut Off!  ");
+  else if (current > CurrentCutOff * 1.01) strcpy(message, "Current Cut Off!  "); // Hasta 1% adicional se permite (Toleración de Calibración máxima)
   else if (power > PowerCutOff) strcpy(message, "Power Cut Off!    ");
   else if (temp >= tempCutOff) strcpy(message, "Over Temperature! ");
   else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Disipation");
@@ -509,21 +509,18 @@ void Const_Resistance_Mode(void) {
     printLCD(0, 2, F("Set R>"));            // Muestra el mensaje
     printLCD_S(12, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Resistencia
-    reading = 1.0;                          // Valor por default, 1o hm.
+    CuPo = 8;                               // Pone el cursor en la posición de las unidades de Resistencia
+    reading = MAX_RESISTOR;                 // Valor por default, 999 Ω
     encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
     modeInitialized = true;                 // Modo inicializado
   }
-  // Solo actualiza `reading` si el encoder cambió
-  float newReading = encoderPosition / 1000.0;  // Convierte a ohms
-
-  if (newReading != reading) {  
-    reading = max(0.1, newReading);         // Evita resistencia 0, mínimo 0.1Ω
-    encoderPosition = reading * 1000;       // Solo actualiza el encoder si el valor cambió
-  }
-
+ 
+  reading = encoderPosition / 1000.0;     // Convierte a ohms (Ω) el valor del encoder
+  reading = max(0.1, reading);            // Evita resistencia 0, mínimo 0.1Ω
+  encoderPosition = reading * 1000;       // pasa el valor a encoder si lo limitó
+  
   if (!toggle) return;
-  setResistance =  reading;                 // en que unidad de ohms sería?     
+  setResistance =  reading;                       // en ohms (Ω)
   setCurrent = (voltage / setResistance) * 1000;  // convirte a mA
 }
 
@@ -848,15 +845,15 @@ void Config_Limits(void)
   printLCD(4, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
   z = 12; r = 1;
-  if (!Value_Input(z, r, 4)) return;              // Permitir 4 digitos, ej.: 1.23 o 123 salir del Modo
-  CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1A y 10.0A
-  printLCDNumber(z, r, CurrentCutOff,' ');
+  if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 9.999 o 10.00 salir del Modo
+  CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1.000A y 10.00A
+  printLCDNumber(z, r, CurrentCutOff,' ',3);
   
   printLCD(0, 2, F("Power(W):"));
   r = 2; z = 12;
-  if (!Value_Input(z, r, 3)) return;              // Permitir 3 digitos, ej.: 1.2 o 100 salir del Modo
-  PowerCutOff = constrain(x, 1, MAX_POWER);       // Límite entre 1W y 300.0W
-  printLCDNumber(z, r, PowerCutOff, ' ',0);
+  if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 50.00 o 300.0 salir del Modo
+  PowerCutOff = constrain(x, 1, MAX_POWER);       // Límite entre 1.000W y 300.0W
+  printLCDNumber(z, r, PowerCutOff, ' ');
  
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
@@ -886,12 +883,12 @@ void Show_Limits(void) {
   // Los muestra
   printLCD(1, 0, F("Limits")); // Muestra el titulo
   printLCD(0, 1, F("Current:"));
-  printLCDNumber(9, 1, CurrentCutOff, 'A');
+  printLCDNumber(9, 1, CurrentCutOff, 'A', 3);   // 3 decimales, ej.: 1.234, 9.999 o 10.00
 
   printLCD(0, 2, F("Power:"));
-  printLCDNumber(9, 2, PowerCutOff, 'W', 0);
+  printLCDNumber(9, 2, PowerCutOff, 'W', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
   printLCD(0, 3, F("Temp.:"));
-  printLCDNumber(9, 3, tempCutOff, ' ', 0);
+  printLCDNumber(9, 3, tempCutOff, ' ', 0);     // 0 decimales, ej.: 10 a 99
   lcd.print(char(0xDF)); lcd.print("C");
 }
 

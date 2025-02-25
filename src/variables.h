@@ -53,9 +53,9 @@ extern float voltage;                      // Voltage de Carga
 extern int CuPo;                           // Posicion inicial del cursor
 extern bool toggle;                        // Conmuta la carga On/Off
 extern float reading;                      // Para tomar valores de encoder
-extern int CurrentCutOff;                  // Corriente maxima de corte seteado o cargado de la EEPROM
-extern int PowerCutOff;                    // Potencia de corte seteado o cargado de la EEPROM
-extern int tempCutOff;                     // Temperatura máxima de corte seteado o cargado de la EEPROM
+extern float CurrentCutOff;                // Corriente máxima de corte seteado o cargado de la EEPROM
+extern float PowerCutOff;                  // Potencia de corte seteado o cargado de la EEPROM
+extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM
 extern float ResistorCutOff;                      // Resistencia en Ω
 enum ModeType { CC, CP, CR, BC, TC, TL, UNKNOWN };
 extern ModeType Mode;                      // Modo de operación, CC Default
@@ -127,16 +127,10 @@ extern unsigned long transientList[10][2];  // Array para almacenar los datos de
 extern int total_instructions;              // Utilizado en el modo de Transient List Mode
 extern int current_instruction;             // Utilizado en el modo de Transient List Mode
 
-//------------------------------ Posiciones reservadas en la EEMPROM --------------------------------------
-const int ADD_CURRENT_CUT_OFF = 0x00;
-const int ADD_POWER_CUT_OFF = 0x20;
-const int ADD_TEMP_CUT_OFF = 0x40;
-
-/*
 //--- Posiciones reservadas en la EEMPROM cada 4 bytes para valores float ----
 const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)
 const int ADD_POWER_CUT_OFF = 4;        // 4 bytes (0-3)
 const int ADD_TEMP_CUT_OFF = 8;         // 4 bytes (8-11)
-*/
+
 
 #endif

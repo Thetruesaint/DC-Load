@@ -1,4 +1,4 @@
-## v1.70 24/02/2025
+## v1.70 25/02/2025
 
  Mejoras:
     - En BC reemplace W por voltageCuttOff, es mas útil y elimino el pantallazo de Cuttoff Voltage
@@ -17,14 +17,19 @@
     - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
     - Calculo mAh era erroneo, asumia que la corriente era cte. Pase a hacer una integración con la I en curso
     - Movi el display de I, R y W y tuve que rediseñar Cursor_Position ojo con esto.
+    - Read_Keypad, con E, carga el valor 0, se ignora si index = 0.
+    - Variables cutoff de int a float, redireccionamiento EEPROM.
+    - CR no limitaba el 0 ingresado por teclado.
  
   Bugs:
     - Check_limit no sirve para limitar entradas de encoder que setea por interrupciones.
-    - Variables cutoff declaradas como int, y mal direccionadas en la EEPROM. Se pasan a float y se cambia el direccionamiento
     - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
     - En BC, menu inicial solo se pude salir con M, con Shit no funciona
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
-       
+  
+  Trabajando:
+    - 
+
   A Trabajar:
      - Limitar a reading/encoder por variable global en cada set mode. Check_limit que quede solo para los de Hardware
    
