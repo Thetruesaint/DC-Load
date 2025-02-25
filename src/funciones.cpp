@@ -533,6 +533,8 @@ void Battery_Mode(void) {
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
     CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
+    maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
+    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
     modeInitialized = true;                // Modo inicializado
   }
   lcd.noCursor();
@@ -631,7 +633,9 @@ void Battery_Capacity(void) {
     BatteryLife += (LoadCurrent * 1000) / 7200; // LoadCurrent A, por horas, por 1000 = mAh
   }
 
-  reading = encoderPosition / 1000;   // este modo se controla solo con el encoder.
+  reading = encoderPosition / 1000;            // Toma el valor del encoder
+  reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
+  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
 
   if (!toggle) return;  //Si esta desconectada, salir, el resto solo si esta conectada
 
