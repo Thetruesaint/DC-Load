@@ -504,12 +504,14 @@ void Const_Resistance_Mode(void) {
     CuPo = 8;                               // Pone el cursor en la posición de las unidades de Resistencia
     reading = MAX_RESISTOR;                 // Valor por default, 999 Ω
     encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
+    maxReading = MAX_RESISTOR;              // Limita reading al corte de resistencia (en Ω, 999.0 por defecto)
+    maxEncoder = maxReading * 1000;         // Limita encoderPosition a 999,000 (en mΩ, equivalente a 999.0Ω)
     modeInitialized = true;                 // Modo inicializado
   }
  
-  reading = encoderPosition / 1000.0;     // Convierte a ohms (Ω) el valor del encoder
-  reading = max(0.1, reading);            // Evita resistencia 0, mínimo 0.1Ω
-  encoderPosition = reading * 1000;       // pasa el valor a encoder si lo limitó
+  reading = encoderPosition / 1000.0;           // Convierte a ohms (Ω) el valor del encoder
+  reading = min(maxReading, max(0.1, reading)); // Evita resistencia 0, mínimo 0.1Ω, maximo, maxReading
+  encoderPosition = reading * 1000;             // pasa el valor a encoder si lo limitó
   
   if (!toggle) return;
   setResistance =  reading;                       // en ohms (Ω)

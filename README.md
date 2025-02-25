@@ -28,9 +28,10 @@
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
   
   Trabajando:
-    - En CC Limite a reading/encoder por variable global. Resta aplicar en CP,CR y BC, vamos con BC
+    - En CC, CR y BC Limite a reading/encoder por variable global. Resta aplicar en CP.
   
   A Trabajar:
+    - En CR, tengo presición de unidades hasta decimas, que no es necesario. Agregar Centeras y decenas y saca décimas. Se requiere un Cursor_Position dedicado.
     - Dentro de TL ejecutandose, no puedo salir con Shift+M, solo con M.
     - En BC, menu inicial solo se pude salir con M, con Shit no funciona
     - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos..
