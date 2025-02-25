@@ -24,8 +24,6 @@ float voltage = 0;                      // Voltage de Carga
 int CuPo = 7;                           // Posicion del cursor
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
-
-float Set_Curr_Dsgn_Fact = 0.386894318; // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
 int CurrentCutOff;                      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
 int PowerCutOff;                        // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
 int tempCutOff;                         // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
@@ -42,7 +40,7 @@ float setCurrent = 0;                   // Variable para setear la corriente de 
 float setPower = 20;                    // Variable para setear la potencia de carga
 float setResistance = 30;               // Variable para setear la resistencia de carga
 
-//--------------- Variables para Keypad ----------------------------------
+//--------------- Variables para Keypad o entrada de valores ------------
 // Definicion de las teclas del teclado
 
 char hexaKeys[ROWS][COLS] = {
@@ -73,10 +71,7 @@ float BatteryLife = 0;          // Variable para la vida de la batería
 float BatteryLifePrevious = 0;  // Variable para la vida de la batería anterior
 float BatteryCutoffVolts;       // Variable usada para indicar a que Voltage se puede descargar la batería
 float BatteryCurrent;           // Variable usada para setear la corriente de descargga de la bateria
-float LiPoCutOffVoltage = 3.6;  // Voltage mínimo de descarga para baterias LiPo
-float LionCutOffVoltage = 3.5;  // Voltage mínimo de descarga para baterias Lion
-float LiPoStoragVoltage = 3.8;  // Voltage mínimo de almacenamiento para baterias LiPo
-float LionStoragVoltage = 3.7;  // Voltage mínimo de almacenamiento para baterias Liom
+
 String BatteryType = "    ";    // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------

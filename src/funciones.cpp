@@ -452,7 +452,7 @@ void Read_Volts_Current(void) {
 void DAC_Control(void) {
   if (toggle) {
     #ifndef WOKWI_SIMULATION
-    controlVoltage = setCurrent * Set_Curr_Dsgn_Fact; 
+    controlVoltage = setCurrent * DAC_CURR_FACTOR; 
     dac.setVoltage(controlVoltage, false); // set DAC output voltage for Range selected
     #endif
   } else {
@@ -479,8 +479,6 @@ void Const_Current_Mode(void) {
   reading = encoderPosition / 1000;
   if (!toggle) return;
   setCurrent = reading * 1000;             // lo pasa a mA 
-  controlVoltage = setCurrent * Set_Curr_Dsgn_Fact;
-  
 }
 
 //------------------------ Select Constant Power LCD set up -------------------------
@@ -574,10 +572,10 @@ void Battery_Type_Selec() {
     customKey = Wait_Key_Pressed(); 
 
     switch (customKey) {
-        case '1': BatteryCutoffVolts = LiPoStoragVoltage; BatteryType = "Li-Po"; break;
-        case '2': BatteryCutoffVolts = LionStoragVoltage; BatteryType = "Li-Ion"; break;
-        case '3': BatteryCutoffVolts = LiPoCutOffVoltage; BatteryType = "Li-Po"; break;
-        case '4': BatteryCutoffVolts = LionCutOffVoltage; BatteryType = "Li-Ion"; break;
+        case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG ; BatteryType = "Li-Po"; break;
+        case '2': BatteryCutoffVolts = LION_STOR_CELL_VLTG ; BatteryType = "Li-Ion"; break;
+        case '3': BatteryCutoffVolts = LIPO_DISC_CELL_VLTG ; BatteryType = "Li-Po"; break;
+        case '4': BatteryCutoffVolts = LION_DISC_CELL_VLTG ; BatteryType = "Li-Ion"; break;
         case '5': BatteryType = "Custom"; break;
         case 'S': shiftPressed = !shiftPressed ; continue; // solo marca el flag y no sale.
         case 'M': case '<': Mode_Selection(shiftPressed); return; // Salida del Modo y salta al proximo, ver como queda el functionIndex
@@ -653,13 +651,13 @@ void Battery_Capacity(void) {
   // Reducción progresiva de corriente cuando el voltaje alcanza al de corte
 
   if (voltage <= BatteryCutoffVolts) {  // Fase 2: Estabilización
-    setCurrent = max(setCurrent - CRR_STEP_RDCTN, MinDischargeCurrent);
+    setCurrent = max(setCurrent - CRR_STEP_RDCTN, MIN_DISC_CURR);
     reading = setCurrent / 1000;
     encoderPosition = reading * 1000;
   }
 
   // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
-  if (voltage <= (BatteryCutoffVolts - VoltageDropMargin)) { 
+  if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) { 
     BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo?
     Load_ON_status(false);
     timer_stop();

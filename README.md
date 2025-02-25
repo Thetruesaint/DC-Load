@@ -9,6 +9,7 @@
     - Value_Imput ahora es default con 5 digitos.
     - elimino exitMode global, ya no se necesita.
     - En TC y TL: usar instrucciones del 0 al 9, mas simple
+    - Paso a const variable de cell Voltage de las baterias y el factor de controlcoltage.
 
   Fixes:
     - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -24,9 +25,7 @@
        
   Trabajando:
     - Optim: Limitar a reading/encoder por modo por variable global en cada set mode. (ya pobado y me costo muchisimo dejo de funcionar el encoder)
-    - Pasar a const bateria a constantes. Lo mismo para Resistorcutoff
-    - Lo mismo que con Set_Curr_Dsgn_Fact pasar a DAC_CURR_FACTOR
-  
+   
   En Cola:
     - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
     - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos..
