@@ -14,15 +14,22 @@
     - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
     - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
     - Calculo mAh era erroneo, asumia que la corriente era cte. Pase a hacer una integración con la I en curso
+    - Movi el display de I, R y W y tuve que rediseñar Cursor_Position ojo con esto.
  
   Bugs:
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
+    - Variables cutoff declaradas como int, y mal direccionadas en la EEPROM. Se pasan a float y se cambia el direccionamiento
+    - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
+    - En BC, menu inicial solo se pude salir con M, con Shit no funciona
        
   Trabajando:
-    - Optim: Limitar a reading/encoder por modo por variable global en cada set mode.
+    - Optim: Limitar a reading/encoder por modo por variable global en cada set mode. (ya pobado y me costo muchisimo dejo de funcionar el encoder)
+    - Pasar a const bateria a constantes. Lo mismo para Resistorcutoff
+    - Lo mismo que con Set_Curr_Dsgn_Fact pasar a DAC_CURR_FACTOR
   
   En Cola:
     - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
+    - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos..
   
   Posibles Mejoras:
     - En TC y TL: mostrar mSec decrecientes?, usar instrucciones del 0 al 9, mas simple

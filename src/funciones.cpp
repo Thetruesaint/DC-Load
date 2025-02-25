@@ -332,17 +332,19 @@ void Check_Limits() {
 
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
-  
-  int unitPosition = (Mode == CP || Mode == CR) ? 8 : 7; // Definir la posición de la unidad en base al modo
+
+  int unitPosition = (Mode == CP || Mode == CR) ? 8 : 7;
   if (digitalRead(ENC_BTN) == LOW) { delay(200); CuPo++;} // Corre el cursor un lugar a la derecha
   if (CuPo == unitPosition + 1) { CuPo++;}          // Salta el punto decimal
-  if (CuPo > 13) {CuPo = unitPosition;}             // vuelve a las unidades
+  if (CuPo > 11) {CuPo = unitPosition;}             // vuelve a las unidades
   if (CuPo == unitPosition)       factor = 1000;    // Unidades
   else if (CuPo == unitPosition + 2) factor = 100;  // Decenas
   else if (CuPo == unitPosition + 3) factor = 10;   // Centenas
   else if (CuPo == unitPosition + 4) factor = 1;    // milesimas
+
   lcd.setCursor(CuPo, 2);
   lcd.cursor();
+
 }
 
 //--------------------------- Read Voltage and Current ------------------------------
@@ -577,7 +579,7 @@ void Battery_Type_Selec() {
         case '3': BatteryCutoffVolts = LiPoCutOffVoltage; BatteryType = "Li-Po"; break;
         case '4': BatteryCutoffVolts = LionCutOffVoltage; BatteryType = "Li-Ion"; break;
         case '5': BatteryType = "Custom"; break;
-        case 'S': shiftPressed = true; continue; // solo marca el flag y no sale.
+        case 'S': shiftPressed = !shiftPressed ; continue; // solo marca el flag y no sale.
         case 'M': case '<': Mode_Selection(shiftPressed); return; // Salida del Modo y salta al proximo, ver como queda el functionIndex
         default: continue;  // Evita salir si la tecla es inválida
     }
