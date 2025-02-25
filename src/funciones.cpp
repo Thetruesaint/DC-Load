@@ -791,13 +791,13 @@ void Transient_List_Setup() {
     printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
 
     z = 13; r = 2;
-    if (!Value_Input(z, r)) return;  // Permitir 5 digitos, ej.: 1.234 o salir del Modo
+    if (!Value_Input(z, r)) return;     // Permitir 5 digitos, ej.: 1.234 o salir del Modo
     x = min(x, CurrentCutOff);          // Limita a CutOff
     printLCDNumber(z, r, x, 'A', 3);    // Muestra el valor de la corriente
     transientList[i][0] = x * 1000;     // Lo guarda en la lista en mA
 
     z = 13; r = 3;                      // Ubica la toma del valor de mSec
-    if (!Value_Input(z, r)) return;  // Permitir 5 digitos, ej.: 99999 o salir del Modo
+    if (!Value_Input(z, r)) return;     // Permitir 5 digitos, ej.: 99999 o salir del Modo
     transientList[i][1] = x;            // Guarda el valor del tiempo en ms
     lcd.clear();                        // Borra la pantalla, para configurar la siguiente instrucción
   }
@@ -848,21 +848,21 @@ void Config_Limits(void)
   printLCD(4, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
   z = 12; r = 1;
-  if (!Value_Input(z, r, 4)) return;      // Permitir 4 digitos, ej.: 1.23 o 123 salir del Modo
-  CurrentCutOff = min(x, 10);
+  if (!Value_Input(z, r, 4)) return;              // Permitir 4 digitos, ej.: 1.23 o 123 salir del Modo
+  CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1A y 10.0A
   printLCDNumber(z, r, CurrentCutOff,' ');
   
   printLCD(0, 2, F("Power(W):"));
   r = 2; z = 12;
-  if (!Value_Input(z, r, 3)) return;      // Permitir 3 digitos, ej.: 1.2 o 100 salir del Modo
-  PowerCutOff = min(x, 300);
-  printLCDNumber(r, r, PowerCutOff, ' ',0);
+  if (!Value_Input(z, r, 3)) return;              // Permitir 3 digitos, ej.: 1.2 o 100 salir del Modo
+  PowerCutOff = constrain(x, 1, MAX_POWER);       // Límite entre 1W y 300.0W
+  printLCDNumber(z, r, PowerCutOff, ' ',0);
  
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
   z = 12; r = 3;
-  if (!Value_Input(z, r, 2)) return;      // Permitir 2 digitos, ej.: 10 a 99 o salir del Modo
-  tempCutOff = min(x, 99);
+  if (!Value_Input(z, r, 2)) return;              // Permitir 2 digitos, ej.: 10 a 99 o salir del Modo
+  tempCutOff = constrain(x, 30.0, MAX_TEMP);      // Límite entre 30°C y 99°C  
   printLCD_S(z, r, String(tempCutOff));
 
   saveToEEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);

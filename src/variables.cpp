@@ -24,10 +24,10 @@ float voltage = 0;                      // Voltage de Carga
 int CuPo = 7;                           // Posicion del cursor
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
-int CurrentCutOff;                      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
-int PowerCutOff;                        // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
-int tempCutOff;                         // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
-float ResistorCutOff = 999;             // Maximo valor de resistencia para el modo CR
+int CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
+int PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
+int tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
+float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
 ModeType Mode = CC;                     // Modo de operación, CC Default
 const char* ModeNames[] = { "CC", "CP", "CR", "BC", "TC", "TL", "NA" };
 bool modeInitialized = false;           // Para reimplirmir la plantilla del modo y/o inicializar valores

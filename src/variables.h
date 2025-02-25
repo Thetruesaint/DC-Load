@@ -38,8 +38,13 @@ extern volatile unsigned long encoderMax; // sets maximum Rotary Encoder value a
 
 //--------------- Variables de operacion --------------------------------- 
 
-const float MAX_VOLTAGE = 90;              // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
-const float DAC_CURR_FACTOR = 0.386894318;           // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
+const float DAC_CURR_FACTOR = 0.386894318;  // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
+const float MAX_VOLTAGE = 90;               // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
+const float MAX_RESISTOR = 999;             // Máximo 999 Ω
+const float MAX_CURRENT = 10;               // Máximo 10A
+const float MAX_POWER = 300;                // Máximo 300W
+const float MAX_TEMP = 99;                  // Máximo 99°C
+
 
 extern int16_t adc1, adc3;                 // ADCs usados, adc0 y adc2 a GND
 extern unsigned long controlVoltage;       // Voltage de control para el DAC que controlara al MOSFET
@@ -51,7 +56,7 @@ extern float reading;                      // Para tomar valores de encoder
 extern int CurrentCutOff;                  // Corriente maxima de corte seteado o cargado de la EEPROM
 extern int PowerCutOff;                    // Potencia de corte seteado o cargado de la EEPROM
 extern int tempCutOff;                     // Temperatura máxima de corte seteado o cargado de la EEPROM
-extern float ResistorCutOff;               // Maximo valor de resistencia para el modo CR
+extern float ResistorCutOff;                      // Resistencia en Ω
 enum ModeType { CC, CP, CR, BC, TC, TL, UNKNOWN };
 extern ModeType Mode;                      // Modo de operación, CC Default
 extern const char* ModeNames[];            // Modos Permitidos
@@ -126,5 +131,12 @@ extern int current_instruction;             // Utilizado en el modo de Transient
 const int ADD_CURRENT_CUT_OFF = 0x00;
 const int ADD_POWER_CUT_OFF = 0x20;
 const int ADD_TEMP_CUT_OFF = 0x40;
+
+/*
+//--- Posiciones reservadas en la EEMPROM cada 4 bytes para valores float ----
+const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)
+const int ADD_POWER_CUT_OFF = 4;        // 4 bytes (0-3)
+const int ADD_TEMP_CUT_OFF = 8;         // 4 bytes (8-11)
+*/
 
 #endif

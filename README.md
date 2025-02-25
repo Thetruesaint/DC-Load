@@ -10,7 +10,8 @@
     - elimino exitMode global, ya no se necesita.
     - En TC y TL: usar instrucciones del 0 al 9, mas simple
     - Paso a const variable de cell Voltage de las baterias y el factor de controlcoltage.
-
+    - const float MAX para limites, asig. a cuttoffs que son int (ojo!). Constrain en Config_Limits con mínimos y esos MAX.
+  
   Fixes:
     - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
     - Cambie limite del Read_Encoder, encoderMax = 10000 solo para CC y BC, antes afectaba a CP y CR
@@ -18,13 +19,14 @@
     - Movi el display de I, R y W y tuve que rediseñar Cursor_Position ojo con esto.
  
   Bugs:
-    - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
+    - Check_limit no sirve para limitar entradas de encoder que setea por interrupciones.
     - Variables cutoff declaradas como int, y mal direccionadas en la EEPROM. Se pasan a float y se cambia el direccionamiento
     - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
     - En BC, menu inicial solo se pude salir con M, con Shit no funciona
+    - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
        
-  Trabajando:
-    - Optim: Limitar a reading/encoder por modo por variable global en cada set mode. (ya pobado y me costo muchisimo dejo de funcionar el encoder)
+  A Trabajar:
+     - Limitar a reading/encoder por variable global en cada set mode. Check_limit que quede solo para los de Hardware
    
   En Cola:
     - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
