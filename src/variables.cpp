@@ -13,7 +13,7 @@ RTC_DS1307 rtc;                     // Objeto RTC para el DS1307
 unsigned long lastButtonPress = 0;          // Use this to store if the encoder button was pressed or not
 volatile float encoderPosition = 0;         // Antes era volatile float
 volatile float factor = 0;                  // Factor de escala del Encoder
-volatile unsigned long encoderMax = 999000; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
+volatile unsigned long maxEncoder = 999000; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -24,6 +24,7 @@ float voltage = 0;                      // Voltage de Carga
 int CuPo = 7;                           // Posicion del cursor
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
+float maxReading = 0;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
 float CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
 float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
 float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
@@ -37,8 +38,8 @@ int functionIndex = 0;                  // Para seleccionar los Modos.
 //--------------- Modos CC, CR y CP --------------------------------------
 
 float setCurrent = 0;                   // Variable para setear la corriente de carga
-float setPower = 20;                    // Variable para setear la potencia de carga
-float setResistance = 30;               // Variable para setear la resistencia de carga
+float setPower = 0;                     // Variable para setear la potencia de carga
+float setResistance = 0;                // Variable para setear la resistencia de carga
 
 //--------------- Variables para Keypad o entrada de valores ------------
 // Definicion de las teclas del teclado

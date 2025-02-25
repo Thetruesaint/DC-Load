@@ -34,7 +34,7 @@ const uint8_t LOADONOFF = 15;  // Input A1 used as a digital pin to set Load ON/
 extern unsigned long lastButtonPress;     // Use this to store if the encoder button was pressed or not
 extern volatile float encoderPosition;    // Antes era volatile float
 extern volatile float factor;             // Factor de escala del Encoder
-extern volatile unsigned long encoderMax; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
+extern volatile unsigned long maxEncoder; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -53,6 +53,7 @@ extern float voltage;                      // Voltage de Carga
 extern int CuPo;                           // Posicion inicial del cursor
 extern bool toggle;                        // Conmuta la carga On/Off
 extern float reading;                      // Para tomar valores de encoder
+extern float maxReading;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
 extern float CurrentCutOff;                // Corriente máxima de corte seteado o cargado de la EEPROM
 extern float PowerCutOff;                  // Potencia de corte seteado o cargado de la EEPROM
 extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM

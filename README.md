@@ -22,22 +22,23 @@
     - CR no limitaba el 0 ingresado por teclado.
  
   Bugs:
-    - Check_limit no sirve para limitar entradas de encoder que setea por interrupciones.
     - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
     - En BC, menu inicial solo se pude salir con M, con Shit no funciona
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
   
   Trabajando:
-    - 
-
+    - En CC Limite a reading/encoder por variable global. Check_limit quedo solo para los de Hardware. Resta aplicar en CP,CR y BC
+  
   A Trabajar:
-     - Limitar a reading/encoder por variable global en cada set mode. Check_limit que quede solo para los de Hardware
+    - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
+    - En BC, menu inicial solo se pude salir con M, con Shit no funciona
+    - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos..
    
   En Cola:
     - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
-    - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos..
   
   Posibles Mejoras:
+    - Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.
     - En TC y TL: mostrar mSec decrecientes?, usar instrucciones del 0 al 9, mas simple
     - En TC, ajustar timing con encoder?
     - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..

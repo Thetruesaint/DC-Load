@@ -28,10 +28,7 @@ void Read_Encoder()
     encoderPosition += (encval > 0 ? factor : -factor);
     encval = 0;
   }
-  encoderPosition = constrain(encoderPosition, 0, encoderMax);
-  if (Mode == CC || Mode == BC) {
-    encoderPosition = constrain(encoderPosition, 0, 10000); 
-  }
+  encoderPosition = constrain(encoderPosition, 0, maxEncoder);
 }
 
 //---------------------------- Read Keypad Input ----------------------------------
@@ -302,17 +299,7 @@ void Check_Limits() {
   else if (power > PowerCutOff) strcpy(message, "Power Cut Off!    ");
   else if (temp >= tempCutOff) strcpy(message, "Over Temperature! ");
   else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Disipation");
-  else if ((Mode == CC && reading > CurrentCutOff) ||
-          (Mode == CP && reading > PowerCutOff) ||
-          (Mode == CR && reading > ResistorCutOff) ||
-          (Mode == BC && reading > CurrentCutOff)) {
-            reading = (Mode == CC) ? CurrentCutOff :
-                      (Mode == CP) ? PowerCutOff :
-                      (Mode == CR) ? ResistorCutOff : CurrentCutOff;
-            encoderPosition = reading * 1000;
-            return;
-  }
-  
+
   if (strlen(message) > 0){
     Load_ON_status(false);                    // Si hubo mensaje, apagar la carga ASAP.
     lcd.noCursor();
@@ -474,9 +461,14 @@ void Const_Current_Mode(void) {
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
     CuPo = 7;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
+    maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
+    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
     modeInitialized = true;                // Modo inicializado
   }
-  reading = encoderPosition / 1000;
+  reading = encoderPosition / 1000;            // Toma el valor del encoder
+  reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
+  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
+
   if (!toggle) return;
   setCurrent = reading * 1000;             // lo pasa a mA 
 }
