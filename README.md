@@ -11,7 +11,7 @@
     - En TC y TL: usar instrucciones del 0 al 9, mas simple
     - Paso a const variable de cell Voltage de las baterias y el factor de controlcoltage.
     - const float MAX para limites, asig. a cuttoffs que son int (ojo!). Constrain en Config_Limits con mínimos y esos MAX.
-    - Check_limit quedo solo para los de Hardware.
+    - CC, CR, CP y BC Limite a reading/encoder por variable global. Check_limit quedo solo para los de Hardware.
   
   Fixes:
     - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -28,8 +28,7 @@
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
   
   Trabajando:
-    - En CC, CR y BC Limite a reading/encoder por variable global. Resta aplicar en CP.
-  
+      
   A Trabajar:
     - En CR, tengo presición de unidades hasta decimas, que no es necesario. Agregar Centeras y decenas y saca décimas. Se requiere un Cursor_Position dedicado.
     - Dentro de TL ejecutandose, no puedo salir con Shift+M, solo con M.

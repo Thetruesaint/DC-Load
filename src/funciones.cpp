@@ -482,11 +482,16 @@ void Const_Power_Mode(void) {
     printLCD(0, 2, F("Set W>"));           // Muestra el mensaje
     printLCD(12, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                             // Pone el cursor en la posición de las unidades de Potecia
+    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Potecia
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
+    maxReading = PowerCutOff;              // Limita reading al corte de potencia (en W, 300.0 por defecto)
+    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 30,000 (en decimas de W, equivalente a 300.0W)
     modeInitialized = true;                // Modo inicializado
   }
-  reading = encoderPosition / 1000;
+  reading = encoderPosition / 1000;            // Toma el valor del encoder
+  reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
+  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
+
   if (!toggle) return;
   setPower = reading * 1000;               // Conversión a mW
   setCurrent = setPower / voltage;         // Conversión a mA 
