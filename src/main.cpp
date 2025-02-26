@@ -15,9 +15,6 @@ ads.setGain(GAIN_TWOTHIRDS); // Setea la ganancia del ADC a 2/3x gain +/- 6.144V
 dac.begin(0x60);             // Inicializa el DAC con address 0x60
 #endif
 
-//-------------------------------------Configuraciones iniciales de única vez-----------------------------
-// dac.setVoltage(0,true);                      // reset DAC to zero for no output current set at Switch On, Cambio a "True" para que guarde este valor en la Emprom
-
 //-------------------------------------Inicializa I/O---------------------------------------------------
 pinMode(ENC_A, INPUT_PULLUP);
 pinMode(ENC_B, INPUT_PULLUP);
@@ -25,8 +22,6 @@ pinMode(ENC_BTN, INPUT_PULLUP);
 pinMode(LOADONOFF, INPUT_PULLUP);
 pinMode(TEMP_SNSR, INPUT);
 pinMode(FAN_CTRL, OUTPUT);
-attachInterrupt(digitalPinToInterrupt(ENC_A), Read_Encoder, CHANGE);
-attachInterrupt(digitalPinToInterrupt(ENC_B), Read_Encoder, CHANGE);
 
 //------------------------------------Pantalla Inicio--------------------------------------------------
 DateTime now = rtc.now();                                                                   // Obtiene la fecha y hora actual del RTC

@@ -39,10 +39,10 @@ extern volatile unsigned long maxEncoder; // sets maximum Rotary Encoder value a
 //--------------- Variables de operacion --------------------------------- 
 
 const float DAC_CURR_FACTOR = 0.386894318;  // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
-const float MAX_VOLTAGE = 90;               // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
-const float MAX_RESISTOR = 999;             // Máximo 999 Ω
-const float MAX_CURRENT = 10;               // Máximo 10A
-const float MAX_POWER = 300;                // Máximo 300W
+const float MAX_VOLTAGE = 90.00;            // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
+const float MAX_RESISTOR = 999.9;           // Máximo 999.9 Ω
+const float MAX_CURRENT = 10.000;           // Máximo 10A
+const float MAX_POWER = 300.0;              // Máximo 300W
 const float MAX_TEMP = 99;                  // Máximo 99°C
 
 

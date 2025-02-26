@@ -11,6 +11,21 @@ void Load_ON_status(bool loadonoff)
   #endif
 }
 
+//---------------------------- Encoder Status -------------------------------------
+void Encoder_Status(bool encOnOff, float limit) {
+  if (encOnOff) {
+    CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
+    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
+    maxReading = limit;                    // Asigna el limite
+    maxEncoder = maxReading * 1000;        // Lo recalcula para el encoder
+    attachInterrupt(digitalPinToInterrupt(ENC_A), Read_Encoder, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENC_B), Read_Encoder, CHANGE);
+  } else {
+      detachInterrupt(digitalPinToInterrupt(ENC_A));
+      detachInterrupt(digitalPinToInterrupt(ENC_B));
+  }
+}
+
 //---------------------------- Encoder Decoder ------------------------------------
 void Read_Encoder()
 {
@@ -478,13 +493,10 @@ void Const_Current_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
-    printLCD(1, 2, F("Set->"));           // Muestra el mensaje
+    printLCD(1, 2, F("Set->"));            // Muestra el mensaje
     printLCD(13, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
-    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
-    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
+    Encoder_Status(true, CurrentCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
     modeInitialized = true;                // Modo inicializado
   }
   reading = encoderPosition / 1000;            // Toma el valor del encoder
@@ -501,13 +513,10 @@ void Const_Power_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set->"));           // Muestra el mensaje
+    printLCD(0, 2, F("Set->"));            // Muestra el mensaje
     printLCD(11, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
-    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    maxReading = PowerCutOff;              // Limita reading al corte de potencia (en W, 300.0 por defecto)
-    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 30,000 (en decimas de W, equivalente a 300.0W)
+    Encoder_Status(true, PowerCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
     modeInitialized = true;                // Modo inicializado
   }
   reading = encoderPosition / 1000;            // Toma el valor del encoder
@@ -525,14 +534,11 @@ void Const_Resistance_Mode(void) {
  if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
-    printLCD(0, 2, F("Set->"));            // Muestra el mensaje
+    printLCD(0, 2, F("Set->"));             // Muestra el mensaje
     printLCD_S(11, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                               // Inbicializa la posicion del cursor, puede venir de otro modo.
-    reading = MAX_RESISTOR;                 // Valor por default, 999 Ω
-    encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
-    maxReading = MAX_RESISTOR;              // Limita reading al corte de resistencia (en Ω, 999.0 por defecto)
-    maxEncoder = maxReading * 1000;         // Limita encoderPosition a 999,000 (en mΩ, equivalente a 999.0Ω)
+    Encoder_Status(true, MAX_RESISTOR);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
+    encoderPosition = MAX_RESISTOR * 1000;  // Lo inicializa en 999.9 Ω, valor mas seguro
     modeInitialized = true;                 // Modo inicializado
   }
  
@@ -560,10 +566,7 @@ void Battery_Mode(void) {
     printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
-    CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
-    reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
-    maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
-    maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
+    Encoder_Status(true, CurrentCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
     modeInitialized = true;                // Modo inicializado
   }
   
@@ -714,6 +717,7 @@ if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurad
     printLCD_S(6, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(11, 3, F("mSecs"));                // Muestra la unidad
     modeInitialized = true;                     // Modo inicializado.
+    Encoder_Status(false);                      // Deshabilitar el encoder
   }
 }
 
@@ -794,6 +798,7 @@ void Transient_List_Mode(void) {
     printLCD(2, 3, F("Time: "));
     printLCD(13, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
+    Encoder_Status(false);                // Deshabilitar el encoder
   }
 }
 

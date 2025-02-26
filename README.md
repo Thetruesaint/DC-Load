@@ -17,6 +17,7 @@
 - En BC Setup ahora se puede llamar a Config_Limits.
 - Cambia TL con "Step" es mas tradicional y claro, reoganizo plantillas LCD
 - A, V y W en minusculas para valores dinámicos, y A con un caracer especial mas petiso que se carga en el LCD por Setup.
+- En TC y TL se deshabilita el encoder. Nueva función Encoder_Status() que inicializa tambien limites de reading y Encoder
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -41,9 +42,9 @@
 - Blink de limites por tggl flag? en lugar de delay..?
 
 **A Trabajar:**
-- En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
+- No mas para v1.70.
 
-**En Cola:**
+**En Cola: (next Release)**
 - No convertir ADC por rango de voltage, complicado al pedo... y peligroso. NOs ahorramos FLASH
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 - Modo Calibracíón incluir external voltage sense?
