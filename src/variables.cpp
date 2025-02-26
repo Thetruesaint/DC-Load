@@ -63,6 +63,17 @@ float x = 0;       // Valor que entrega la función Value_Input()
 int z = 1; // Posición en renglón (En CC,CP y CR dejo lugar para poner caracter ">"), aun no lo puse
 int r = 0; // Renglon
 
+byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar valores que pueden cambiar. Los de Set son con mayusculas comunes
+    0b00000,  //      
+    0b00000,  //      
+    0b00100,  //   *  
+    0b01010,  //  * *
+    0b10001,  // *   *
+    0b11111,  // *****
+    0b10001,  // *   *
+    0b00000,  //      
+  };
+
 //---------------- Variables para Modo BC --------------------------------
 float Seconds = 0;              // Variable para los segundio usada en Battery Capacity Mode (BC)
 bool timerStarted = false;      // Variable para saber si el timer esta corriendo

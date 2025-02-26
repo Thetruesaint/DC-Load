@@ -89,8 +89,9 @@ extern float x;                     // Auxiliar para carga de valores.
 //---------------- Variables LCD -----------------------------------------
 const unsigned long LCD_RFSH_TIME = 200; // Tiempo de refresco del LCD en ms
 
-extern int z; // Posición en renglón
-extern int r; // Renglon
+extern int z;       // Posición en renglón
+extern int r;       // Renglon
+extern byte amp_char[8];    // Caracter especial para LCD
 
 //---------------- Variables para Modo BC --------------------------------
 

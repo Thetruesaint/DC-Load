@@ -16,6 +16,7 @@
 - Optimización de Cursor_Position, no se ve el cursor de tan rápido. Validar en entorno real.
 - En BC Setup ahora se puede llamar a Config_Limits.
 - Cambia TL con "Step" es mas tradicional y claro, reoganizo plantillas LCD
+- A, V y W en minusculas para valores dinámicos, y A con un caracer especial mas petiso que se carga en el LCD por Setup.
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -31,18 +32,19 @@
 - Al salir de TL Setup, quedaba el blink.
 - En BC, Setup solo salir con M, con Shit no respondia
 - Value Imput permite deshabilitar numeros decimales (mSec de TC y TL o BC selec. de n°S)
+- En CC y BC, en la unidad del Set quedaba tapada
 
 **Bugs:**
 - No detectados
   
 **Trabajando:**
-- En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
-- Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.
-
-**A Trabajar:**
 - Blink de limites por tggl flag? en lugar de delay..?
 
+**A Trabajar:**
+- En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
+
 **En Cola:**
+- No convertir ADC por rango de voltage, complicado al pedo... y peligroso. NOs ahorramos FLASH
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 - Modo Calibracíón incluir external voltage sense?
 

@@ -7,6 +7,7 @@ void setup() {
 //-------------------------------------Inicializa perifericos-------------------------------------------
 Serial.begin(9600); // Para Debugs y Logs
 lcd.begin(20, 4);   // initialize the lcd, default address 0x27
+lcd.createChar(0, amp_char);  // Guarda el carácter en la posición 0
 rtc.begin();        // Inicializa el RTC en teoría en address 0x68
 #ifndef WOKWI_SIMULATION
 ads.begin();                 // Inicializa el ADC con address 0x48

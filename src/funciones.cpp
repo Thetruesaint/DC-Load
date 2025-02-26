@@ -228,14 +228,14 @@ void Update_LCD(void) {
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
-  printLCDNumber(7, 1, voltage, 'V', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
+  printLCDNumber(7, 1, voltage, 'v', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
   if (Mode != BC) {   // lo reemplazo por BatteryCutoffVolts
     lcd.setCursor(14,1);
     if (power < 10) { lcd.print(F(" ")); lcd.print(power, 2);} 
     else if (power < 100) {lcd.print(power, 2);} 
     else {lcd.print(power, 1);}
     lcd.setCursor(19,1);
-    lcd.print(F("W"));
+    lcd.print(F("w"));
   }
 
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
@@ -478,8 +478,8 @@ void Const_Current_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set I>"));           // Muestra el mensaje
-    printLCD(12, 2, F("A"));               // Muestra el mensaje
+    printLCD(1, 2, F("Set->"));           // Muestra el mensaje
+    printLCD(13, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
     CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
@@ -501,8 +501,8 @@ void Const_Power_Mode(void) {
   if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set W>"));           // Muestra el mensaje
-    printLCD(12, 2, F("W"));               // Muestra el mensaje
+    printLCD(0, 2, F("Set->"));           // Muestra el mensaje
+    printLCD(11, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
     CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
@@ -525,8 +525,8 @@ void Const_Resistance_Mode(void) {
  if (!modeInitialized) {
     lcd.clear();
     printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
-    printLCD(0, 2, F("Set R>"));            // Muestra el mensaje
-    printLCD_S(12, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
+    printLCD(0, 2, F("Set->"));            // Muestra el mensaje
+    printLCD_S(11, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
     CuPo = 8;                               // Inbicializa la posicion del cursor, puede venir de otro modo.
     reading = MAX_RESISTOR;                 // Valor por default, 999 Ω
@@ -555,8 +555,8 @@ void Battery_Mode(void) {
     printLCD(0, 0, F("BC LOAD"));          // Muestra el titulo del modo
     lcd.setCursor(13,1);lcd.print(F(">")); 
     printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Muestro el Cutoff Voltage
-    printLCD(0, 2, F("Adj I>"));           // Muestra el mensaje
-    printLCD(12, 2, F("A"));               // La unidad de corriente
+    printLCD(1, 2, F("Adj->"));            // Muestra el mensaje
+    printLCD(13, 2, F("A"));               // La unidad de corriente
     printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
@@ -879,13 +879,13 @@ void Config_Limits(void)
   z = 12; r = 1;
   if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 9.999 o 10.00 salir del Modo
   CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1.000A y 10.00A
-  printLCDNumber(z, r, CurrentCutOff,' ',3);
+  printLCDNumber(z, r, CurrentCutOff,' ',3);lcd.print(F("A")); // A normal porque es valor fijo.
   
   printLCD(0, 2, F("Power(W):"));
   r = 2; z = 12;
   if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 50.00 o 300.0 salir del Modo
   PowerCutOff = constrain(x, 1, MAX_POWER);       // Límite entre 1.000W y 300.0W
-  printLCDNumber(z, r, PowerCutOff, ' ');
+  printLCDNumber(z, r, PowerCutOff, 'W',1);
  
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
@@ -918,7 +918,7 @@ void Show_Limits(void) {
   printLCDNumber(9, 1, CurrentCutOff, 'A', 3);   // 3 decimales, ej.: 1.234, 9.999 o 10.00
 
   printLCD(0, 2, F("Power:"));
-  printLCDNumber(9, 2, PowerCutOff, 'W', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
+  printLCDNumber(9, 2, PowerCutOff, 'w', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
   printLCD(0, 3, F("Temp.:"));
   printLCDNumber(9, 3, tempCutOff, ' ', 0);     // 0 decimales, ej.: 10 a 99
   lcd.print(char(0xDF)); lcd.print("C");
@@ -983,7 +983,7 @@ void printLCD_S(int col, int row, const String &message) {
 // Función para imprimir un mensaje con texto almacenado en FLASH
 void printLCD(int col, int row, const __FlashStringHelper *message) {
   lcd.setCursor(col, row);
-  lcd.print(message);
+    lcd.print(message);
 }
 
 // Función para imprimir un mensaje con texto almacenado en FLASH
@@ -991,9 +991,9 @@ void printLCDNumber(int col, int row, float number, char unit, int decimals) {
   lcd.setCursor(col, row);
   lcd.print(number, decimals);  // Imprime el número con los decimales especificados
   
-  if (unit != '\0' && unit != ' ') {  // Solo imprime la unidad si no es nula o espacio en blanco
+  if (unit != '\0' && unit != ' ' && unit != 'A') {  // Solo imprime la unidad si no es nula o espacio en blanco o si no es A
     lcd.print(unit);
-  }
+  } else if (unit == 'A') {lcd.write(byte(0));}   // Escribe el carácter personalizado
 }
 
 //-------------------------------- Graba en EEPROM ------------------------------------
