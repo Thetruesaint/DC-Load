@@ -52,7 +52,8 @@ void Read_Keypad(void) {
   static int zl = 1;
   static bool shiftPressed = false; // Bandera para detectar Shift
 
-  customKey = customKeypad.getKey();              // Escanea el teclado   
+  customKey = customKeypad.getKey();              // Escanea el teclado
+  Serial.print("entro e keypad");
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
 
@@ -62,6 +63,7 @@ void Read_Keypad(void) {
   }
 
   if (shiftPressed) {
+    Serial.print("entro con Shift");
     shiftPressed = false;
     Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
     return;
@@ -74,6 +76,7 @@ void Read_Keypad(void) {
       Mode_Selection();
         break;                                      
     case 'C':                                   // Configuración de limites
+    Serial.print("entro Case C");
      if (Mode != TC || Mode !=TL){             // Por ahora solo durante modos CC, CP y CR.
       Config_Limits(); }
       break;                                      
@@ -99,7 +102,7 @@ void Read_Keypad(void) {
     reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     zl = 1;                             // Resetea la posición en el renglón
-    printLCD(1, 3, F("     "));         // Borra el renglón del LCD
+    Print_Spaces(1, 3, 5);
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
 
@@ -108,8 +111,8 @@ void Read_Keypad(void) {
     index--;  
     if (numbers[index] == '.') decimalPoint = ' '; // Si borramos un punto, permitimos otro  
     numbers[index] = '\0';  
-    zl--;  
-    printLCD(zl, 3, F(" ")); // Borra visualmente en LCD  
+    zl--;
+    Print_Spaces(zl, 3);
   }
 }
 
@@ -241,7 +244,7 @@ void Update_LCD(void) {
   printLCDNumber(7, 1, voltage, 'v', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
   if (Mode != BC) {   // lo reemplazo por BatteryCutoffVolts
     lcd.setCursor(14,1);
-    if (power < 10) { lcd.print(F(" ")); lcd.print(power, 2);} 
+    if (power < 10) {Print_Spaces(14, 1); lcd.print(power, 2);} 
     else if (power < 100) {lcd.print(power, 2);} 
     else {lcd.print(power, 1);}
     lcd.setCursor(19,1);
@@ -252,8 +255,8 @@ void Update_LCD(void) {
 
     lcd.setCursor(6, 2);
     if (Mode == CC || Mode == BC){
-      if (reading < 100) lcd.print(F(" "));
-      if (reading < 10) lcd.print(F(" "));
+      if (reading < 100) Print_Spaces(6, 2);
+      if (reading < 10) Print_Spaces(7, 2);
       lcd.print(reading, 3);
     } else {
       if (reading < 100) lcd.print("0");
@@ -265,7 +268,7 @@ void Update_LCD(void) {
     blink_cntr = (blink_cntr + 1) % 5;  
     lcd.setCursor(CuPo, 2);
     if (blink_cntr == 4) {  // Solo en el último ciclo de cada 500ms imprime espacio
-        lcd.print(F(" "));
+      Print_Spaces(CuPo, 2);
     }
   }
 }
@@ -330,12 +333,12 @@ void Check_Limits() {
     setCurrent = 0;                     // Todo a 0 para asegurar el apagado
     for (int i = 0; i < 6; i++) {       // Parpaderá el mensaje tres veces
       printLCD_S(0, 3, message);
-      if (vlimit){lcd.setCursor(12,1); lcd.print(F(" "));}
-      else if(ilimit){lcd.setCursor(5,1); lcd.print(F(" "));}
-      else if(plimit){lcd.setCursor(19,1); lcd.print(F(" "));}
-      else if(climit){lcd.setCursor(19,0); lcd.print(F(" "));}
+      if (vlimit){Print_Spaces(12, 1);}
+      else if(ilimit){Print_Spaces(5, 1);}
+      else if(plimit){Print_Spaces(19, 1);}
+      else if(climit){Print_Spaces(19,0);}
       delay(250);
-      printLCD(0, 3, F("                  "));  // Borra todo salvo el indicador de modo
+      Print_Spaces(0, 3, 18);
       if (vlimit){lcd.setCursor(12,1); lcd.print(F("v"));}
       else if(ilimit){lcd.setCursor(5,1); lcd.write(byte(0));}
       else if(plimit){lcd.setCursor(19,1); lcd.print(F("w"));}
@@ -586,7 +589,7 @@ void Battery_Mode(void) {
     lcd.print(F("mAh"));
     BatteryLifePrevious = BatteryLife;
   }
-  if (toggle && (voltage > BatteryCutoffVolts)){printLCD(16,2, F("    "));} // Borra "Done " si quedo de antes.
+  if (toggle && (voltage > BatteryCutoffVolts)){Print_Spaces(16, 2, 4);} // Borra "Done " si quedo de antes.
   else if (!toggle && (voltage <= BatteryCutoffVolts)) {printLCD(16,2, F("Done"));}
 }
 
@@ -638,7 +641,8 @@ while (true) {  // Bucle para evitar la salida accidental
     do {
       z = 7; r = 3;
       printLCD(z - 1, r, F(">"));
-      printLCD(z, r, F("     "));         // Borra el espacio si hubo un valor fuera de rango
+      Print_Spaces(z , r, 5); // Borra el espacio si hubo un valor fuera de rango
+     
       if (!Value_Input(z, r)) return;  // Sale si hubo selección de nuevo modo o reset de modo
     } while (x > 25 || x < 0.1);          // Mintras este fuera de rango, repite
       BatteryCutoffVolts = x;
@@ -653,7 +657,7 @@ while (true) {  // Bucle para evitar la salida accidental
     do {
         z = 9; r = 2; //y = 1;
         printLCD(z - 1, r, F(">"));
-        printLCD(z, r, F(" "));                   // Borra el espacio si hubo un valor fuera de rango
+        Print_Spaces(z , r, 5);                   // Borra el espacio si hubo un valor fuera de rango
         if (!Value_Input(z, r, 1, false)) return; //1 digito, sin decimal.
     } while (x < 1 || x > 6);                     // Asegura que solo se ingrese un número entre 1 y 6
     BatteryCutoffVolts *= x;                      // Multiplica por la cantidad de celdas
@@ -792,8 +796,8 @@ void Transient_List_Mode(void) {
 
   if(modeConfigured) {
     printLCD_S(12, 2, String(current_step));            // Paso en curso, de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
-        if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
-      printLCD(8, 3, F("     "));                       // Borra anteriores
+      if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
+      Print_Spaces(8, 3, 5);
       printLCD_S(8, 3, String(transientPeriod));        // Nuevo valor con espacio extra
       last_transientPeriod = transientPeriod;
     }
@@ -822,7 +826,7 @@ void Transient_List_Setup() {
   do { // Bucle para garantizar entrada válida
     z = 9; r = 2; //y = 9;
     printLCD(z - 1, r, F(">"));
-    printLCD(z, r, F("  "));                  // Borra el espacio si hubo un valor fuera de rango
+    Print_Spaces(z, r, 2);
     if (!Value_Input(z, r, 2, false)) return; // 2 digitos, sin decimal.
   } while (x < 2 || x > 10);
 
@@ -990,19 +994,19 @@ String timer_getTime() {
 }
 
 //--------------------------- Funciones para el LCD -----------------------------------
-// Función para imprimir un mensaje de texto variable
+// Imprimir un mensaje de texto variable
 void printLCD_S(int col, int row, const String &message) {
     lcd.setCursor(col, row);
     lcd.print(message);
   }
 
-// Función para imprimir un mensaje con texto almacenado en FLASH
+// Imprimir un mensaje con texto almacenado en FLASH
 void printLCD(int col, int row, const __FlashStringHelper *message) {
   lcd.setCursor(col, row);
     lcd.print(message);
 }
 
-// Función para imprimir un mensaje con texto almacenado en FLASH
+// Imprimir un mensaje con texto almacenado en FLASH
 void printLCDNumber(int col, int row, float number, char unit, int decimals) {
   lcd.setCursor(col, row);
   lcd.print(number, decimals);  // Imprime el número con los decimales especificados
@@ -1010,6 +1014,13 @@ void printLCDNumber(int col, int row, float number, char unit, int decimals) {
   if (unit != '\0' && unit != ' ' && unit != 'A') {  // Solo imprime la unidad si no es nula o espacio en blanco o si no es A
     lcd.print(unit);
   } else if (unit == 'A') {lcd.write(byte(0));}   // Escribe el carácter personalizado
+}
+// Imprimir n cantidad de espacios " "
+void Print_Spaces(int col, int row, byte count) {
+  lcd.setCursor(col ,row);
+  for (byte i = 0; i < count; i++) {
+    lcd.print(F(" "));
+  }
 }
 
 //-------------------------------- Graba en EEPROM ------------------------------------

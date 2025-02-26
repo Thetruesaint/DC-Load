@@ -19,6 +19,7 @@
 - A, V y W en minusculas para valores dinámicos, y A con un caracer especial mas petiso que se carga en el LCD por Setup.
 - En TC y TL se deshabilita el encoder. Nueva función Encoder_Status() que inicializa tambien limites de reading y Encoder
 - Blink de unidad de limite excedido
+- Optimización de espacio con funcion Print_Spaces.
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -37,7 +38,7 @@
 - En CC y BC, en la unidad del Set quedaba tapada
 
 **Bugs:**
-- No detectados
+- En TC y TL se puede entrar a config y no se resetea el modo
   
 **Trabajando:**
 - Relese Terminado!
@@ -49,6 +50,7 @@
 - No convertir ADC por rango de voltage, complicado al pedo... y peligroso. NOs ahorramos FLASH
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 - Modo Calibracíón incluir external voltage sense?
+- Revisar la lógica del encoder, ya no se requiere asceleración y usa dos identaciones para avanzar.
 
 **Posibles Mejoras SW:**
 
