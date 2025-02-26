@@ -15,6 +15,7 @@
 - CR y CP con ajustes de decenas, centenas y solo decimas. CC y BC se alinean con las unidades (unitPosition = 8), ajusto Update_LCD
 - Optimización de Cursor_Position, no se ve el cursor de tan rápido. Validar en entorno real.
 - En BC Setup ahora se puede llamar a Config_Limits.
+- Cambia TL con "Step" es mas tradicional y claro, reoganizo plantillas LCD
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -35,7 +36,6 @@
   
 **Trabajando:**
 - Se pueden ingresar tiempos mSec con punto decimal, cambiar Value_Input para setear decimal true o false
-- Cambiar a TL con "Step" es mas tradicional.
 
 **A Trabajar:**
 - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
@@ -44,6 +44,7 @@
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 
 **Posibles Mejoras:**
+- En TL poner "-" por cada step y marcar en cual se esta ej.: ---3----- -> ----4----
 - En CC, CP, CR y BC, con customkey == "S" + BTN encoder, mover cursor a la izquierda --CuPo, posiblemente requiera reingeniería de Cursor_Position
 - Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
 - Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.

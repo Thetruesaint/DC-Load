@@ -776,10 +776,10 @@ void Transient_List_Mode(void) {
   static unsigned int last_transientPeriod = -1;
 
   if(modeConfigured) {
-    printLCD_S(13, 2, String(current_instruction));     // Muestra la instrucción en curso de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
+    printLCD_S(12, 2, String(current_step));            // Paso en curso, de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
         if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
-      printLCD(6, 3, F("     "));                       // Borra anteriores
-      printLCD_S(6, 3, String(transientPeriod));        // Nuevo valor con espacio extra
+      printLCD(8, 3, F("     "));                       // Borra anteriores
+      printLCD_S(8, 3, String(transientPeriod));        // Nuevo valor con espacio extra
       last_transientPeriod = transientPeriod;
     }
   }
@@ -788,11 +788,12 @@ void Transient_List_Mode(void) {
 
   if (!modeInitialized) {                 // Si es falso, prepara el LCD
     printLCD(0, 0, F("TL LOAD"));         // Muestra el titulo del modo
-    printLCD(0, 2, F("Instruccion: "));   // Muestra el mensaje
-    printLCD(14, 2, F("/"));   // Muestra el mensaje
-    printLCD_S(15, 2, String(total_instructions));
-    printLCD(0, 3, F("Time: "));         // Muestra el mensaje
-    printLCD(11, 3, F("mSecs"));          // Muestra la unidad
+  //printLCD(0, 2, F("Instruccion: "));
+    printLCD(6, 2, F("Step: "));
+    printLCD(13, 2, F("/"));
+    printLCD_S(14, 2, String(total_steps));
+    printLCD(2, 3, F("Time: "));
+    printLCD(13, 3, F("mSecs"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
   }
 }
@@ -802,7 +803,7 @@ void Transient_List_Setup() {
   lcd.clear(); // Apaga el cursor y borra la pantalla
   // Pregunta por cuantos saltos se desean cargar
   printLCD(3, 0, F("TRANSIENT LIST"));
-  printLCD(2, 1, F("Set Q (2 to 10)?"));
+  printLCD(4, 1, F("Steps(2-10)?"));
   do { // Bucle para garantizar entrada válida
     z = 9; r = 2; //y = 9;
     printLCD(z - 1, r, F(">"));
@@ -810,15 +811,15 @@ void Transient_List_Setup() {
     if (!Value_Input(z, r, 2)) return; // Si se presiona 'M', sale del modo
   } while (x < 2 || x > 10);
 
-  total_instructions = x - 1;   // Guarda el número total de instrucciones
+  total_steps = x - 1;   // Guarda el número total de instrucciones
 
-  // Pide confifurar cada salto
-  lcd.clear();                // Borra la pantalla del LCD
-  for (int i = 0; i <= total_instructions; i++) {     // Bucle para obtener los valores de la lista
-    printLCD(3, 0, F("TRANSIENT LIST"));              // Mantengo el titulo para que se vea bien el modo que se está configurando
-    printLCD_S(0, 1, "Instruccion " + String(i));     // Muestra la instrucción a configurar
-    printLCD(0, 2, F("Current (A):"));                // Pide el valor de corriente en Amperes
-    printLCD(0, 3, F("Time (mSec):"));                // Pide el valor de tiempo en milisegundos
+  // confifurar cada paso:
+  lcd.clear();
+  for (int i = 0; i <= total_steps; i++) {     // Bucle para obtener los valores de la lista
+    printLCD(3, 0, F("TRANSIENT LIST"));       // Mantengo el titulo para que se vea bien el modo que se está configurando
+    printLCD_S(5, 1, "Set step " + String(i));     // Muestra la instrucción a configurar
+    printLCD(0, 2, F("Current (A):"));         // Pide el valor de corriente en Amperes
+    printLCD(0, 3, F("Time (mSec):"));         // Pide el valor de tiempo en milisegundos
 
     z = 13; r = 2;
     if (!Value_Input(z, r)) return;     // Permitir 5 digitos, ej.: 1.234 o salir del Modo
@@ -832,8 +833,8 @@ void Transient_List_Setup() {
     lcd.clear();                        // Borra la pantalla, para configurar la siguiente instrucción
   }
   setCurrent = 0;          // por si quedo seteada del modo anterior
-  current_instruction = 0; // Resetea el contador de instrucciones porque finalizo la configuración
-  transientPeriod = transientList[current_instruction][1];      // Por las dudas tambien el periodo a mostrar
+  current_step = 0; // Resetea el contador de instrucciones porque finalizo la configuración
+  transientPeriod = transientList[current_step][1];      // Por las dudas tambien el periodo a mostrar
   modeConfigured = true;   // Se configuro el modo TC
   modeInitialized = false; // Pinta la plantilla TC en el LCD
 }
@@ -844,24 +845,24 @@ void Transient_List_Timing(void) {
   static unsigned long last_time = 0;
 
   if (!toggle) {
-    current_instruction = 0;
+    current_step = 0;
     last_time = 0;
-    transientPeriod = transientList[current_instruction][1];
+    transientPeriod = transientList[current_step][1];
     return;} // Reinicio la lista
 
     current_time = micros();
 
   if (last_time == 0){
-    setCurrent = transientList[current_instruction][0];       // Ya esta en mA
-    transientPeriod = transientList[current_instruction][1];
+    setCurrent = transientList[current_step][0];       // Ya esta en mA
+    transientPeriod = transientList[current_step][1];
     last_time = current_time; 
   }
 
   if ((current_time - last_time) >= transientPeriod * 1000) {
-    current_instruction++;
-    if (current_instruction > total_instructions) { current_instruction = 0; }
-    setCurrent = transientList[current_instruction][0];       // Ya esta en mA
-    transientPeriod = transientList[current_instruction][1];
+    current_step++;
+    if (current_step > total_steps) { current_step = 0; }
+    setCurrent = transientList[current_step][0];       // Ya esta en mA
+    transientPeriod = transientList[current_step][1];
     last_time = current_time;
   }
 }

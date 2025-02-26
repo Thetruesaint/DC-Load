@@ -125,8 +125,8 @@ extern float HighCurrent;                   // Configuración de corriente alta 
 extern unsigned long transientPeriod;       // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
 extern unsigned long current_time;          // Para almacenar el tiempo actual en microsegundos
 extern unsigned long transientList[10][2];  // Array para almacenar los datos de la lista transitoria
-extern int total_instructions;              // Utilizado en el modo de Transient List Mode
-extern int current_instruction;             // Utilizado en el modo de Transient List Mode
+extern int total_steps;                     // Utilizado en el modo de Transient List Mode
+extern int current_step;             // Utilizado en el modo de Transient List Mode
 
 //--- Posiciones reservadas en la EEMPROM cada 4 bytes para valores float ----
 const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)

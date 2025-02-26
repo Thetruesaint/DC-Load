@@ -84,5 +84,5 @@ float HighCurrent = 0;                // Configuración de corriente alta para e
 unsigned long transientPeriod;        // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
 unsigned long current_time;           // Para almacenar el tiempo actual en microsegundos
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
-int total_instructions;               // Utilizado en el modo de Transient List Mode
-int current_instruction;              // Utilizado en el modo de Transient List Mode
+int total_steps;               // Utilizado en el modo de Transient List Mode
+int current_step;              // Utilizado en el modo de Transient List Mode
