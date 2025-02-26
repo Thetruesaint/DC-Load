@@ -18,6 +18,7 @@
 - Cambia TL con "Step" es mas tradicional y claro, reoganizo plantillas LCD
 - A, V y W en minusculas para valores dinámicos, y A con un caracer especial mas petiso que se carga en el LCD por Setup.
 - En TC y TL se deshabilita el encoder. Nueva función Encoder_Status() que inicializa tambien limites de reading y Encoder
+- Blink de unidad de limite excedido
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -39,7 +40,7 @@
 - No detectados
   
 **Trabajando:**
-- Blink de limites por tggl flag? en lugar de delay..?
+- Relese Terminado!
 
 **A Trabajar:**
 - No mas para v1.70.

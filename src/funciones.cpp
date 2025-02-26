@@ -252,8 +252,8 @@ void Update_LCD(void) {
 
     lcd.setCursor(6, 2);
     if (Mode == CC || Mode == BC){
-      if (reading < 100) lcd.print(" ");
-      if (reading < 10) lcd.print(" ");
+      if (reading < 100) lcd.print(F(" "));
+      if (reading < 10) lcd.print(F(" "));
       lcd.print(reading, 3);
     } else {
       if (reading < 100) lcd.print("0");
@@ -313,24 +313,35 @@ void Check_Limits() {
   float power = voltage * current;
   float maxpwrdis = constrain(140 - 0.80 * temp, 0, 120);     // Limite por MOSFET IRF540
   float actpwrdis = max(0, power / 4);                        // Por los 4 MOSFET IRF540
+  bool vlimit = false;
+  bool ilimit = false;
+  bool plimit = false;
+  bool climit = false;
 
-  if (voltage > MAX_VOLTAGE) strcpy(message, "Max Voltage!      ");
-  else if (current > CurrentCutOff * 1.01) strcpy(message, "Current Cut Off!  "); // Hasta 1% adicional se permite (Toleración de Calibración máxima)
-  else if (power > PowerCutOff) strcpy(message, "Power Cut Off!    ");
-  else if (temp >= tempCutOff) strcpy(message, "Over Temperature! ");
+  if (voltage > MAX_VOLTAGE) {strcpy(message, "Max Voltage!      "); vlimit = true;}
+  else if (current > CurrentCutOff * 1.01) {strcpy(message, "Current Cut Off!  "); ilimit = true;} // 1% adicional (Toleración de Calibración máxima)
+  else if (power > PowerCutOff) {strcpy(message, "Power Cut Off!    "); plimit = true;}
+  else if (temp > tempCutOff) {strcpy(message, "Over Temperature! "); climit = true;}
   else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Disipation");
 
   if (strlen(message) > 0){
-    Load_ON_status(false);                    // Si hubo mensaje, apagar la carga ASAP.
-    for (int i = 0; i < 3; i++) {             // Parpaderá el mensaje tres veces
+    Load_ON_status(false);              // Si hubo mensaje, apagar la carga ASAP.
+    reading = 0; encoderPosition = 0;   // Reset de inputs
+    setCurrent = 0;                     // Todo a 0 para asegurar el apagado
+    for (int i = 0; i < 6; i++) {       // Parpaderá el mensaje tres veces
       printLCD_S(0, 3, message);
-      delay(500);
+      if (vlimit){lcd.setCursor(12,1); lcd.print(F(" "));}
+      else if(ilimit){lcd.setCursor(5,1); lcd.print(F(" "));}
+      else if(plimit){lcd.setCursor(19,1); lcd.print(F(" "));}
+      else if(climit){lcd.setCursor(19,0); lcd.print(F(" "));}
+      delay(250);
       printLCD(0, 3, F("                  "));  // Borra todo salvo el indicador de modo
-      delay(500);
+      if (vlimit){lcd.setCursor(12,1); lcd.print(F("v"));}
+      else if(ilimit){lcd.setCursor(5,1); lcd.write(byte(0));}
+      else if(plimit){lcd.setCursor(19,1); lcd.print(F("w"));}
+      else if(climit){lcd.setCursor(19,0); lcd.print(F("C"));}
+      delay(250);
     }
-    reading = 0;
-    encoderPosition = 0;
-    setCurrent = 0;
     Reset_Input_Pointers();           
     modeInitialized = false;      // Avisa a los modos que se deben inicializar dado que se execdio un limite
   }
@@ -920,10 +931,10 @@ void Show_Limits(void) {
   // Los muestra
   printLCD(1, 0, F("Limits")); // Muestra el titulo
   printLCD(0, 1, F("Current:"));
-  printLCDNumber(9, 1, CurrentCutOff, 'A', 3);   // 3 decimales, ej.: 1.234, 9.999 o 10.00
-
+  // 3 decimales, ej.: 1.234, 9.999 o 10.00
+  printLCDNumber(9, 1, CurrentCutOff,' ',3);lcd.print(F("A")); // A normal porque es valor fijo.
   printLCD(0, 2, F("Power:"));
-  printLCDNumber(9, 2, PowerCutOff, 'w', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
+  printLCDNumber(9, 2, PowerCutOff, 'W', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
   printLCD(0, 3, F("Temp.:"));
   printLCDNumber(9, 3, tempCutOff, ' ', 0);     // 0 decimales, ej.: 10 a 99
   lcd.print(char(0xDF)); lcd.print("C");
