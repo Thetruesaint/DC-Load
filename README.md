@@ -36,9 +36,11 @@
 - En BC, Setup solo salir con M, con Shit no respondia
 - Value Imput permite deshabilitar numeros decimales (mSec de TC y TL o BC selec. de n°S)
 - En CC y BC, en la unidad del Set quedaba tapada
+- En TC y TL se podia modificar Config_Limits mal el condicional de Read_Keypad. 
+- Read_Keypad permitia 5 digitos mas el . que luego no se borraba. Faltaba condicional en el "."
 
 **Bugs:**
-- En TC y TL se puede entrar a config y no se resetea el modo
+- No detectados por ahora
   
 **Trabajando:**
 - Relese Terminado!
@@ -51,6 +53,7 @@
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 - Modo Calibracíón incluir external voltage sense?
 - Revisar la lógica del encoder, ya no se requiere asceleración y usa dos identaciones para avanzar.
+- Unificar Read_Keypad e Value_Input? para que tome valores instantaneos.
 
 **Posibles Mejoras SW:**
 

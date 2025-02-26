@@ -53,7 +53,6 @@ void Read_Keypad(void) {
   static bool shiftPressed = false; // Bandera para detectar Shift
 
   customKey = customKeypad.getKey();              // Escanea el teclado
-  Serial.print("entro e keypad");
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
 
@@ -63,21 +62,18 @@ void Read_Keypad(void) {
   }
 
   if (shiftPressed) {
-    Serial.print("entro con Shift");
     shiftPressed = false;
     Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
     return;
   }
 
   switch (customKey) {                            
-    case 'M':                                     // Cambio de Modo                    
-      zl = 1;                                     // Resetea la posición en el renglón
-      //Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
+    case 'M':                       // Cambio de Modo                    
+      zl = 1;                       // Resetea la posición en el renglón
       Mode_Selection();
-        break;                                      
-    case 'C':                                   // Configuración de limites
-    Serial.print("entro Case C");
-     if (Mode != TC || Mode !=TL){             // Por ahora solo durante modos CC, CP y CR.
+      break;                                      
+    case 'C':                       // Configuración de limites
+      if (Mode != TC && Mode !=TL){ // Porque ya se consideraron durante el Setup, reiniciar el modo para el Config_Limits
       Config_Limits(); }
       break;                                      
   }
@@ -91,7 +87,7 @@ void Read_Keypad(void) {
     printLCD_S(zl++, 3, String(customKey));                 // Muestra el número en el LCD
   }
 
-  if (customKey == '.' && decimalPoint != '*') {   // Si la tecla presionada es un punto decimal y no se ha ingresado uno antes
+  if (customKey == '.' && decimalPoint != '*'&& index < 5) {   // Si punto decimal y no se ha ingresado uno antes y si no se llego al limite de carga
     numbers[index++] = '.';                        // Almacena el punto decimal en la variable numbers
     numbers[index] = '\0';                         // Agrega el caracter nulo al final de la cadena
     printLCD(zl++, 3, F("."));                     // Muestra el punto decimal en el LCD
