@@ -324,23 +324,36 @@ void Check_Limits() {
 
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
+  static uint32_t lastPressTime = 0;  // Para evitar bloqueo por delay()
+  constexpr int unitPosition = 8;     // Posición base del cursor, constexpr hace lo mismo que const pero optimizado.
+  static int last_CuPo = -1;          // Posición previa del cursor
 
-  int unitPosition = 8;
+  // Verifica si el botón fue presionado y hace debounce
+  if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 150) { 
+      lastPressTime = millis();
+      CuPo++;  // Corre el cursor un lugar a la derecha
+  }
 
-  if (digitalRead(ENC_BTN) == LOW) { delay(200); CuPo++;} // Corre el cursor un lugar a la derecha
+  if (last_CuPo == CuPo) return;
 
-  if (CuPo == unitPosition + 1) { CuPo++;}          // Salta el punto decimal
-  if ((Mode == CC || Mode == BC) && CuPo > 12)  CuPo = unitPosition;      // vuelve a las unidades
-  if ((Mode == CP || Mode == CR) && CuPo > 10 ) CuPo = unitPosition - 2;  // vuelve a las centenas
-  if (CuPo == unitPosition)       factor = 1000;    // Unidades
-  if (CuPo == unitPosition + 2)   factor = 100;     // Decimas
-  if (Mode == CP || Mode == CR){                    // Solo para CP y CR:
-    if (CuPo == unitPosition - 1) factor = 10000;   // Decenas
-    if (CuPo == unitPosition - 2) factor = 100000;} // Centemas  
-  if (Mode == CC || Mode == BC){                    // Solo para CC y BC:
-    if (CuPo == unitPosition + 3) factor = 10;      // Centenas
-    if (CuPo == unitPosition + 4) factor = 1;}      // Milesimas
-  
+  // Saltar el punto decimal
+  if (CuPo == unitPosition + 1) CuPo++;
+
+  // Volver a la posición inicial si excede el rango permitido
+  if ((Mode == CC || Mode == BC) && CuPo > 12) CuPo = unitPosition;
+  if ((Mode == CP || Mode == CR) && CuPo > 10) CuPo = unitPosition - 2;
+
+  // Asignar factor según la posición del cursor y el modo
+  switch (CuPo) {
+      case 6:   factor = 100000;  break;  // Centenas (Solo CP y CR)
+      case 7:   factor = 10000;  break;   // Decenas (Solo CP y CR)
+      case 10:  factor = 100;   break;    // Décimas
+      case 11:  factor = 10;    break;    // Centésimas (Solo CC y BC)
+      case 12:  factor = 1;     break;    // Milésimas (Solo CC y BC)
+      default:  factor = 1000;            // Unidades por defecto CuPo = 8
+  }
+  last_CuPo = CuPo;
+
   lcd.setCursor(CuPo, 2);
   lcd.cursor();
 }
@@ -470,7 +483,6 @@ void Const_Current_Mode(void) {
     printLCD(0, 2, F("Set I>"));           // Muestra el mensaje
     printLCD(12, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
     maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
@@ -493,7 +505,6 @@ void Const_Power_Mode(void) {
     printLCD(0, 2, F("Set W>"));           // Muestra el mensaje
     printLCD(12, 2, F("W"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Potecia
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = PowerCutOff;              // Limita reading al corte de potencia (en W, 300.0 por defecto)
     maxEncoder = maxReading * 1000;        // Limita encoderPosition a 30,000 (en decimas de W, equivalente a 300.0W)
@@ -517,7 +528,6 @@ void Const_Resistance_Mode(void) {
     printLCD(0, 2, F("Set R>"));            // Muestra el mensaje
     printLCD_S(12, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-    CuPo = 8;                               // Pone el cursor en la posición de las unidades de Resistencia
     reading = MAX_RESISTOR;                 // Valor por default, 999 Ω
     encoderPosition = reading * 1000;       // Resetea la posición del encoder y cualquier valor de reading
     maxReading = MAX_RESISTOR;              // Limita reading al corte de resistencia (en Ω, 999.0 por defecto)
@@ -549,7 +559,6 @@ void Battery_Mode(void) {
     printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
-    CuPo = 8;                              // Pone el cursor en la posición de las unidades de Amperes
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = CurrentCutOff;            // Limita reading al corte de corriente (en A)
     maxEncoder = maxReading * 1000;        // Limita encoderPosition a 10,000 (en mA, equivalente a 10.0A)
