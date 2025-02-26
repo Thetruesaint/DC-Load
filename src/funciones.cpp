@@ -138,7 +138,7 @@ void Read_Load_Button(void) {
 }
 
 //----------------------- Key input used for UserSetUp ------------------------------- 
-bool Value_Input(int col, int row, int maxDigits) {  
+bool Value_Input(int col, int row, int maxDigits, bool decimal) {  
   
   static bool shiftPressed = false;
 
@@ -167,7 +167,7 @@ bool Value_Input(int col, int row, int maxDigits) {
           numbers[index] = '\0'; 
         }
       } 
-      else if (customKey == '.' && decimalPoint != '*') { 
+      else if (customKey == '.' && decimalPoint != '*' && decimal) {  // solo si esta habilitado
         if (index < maxDigits) {
           numbers[index++] = '.';
           numbers[index] = '\0';
@@ -639,10 +639,10 @@ while (true) {  // Bucle para evitar la salida accidental
     do {
         z = 9; r = 2; //y = 1;
         printLCD(z - 1, r, F(">"));
-        printLCD(z, r, F(" "));            // Borra el espacio si hubo un valor fuera de rango
-        if (!Value_Input(z, r, 1)) return; // Sale si hubo selección de nuevo modo o reset de modo
-    } while (x < 1 || x > 6);              // Asegura que solo se ingrese un número entre 1 y 6
-    BatteryCutoffVolts *= x;               // Multiplica por la cantidad de celdas
+        printLCD(z, r, F(" "));                   // Borra el espacio si hubo un valor fuera de rango
+        if (!Value_Input(z, r, 1, false)) return; //1 digito, sin decimal.
+    } while (x < 1 || x > 6);                     // Asegura que solo se ingrese un número entre 1 y 6
+    BatteryCutoffVolts *= x;                      // Multiplica por la cantidad de celdas
   }
 
   timer_reset();                  // Resetea el timer
@@ -723,20 +723,20 @@ void Transient_Cont_Setup(void) {
 
   printLCD(3, 0, F("TRANSIENT CONT."));
   printLCD(0, 1, F("Low I (A):"));
-  z = 13; r = 1;                      // Setea las posiciones de la pantalla del LCD
-  if (!Value_Input(z, r)) return;                // Obtiene el valor ingresado por el usuario o sale del modo
-  LowCurrent = min(x, CurrentCutOff);         // Limita la corriente baja al valor de corte de corriente
+  z = 13; r = 1;                             // Coord. LCD
+  if (!Value_Input(z, r)) return;            // Obtiene el valor ingresado por el usuario o sale del modo
+  LowCurrent = min(x, CurrentCutOff);        // Limita la corriente baja al valor de corte de corriente
   printLCDNumber(z, r, LowCurrent, 'A', 3);  // Muestra el valor de la corriente baja
 
   printLCD(0, 2, F("High I (A):"));
   z = 13; r = 2; 
-  if (!Value_Input(z, r)) return;           // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r)) return;             // Limita la corriente baja al valor de corte de corriente
   HighCurrent = min(x, CurrentCutOff);        // Limita la corriente alta al valor de corte de corriente
   printLCDNumber(z, r, HighCurrent, 'A', 3);  // Muestra el valor de la corriente alta con tres decimales
 
   printLCD(0, 3, F("Delay(mSec):"));
   z = 13; r = 3;                              // Setea las posiciones de la pantalla del LCD
-  if (!Value_Input(z, r)) return;          // Limita la corriente baja al valor de corte de corriente
+  if (!Value_Input(z, r, 5, false)) return;   // 5 digitos, sin decimal.
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
 
   lcd.clear();                                // Borra la pantalla del LCD
@@ -760,7 +760,7 @@ void Transcient_Cont_Timing() {
   current_time = micros();
 
   if ((current_time - last_time) >= (transientPeriod * 1000.0)) { 
-    last_time = current_time; // 🔹 Actualiza tiempo directamente
+    last_time = current_time; 
 
     if (!transient_cont_toggle) {
       setCurrent = LowCurrent * 1000 ; } // lo convierte a mA
@@ -788,7 +788,6 @@ void Transient_List_Mode(void) {
 
   if (!modeInitialized) {                 // Si es falso, prepara el LCD
     printLCD(0, 0, F("TL LOAD"));         // Muestra el titulo del modo
-  //printLCD(0, 2, F("Instruccion: "));
     printLCD(6, 2, F("Step: "));
     printLCD(13, 2, F("/"));
     printLCD_S(14, 2, String(total_steps));
@@ -807,19 +806,19 @@ void Transient_List_Setup() {
   do { // Bucle para garantizar entrada válida
     z = 9; r = 2; //y = 9;
     printLCD(z - 1, r, F(">"));
-    printLCD(z, r, F("  "));   // Borra el espacio si hubo un valor fuera de rango
-    if (!Value_Input(z, r, 2)) return; // Si se presiona 'M', sale del modo
+    printLCD(z, r, F("  "));                  // Borra el espacio si hubo un valor fuera de rango
+    if (!Value_Input(z, r, 2, false)) return; // 2 digitos, sin decimal.
   } while (x < 2 || x > 10);
 
   total_steps = x - 1;   // Guarda el número total de instrucciones
 
-  // confifurar cada paso:
+  // configurar cada paso:
   lcd.clear();
-  for (int i = 0; i <= total_steps; i++) {     // Bucle para obtener los valores de la lista
-    printLCD(3, 0, F("TRANSIENT LIST"));       // Mantengo el titulo para que se vea bien el modo que se está configurando
-    printLCD_S(5, 1, "Set step " + String(i));     // Muestra la instrucción a configurar
-    printLCD(0, 2, F("Current (A):"));         // Pide el valor de corriente en Amperes
-    printLCD(0, 3, F("Time (mSec):"));         // Pide el valor de tiempo en milisegundos
+  for (int i = 0; i <= total_steps; i++) {      // Bucle para obtener los valores de la lista
+    printLCD(3, 0, F("TRANSIENT LIST"));        // Mantengo el titulo para que se vea bien el modo que se está configurando
+    printLCD_S(5, 1, "Set step " + String(i));  // Muestra la instrucción a configurar
+    printLCD(0, 2, F("Current (A):"));          // Pide el valor de corriente en Amperes
+    printLCD(0, 3, F("Time (mSec):"));          // Pide el valor de tiempo en milisegundos
 
     z = 13; r = 2;
     if (!Value_Input(z, r)) return;     // Permitir 5 digitos, ej.: 1.234 o salir del Modo
@@ -827,16 +826,16 @@ void Transient_List_Setup() {
     printLCDNumber(z, r, x, 'A', 3);    // Muestra el valor de la corriente
     transientList[i][0] = x * 1000;     // Lo guarda en la lista en mA
 
-    z = 13; r = 3;                      // Ubica la toma del valor de mSec
-    if (!Value_Input(z, r)) return;     // Permitir 5 digitos, ej.: 99999 o salir del Modo
-    transientList[i][1] = x;            // Guarda el valor del tiempo en ms
-    lcd.clear();                        // Borra la pantalla, para configurar la siguiente instrucción
+    z = 13; r = 3;                            // Ubica la toma del valor de mSec
+    if (!Value_Input(z, r, 5, false)) return; // 5 digitos, sin decimal.
+    transientList[i][1] = x;                  // Guarda el valor del tiempo en ms
+    lcd.clear();                              // Borra la pantalla, para configurar la siguiente instrucción
   }
-  setCurrent = 0;          // por si quedo seteada del modo anterior
-  current_step = 0; // Resetea el contador de instrucciones porque finalizo la configuración
-  transientPeriod = transientList[current_step][1];      // Por las dudas tambien el periodo a mostrar
-  modeConfigured = true;   // Se configuro el modo TC
-  modeInitialized = false; // Pinta la plantilla TC en el LCD
+  setCurrent = 0;           // por si quedo seteada del modo anterior
+  current_step = 0;         // Resetea el contador de pasos porque finalizo la configuración
+  transientPeriod = transientList[current_step][1];      // Tambien el periodo a mostrar
+  modeConfigured = true;    // Se configuro el modo TC
+  modeInitialized = false;  // Pinta la plantilla TC en el LCD
 }
 
 //------------------------------ Transcient List Timing ------------------------------

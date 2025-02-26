@@ -30,33 +30,41 @@
 - No se veia bien el cursor, cambio método a blinking manual.
 - Al salir de TL Setup, quedaba el blink.
 - En BC, Setup solo salir con M, con Shit no respondia
+- Value Imput permite deshabilitar numeros decimales (mSec de TC y TL o BC selec. de n°S)
 
 **Bugs:**
-- Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
+- No detectados
   
 **Trabajando:**
-- Se pueden ingresar tiempos mSec con punto decimal, cambiar Value_Input para setear decimal true o false
+- En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
+- Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.
 
 **A Trabajar:**
-- En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
+- Blink de limites por tggl flag? en lugar de delay..?
 
 **En Cola:**
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
+- Modo Calibracíón incluir external voltage sense?
 
-**Posibles Mejoras:**
-- En TL poner "-" por cada step y marcar en cual se esta ej.: ---3----- -> ----4----
+**Posibles Mejoras SW:**
+
 - En CC, CP, CR y BC, con customkey == "S" + BTN encoder, mover cursor a la izquierda --CuPo, posiblemente requiera reingeniería de Cursor_Position
 - Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
-- Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.
-- En TC y TL: mostrar mSec decrecientes?, usar instrucciones del 0 al 9, mas simple
+- En TL poner "-" por cada step y marcar en cual se esta ej.: ---3----- -> ----4----
+- En TC y TL: mostrar mSec decrecientes?
 - En TC, ajustar timing con encoder?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
 - Heald Checks en setup e informar errores con periféricos I2C, temp., etc. llamar a Check_Limits?
-- Ponerle un Buzzer?
-- Modo Calibracíón incluir external voltage sense?
 - Anuncio de limite excedido, hacer "blimk" del valor excedido.
-- Activar el LOAD ON OFF por interrupción?, desactivar el mosfet con el procesador directamente?
-- Ver la frecuencia máxima de conmutación de los Trasient con el osciloscopio a ver hasta donde llega.
-- Setear hora y fecha del RTC y poder mirarla boton Shift?.
+- Activar el LOAD ON OFF por interrupción?
+-  Setear hora y fecha del RTC y poder mirarla boton Shift?.
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
+
+**Posibles Mejoras de HW:**
+- Cooler mas grande contra el Disipador.
+- Buzzer
+- Medir frecuencia máxima TC y TL con el osciloscopio a ver hasta donde llega, usar Lipo.
+- Mosfets para coolers
+- E Control para apagar los MOSFET si falla el DAC
+- habiliar control externo de MOSFETs?
