@@ -40,7 +40,7 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.70"));
+printLCD(0, 3, F("v1.70b")); // Version Beta para testear en equipo Real
 
 #ifndef WOKWI_SIMULATION
 delay (2000);

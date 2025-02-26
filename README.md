@@ -23,12 +23,15 @@
     - Read_Keypad, con E, carga el valor 0, se ignora si index = 0.
     - Variables cutoff de int a float, redireccionamiento EEPROM.
     - CR no limitaba el 0 ingresado por teclado.
- 
+    - CuPo no inicializaba al cambiar de modo.
+    - En BC quedaba en 100mA cuando termina. Se retea los input cuando "Done"
+    - No se veia bien el cursor, cambio método a blinking manual.
+  
   **Bugs:**
     - Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
     - En BC, menu inicial solo se pude salir con M, con Shit no funciona
     - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
-  
+      
   **Trabajando:**
 
     - Dentro de TL ejecutandose, no puedo salir con Shift+M, solo con M.

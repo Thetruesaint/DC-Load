@@ -21,7 +21,7 @@ int16_t adc1, adc3;                     // ADCs usados, adc0 y adc2 a GND
 unsigned long controlVoltage = 0;       // Voltage de control para el DAC que controlara al MOSFET
 float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
-int CuPo = 7;                           // Posicion del cursor
+int CuPo = 8;                           // Posicion del cursor, es 8 incialmente.
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
 float maxReading = 0;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
