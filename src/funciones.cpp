@@ -157,6 +157,7 @@ bool Value_Input(int col, int row, int maxDigits) {
       if (shiftPressed) {
         shiftPressed = false;
         Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
+        lcd.noCursor(); lcd.blink_off();
         return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
       }
 
@@ -578,7 +579,7 @@ void Battery_Mode(void) {
 //-------------------- Battery Type Selection and Cutoff Setup ----------------------
 void Battery_Type_Selec() {
 
-  static bool shiftPressed = false;
+  bool shiftPressed = false;
 
   lcd.clear();                            // Borra la pantalla del LCD
   printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
@@ -586,21 +587,33 @@ void Battery_Type_Selec() {
   printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
   printLCD(2, 3, F("5)Cutoff Voltage"));
 
-  while (true) {  // Bucle para evitar la salida accidental
+while (true) {  // Bucle para evitar la salida accidental
     customKey = Wait_Key_Pressed(); 
 
+    if (customKey == 'S') { 
+        shiftPressed = !shiftPressed;  // Alterna shift y sigue esperando otra tecla
+        continue;                      // No sale del bucle, sigue esperando una nueva tecla
+    }
+
+    // Si Shift está activado y la tecla está en el rango 1-6, llama a Mode_Selection
+    if (shiftPressed && (customKey >= '1' && customKey <= '6')) {
+        Mode_Selection(true, customKey);
+        return;
+    }
+
     switch (customKey) {
-        case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG ; BatteryType = "Li-Po"; break;
-        case '2': BatteryCutoffVolts = LION_STOR_CELL_VLTG ; BatteryType = "Li-Ion"; break;
-        case '3': BatteryCutoffVolts = LIPO_DISC_CELL_VLTG ; BatteryType = "Li-Po"; break;
-        case '4': BatteryCutoffVolts = LION_DISC_CELL_VLTG ; BatteryType = "Li-Ion"; break;
+        case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG; BatteryType = "Li-Po"; break;
+        case '2': BatteryCutoffVolts = LION_STOR_CELL_VLTG; BatteryType = "Li-Ion"; break;
+        case '3': BatteryCutoffVolts = LIPO_DISC_CELL_VLTG; BatteryType = "Li-Po"; break;
+        case '4': BatteryCutoffVolts = LION_DISC_CELL_VLTG; BatteryType = "Li-Ion"; break;
         case '5': BatteryType = "Custom"; break;
-        case 'S': shiftPressed = !shiftPressed ; continue; // solo marca el flag y no sale.
-        case 'M': case '<': Mode_Selection(shiftPressed); return; // Salida del Modo y salta al proximo, ver como queda el functionIndex
+        case 'M': case '<': Mode_Selection(false); return; // Salida del Modo y salta al próximo
+        case 'C': Config_Limits(); Mode_Selection(true, 4); return; // configura el limite y vuelve a llamar al modo BC.
         default: continue;  // Evita salir si la tecla es inválida
     }
-    break;  //  Sale del bucle si se ingresó una tecla válida
-  }
+    break;  // Sale del bucle si se ingresó una tecla válida
+}
+
 
   // Pedir ingresar un voltaje de corte
   if (BatteryType == "Custom") {
@@ -687,7 +700,7 @@ void Battery_Capacity(void) {
 //---------------------------- Transcient Continuos Mode ----------------------------
 void Transient_Cont_Mode(void) {
 
-  if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
+if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
 
   if (!modeInitialized) {                       // Si es falso, prepara el LCD
     printLCD_S(3, 2, String(LowCurrent, 3));    // Muestra el valor de la corriente baja

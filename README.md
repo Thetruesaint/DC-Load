@@ -14,6 +14,7 @@
 - CC, CR, CP y BC Limite a reading/encoder por variable global. Check_limit quedo solo para los de Hardware.
 - CR y CP con ajustes de decenas, centenas y solo decimas. CC y BC se alinean con las unidades (unitPosition = 8), ajusto Update_LCD
 - Optimización de Cursor_Position, no se ve el cursor de tan rápido. Validar en entorno real.
+- En BC Setup ahora se puede llamar a Config_Limits.
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -26,25 +27,25 @@
 - CuPo no inicializaba al cambiar de modo.
 - En BC quedaba en 100mA cuando termina. Se retea los input cuando "Done"
 - No se veia bien el cursor, cambio método a blinking manual.
+- Al salir de TL Setup, quedaba el blink.
+- En BC, Setup solo salir con M, con Shit no respondia
 
 **Bugs:**
-- Dentro de TL ejecutando se, no puedo salir con Shift+M, solo con M.
-- En BC, menu inicial solo se pude salir con M, con Shit no funciona
 - Se pueden ingresar tiempos mSec con punto decimal, ver efecto.
   
 **Trabajando:**
-
-- Dentro de TL ejecutandose, no puedo salir con Shift+M, solo con M.
-- En BC, menu inicial solo se pude salir con M, con Shit no funciona
+- Se pueden ingresar tiempos mSec con punto decimal, cambiar Value_Input para setear decimal true o false
+- Cambiar a TL con "Step" es mas tradicional.
 
 **A Trabajar:**
 - En modos TC y TL Deshabilitar interrupción de encoder? afectara tiempos cortos.
-- En CC, CP, CR y BC, con customkey == "S" + BTN encoder, mover cursor a la izquierda --CuPo, posiblemente requiera reingeniería de Cursor_Position
 
 **En Cola:**
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE) para V1.71
 
 **Posibles Mejoras:**
+- En CC, CP, CR y BC, con customkey == "S" + BTN encoder, mover cursor a la izquierda --CuPo, posiblemente requiera reingeniería de Cursor_Position
+- Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
 - Cambiar los caracteres V y W a minuscular y A con un caracer espacial mas petiso que se carga en el LCD por Setup.
 - En TC y TL: mostrar mSec decrecientes?, usar instrucciones del 0 al 9, mas simple
 - En TC, ajustar timing con encoder?
