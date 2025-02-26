@@ -87,7 +87,7 @@ extern byte index;                  // poicion para el caranter de la variable n
 extern float x;                     // Auxiliar para carga de valores.
 
 //---------------- Variables LCD -----------------------------------------
-const unsigned long LCD_RFSH_TIME = 200; // Tiempo de refresco del LCD en ms
+const unsigned long LCD_RFSH_TIME = 100; // Tiempo de refresco del LCD en ms
 
 extern int z;       // Posición en renglón
 extern int r;       // Renglon

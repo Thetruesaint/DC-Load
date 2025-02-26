@@ -220,19 +220,14 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
 //------------ Calculate and Display Actual Voltage, Current, and Power ------------
 void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
-  static bool tggl_CuPo = false;
+  static int blink_cntr = 0;
 
   if(!modeInitialized) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
-  if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
-  
-  tggl_CuPo = !tggl_CuPo;     // Simula cursor blinkeando cada LCD_RFSH_TIME
-
+  if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;  
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
   
-  //printLCD_S(18, 3, ModeNames[Mode]); // Actualiza el Modo, lo hace seguido porque a veces se sale y se entra al mismo modo
-
   // Evitar valores negativos por errores de medición
   float power = voltage * current;
   if (power < 0) power = 0;
@@ -266,7 +261,12 @@ void Update_LCD(void) {
       lcd.print(reading, 1);
     }
     lcd.setCursor(CuPo, 2); // Cursor en la unidad a modificar
-    if (tggl_CuPo) lcd.print(F(" "));
+
+    blink_cntr = (blink_cntr + 1) % 5;  
+    lcd.setCursor(CuPo, 2);
+    if (blink_cntr == 4) {  // Solo en el último ciclo de cada 500ms imprime espacio
+        lcd.print(F(" "));
+    }
   }
 }
 

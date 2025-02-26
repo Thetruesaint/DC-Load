@@ -13,7 +13,7 @@
 - const float MAX para limites, asig. a cuttoffs que son int (ojo!). Constrain en Config_Limits con mínimos y esos MAX.
 - CC, CR, CP y BC Limite a reading/encoder por variable global. Check_limit quedo solo para los de Hardware.
 - CR y CP con ajustes de decenas, centenas y solo decimas. CC y BC se alinean con las unidades (unitPosition = 8), ajusto Update_LCD
-- Optimización de Cursor_Position, no se ve el cursor de tan rápido. Validar en entorno real.
+- Optimización de Cursor_Position. 
 - En BC Setup ahora se puede llamar a Config_Limits.
 - Cambia TL con "Step" es mas tradicional y claro, reoganizo plantillas LCD
 - A, V y W en minusculas para valores dinámicos, y A con un caracer especial mas petiso que se carga en el LCD por Setup.
@@ -29,7 +29,7 @@
 - CR no limitaba el 0 ingresado por teclado.
 - CuPo no inicializaba al cambiar de modo.
 - En BC quedaba en 100mA cuando termina. Se retea los input cuando "Done"
-- No se veia bien el cursor, cambio método a blinking manual.
+- No se veia bien el cursor, cambio método a blinking manual LCD_RFSH_TIME
 - Al salir de TL Setup, quedaba el blink.
 - En BC, Setup solo salir con M, con Shit no respondia
 - Value Imput permite deshabilitar numeros decimales (mSec de TC y TL o BC selec. de n°S)
@@ -51,7 +51,7 @@
 
 **Posibles Mejoras SW:**
 
-- En CC, CP, CR y BC, con customkey == "S" + BTN encoder, mover cursor a la izquierda --CuPo, posiblemente requiera reingeniería de Cursor_Position
+- En CC, CP, CR y BC, con BTN encoder habilito cambiar de valor o de unidad para --CuPo, reqiuere reingenieriaa Cursor_Position
 - Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
 - En TL poner "-" por cada step y marcar en cual se esta ej.: ---3----- -> ----4----
 - En TC y TL: mostrar mSec decrecientes?
