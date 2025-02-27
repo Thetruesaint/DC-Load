@@ -2,41 +2,88 @@
   "version": 1,
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-arduino-nano", "id": "nano1", "top": 446.05, "left": 321.53, "attrs": {} },
-    { "type": "wokwi-ky-040", "id": "encoder1", "top": 68.55, "left": 302.03, "attrs": {} },
+    {
+      "type": "wokwi-arduino-nano",
+      "id": "nano1",
+      "top": 437,
+      "left": 32.1,
+      "rotate": 180,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ky-040",
+      "id": "encoder1",
+      "top": -83.4,
+      "left": 366.1,
+      "rotate": 90,
+      "attrs": {}
+    },
     {
       "type": "wokwi-lcd2004",
       "id": "lcd1",
-      "top": 102.05,
-      "left": 481.23,
+      "top": -137.6,
+      "left": 15.2,
       "attrs": { "pins": "i2c" }
     },
-    { "type": "wokwi-ds1307", "id": "rtc1", "top": 320.65, "left": 552.53, "attrs": {} },
-    { "type": "wokwi-membrane-keypad", "id": "keypad1", "top": 60, "left": 10, "attrs": {} },
+    {
+      "type": "wokwi-ds1307",
+      "id": "rtc1",
+      "top": 353.4,
+      "left": -126.9,
+      "rotate": 180,
+      "attrs": {}
+    },
+    { "type": "wokwi-membrane-keypad", "id": "keypad1", "top": 55.6, "left": 15.2, "attrs": {} },
     {
       "type": "wokwi-pushbutton",
       "id": "btn1",
-      "top": 178.65,
-      "left": 302.83,
+      "top": 86.3,
+      "left": 387.5,
+      "rotate": 90,
       "attrs": { "color": "red" }
     },
     {
       "type": "wokwi-potentiometer",
-      "id": "pot1",
-      "top": 431.45,
-      "left": 554.53,
+      "id": "pot2",
+      "top": 171.5,
+      "left": 431.8,
       "rotate": 90,
       "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text1",
+      "top": 307.2,
+      "left": 316.8,
+      "attrs": { "text": "Temperatura" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text2",
+      "top": 259.2,
+      "left": 441.6,
+      "attrs": { "text": "Voltaje" }
+    },
+    {
+      "type": "wokwi-slide-potentiometer",
+      "id": "pot1",
+      "top": 134.4,
+      "left": 239.2,
+      "rotate": 270,
+      "attrs": { "travelLength": "30" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "text3",
+      "top": 57.6,
+      "left": 422.4,
+      "attrs": { "text": "LOAD ON/OFF" }
     }
   ],
   "connections": [
-    [ "encoder1:GND", "nano1:GND.2", "black", [ "h0" ] ],
-    [ "encoder1:SW", "nano1:4", "cyan", [ "h0" ] ],
-    [ "nano1:3", "encoder1:CLK", "orange", [ "v0" ] ],
-    [ "encoder1:DT", "nano1:2", "white", [ "h0" ] ],
-    [ "lcd1:GND", "nano1:GND.2", "black", [ "h0" ] ],
-    [ "lcd1:SDA", "nano1:A4", "limegreen", [ "h-76.8", "v166.52", "h-48" ] ],
-    [ "lcd1:SCL", "nano1:A5", "blue", [ "h-67.2", "v345.9" ] ],
+    [ "encoder1:SW", "nano1:4", "gold", [ "v19.2", "h105.5", "v480", "h-432" ] ],
+    [ "nano1:3", "encoder1:CLK", "orange", [ "v19.2", "h460.8", "v-508.8" ] ],
+    [ "encoder1:DT", "nano1:2", "white", [ "v9.6", "h105.5", "v508.8", "h-460.8" ] ],
     [ "rtc1:5V", "nano1:5V", "red", [ "h0" ] ],
     [ "rtc1:SDA", "nano1:A4", "limegreen", [ "h0" ] ],
     [ "rtc1:SCL", "nano1:A5", "blue", [ "h0" ] ],
@@ -48,14 +95,21 @@
     [ "keypad1:C2", "nano1:10", "green", [ "v34.69", "h204.05" ] ],
     [ "keypad1:C3", "nano1:11", "green", [ "v39.68", "h182.4" ] ],
     [ "keypad1:C4", "nano1:12", "green", [ "v44.67", "h164.59" ] ],
-    [ "btn1:1.r", "nano1:A1", "magenta", [ "v0.36", "h12.94" ] ],
-    [ "nano1:GND.1", "btn1:2.r", "black", [ "h-19.2", "v-297.8" ] ],
-    [ "pot1:GND", "nano1:GND.1", "black", [ "h-48", "v48" ] ],
-    [ "pot1:VCC", "nano1:5V", "red", [ "h-28.8", "v47.2", "h-86.4" ] ],
-    [ "pot1:SIG", "nano1:A0", "yellow", [ "h-38.4", "v47.6", "h-153.6" ] ],
-    [ "encoder1:VCC", "nano1:5V", "red", [ "h0" ] ],
-    [ "lcd1:VCC", "nano1:5V", "red", [ "h0" ] ],
-    [ "rtc1:GND", "nano1:GND.2", "black", [ "h0" ] ]
+    [ "btn1:1.r", "nano1:A1", "magenta", [ "h86.4", "v307.4", "h-374.4" ] ],
+    [ "pot2:SIG", "nano1:A2", "cyan", [ "h-36.1", "v144", "h-268.8" ] ],
+    [ "btn1:2.r", "pot2:GND", "black", [ "h-0.2", "v57.8", "h26.5" ] ],
+    [ "encoder1:GND", "btn1:2.l", "black", [ "v38.4", "h-0.6" ] ],
+    [ "encoder1:VCC", "pot2:VCC", "red", [ "v28.8", "h105.2", "v268.8", "h-105.6", "v-86.7" ] ],
+    [ "rtc1:GND", "nano1:GND.1", "black", [ "h0" ] ],
+    [ "lcd1:SCL", "rtc1:SCL", "blue", [ "h-9.6", "v470.5" ] ],
+    [ "lcd1:SDA", "rtc1:SDA", "limegreen", [ "h-19.2", "v489.5" ] ],
+    [ "lcd1:VCC", "rtc1:5V", "red", [ "h-28.8", "v508.9" ] ],
+    [ "lcd1:GND", "rtc1:GND", "black", [ "h-38.4", "v528" ] ],
+    [ "pot1:GND", "btn1:2.l", "black", [ "v0" ] ],
+    [ "pot1:VCC", "pot2:VCC", "red", [ "v14.8", "h91.2", "v-48", "h16.9" ] ],
+    [ "pot1:SIG", "nano1:A0", "yellow", [ "v139.6", "h-197.6" ] ],
+    [ "nano1:5V", "pot2:VCC", "red", [ "v-9.6", "h345.6", "v-211.2" ] ],
+    [ "pot2:GND", "nano1:GND.2", "black", [ "h-26.5", "v337.1", "h-336" ] ]
   ],
   "dependencies": {}
 }
