@@ -20,6 +20,7 @@
 - En TC y TL se deshabilita el encoder. Nueva función Encoder_Status() que inicializa tambien limites de reading y Encoder
 - Blink de unidad de limite excedido
 - Optimización de espacio con funcion Print_Spaces.
+- Encadeno funciones secuenciales dentro de las funciones "x_Mode", dejando mas claro el Loop de main.
 
 **Fixes:**
 - ##CRITICO## DAC Control con !toggle no ponia setCurrent = 0; al cambiar de modo y darle ON seteba la corriente anterior por un momento.
@@ -38,9 +39,11 @@
 - En CC y BC, en la unidad del Set quedaba tapada
 - En TC y TL se podia modificar Config_Limits mal el condicional de Read_Keypad. 
 - Read_Keypad permitia 5 digitos mas el . que luego no se borraba. Faltaba condicional en el "."
+- BC en HW real, cuando terminaba, recupera V rapidamente y borra el mensaje "Done". Cambio la logica, se borra si cambia BatteryLife
+- BC al reiniciar el modo, no se reseta BatteryLife, se agrega a la inicialización del modo.
 
 **Bugs:**
-- No detectados por ahora
+- No detectados, por ahora y de haber, será en el próximo relese
   
 **Trabajando:**
 - Relese Terminado!

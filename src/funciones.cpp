@@ -460,16 +460,20 @@ void Read_Volts_Current(void) {
   if (Mode != BC){                                             // Para todos los demas modos
     simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
     voltage = simulatedVoltage;                                // Asigna el valor de v simulado
-  } else { 
-      // En modo BC Si toggle es true, reduce el voltaje simulado en 0.01V. Luego ver si puede ser proporcional a la corriente
-      // ## SETEAR ANTES DE ENTRAR AL MODO##
-      if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
-      lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
-      simulatedVoltage -= 0.005;                      // Reducir el voltaje a medida que pasa el tiempo
-      simulatedVoltage = max(simulatedVoltage, 0.0);  // Asegurar que no sea negativo
-      voltage = simulatedVoltage;                     // Asigna el valor de v simulado
-      }
+  }
+  else { 
+    // En modo BC Si toggle es true, reduce el voltaje simulado en 0.01V. Luego ver si puede ser proporcional a la corriente
+    if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
+    lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
+    simulatedVoltage -= 0.005;                      // Reducir el voltaje a medida que pasa el tiempo
+    simulatedVoltage = max(simulatedVoltage, 0.0);  // Asegurar que no sea negativo
+    voltage = simulatedVoltage;                     // Asigna el valor de v simulado
     }
+    else if (!toggle) {
+      simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
+      voltage = simulatedVoltage; 
+    }
+  }
   
   // Simulación de corriente sensada.
 
@@ -512,6 +516,7 @@ void Const_Current_Mode(void) {
   reading = encoderPosition / 1000;            // Toma el valor del encoder
   reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
   encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
+  Cursor_Position();
 
   if (!toggle) return;
   setCurrent = reading * 1000;             // lo pasa a mA 
@@ -532,6 +537,7 @@ void Const_Power_Mode(void) {
   reading = encoderPosition / 1000;            // Toma el valor del encoder
   reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
   encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
+  Cursor_Position(); 
 
   if (!toggle) return;
   setPower = reading * 1000;               // Conversión a mW
@@ -551,10 +557,10 @@ void Const_Resistance_Mode(void) {
     encoderPosition = MAX_RESISTOR * 1000;  // Lo inicializa en 999.9 Ω, valor mas seguro
     modeInitialized = true;                 // Modo inicializado
   }
- 
   reading = encoderPosition / 1000.0;           // Convierte a ohms (Ω) el valor del encoder
   reading = min(maxReading, max(0.1, reading)); // Evita resistencia 0, mínimo 0.1Ω, maximo, maxReading
   encoderPosition = reading * 1000;             // pasa el valor a encoder si lo limitó
+  Cursor_Position();
   
   if (!toggle) return;
   setResistance =  reading;                       // en ohms (Ω)
@@ -563,30 +569,36 @@ void Const_Resistance_Mode(void) {
 
 //-------------------- Select Battery Capacity Testing LCD set up -------------------
 void Battery_Mode(void) {
-
+  
   if (!modeConfigured) {Battery_Type_Selec(); return;}  // Probar bien si aca no tiene problemas, en algunas pruebas queda fliqueando con carga en ON
 
   if (!modeInitialized){
     lcd.clear();
-    printLCD(0, 0, F("BC LOAD"));          // Muestra el titulo del modo
-    lcd.setCursor(13,1);lcd.print(F(">")); 
-    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2); // Muestro el Cutoff Voltage
-    printLCD(1, 2, F("Adj->"));            // Muestra el mensaje
-    printLCD(13, 2, F("A"));               // La unidad de corriente
-    printLCDNumber(6, 3, BatteryLife, ' ', 0); // Mostrar sin decimales
+    printLCD(0, 0, F("BC LOAD"));
+    lcd.setCursor(13,1);lcd.print(F(">"));
+    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2);  // Muestro el Cutoff Voltage
+    printLCD(1, 2, F("Adj->"));
+    printLCD(13, 2, F("A"));
+    BatteryLife = 0;                            // Inicializa  la medición
+    printLCDNumber(6, 3, BatteryLife, ' ', 0);  // Mostrar sin decimales
     lcd.print(F("mAh"));
-    printLCD_S(14, 3, BatteryType);        // Muestro el tipo de Bateria.
-    Encoder_Status(true, CurrentCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-    modeInitialized = true;                // Modo inicializado
+    printLCD_S(14, 3, BatteryType);             // Muestro el tipo de Bateria.
+    Encoder_Status(true, CurrentCutOff);        // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
+    modeInitialized = true;                     // Modo inicializado
   }
   
-  if (BatteryLife > BatteryLifePrevious) { // Actualizar LCD solo si cambia el valor
+  if (BatteryLife > BatteryLifePrevious) {      // Solo si cambia el valor
     printLCDNumber(6, 3, BatteryLife, ' ', 0);
     lcd.print(F("mAh"));
+    Print_Spaces(16, 2, 4);                    // Borra "Done ", porque si cambia es porque hubo acción manual.
     BatteryLifePrevious = BatteryLife;
   }
+  /*
   if (toggle && (voltage > BatteryCutoffVolts)){Print_Spaces(16, 2, 4);} // Borra "Done " si quedo de antes.
   else if (!toggle && (voltage <= BatteryCutoffVolts)) {printLCD(16,2, F("Done"));}
+  */
+  if (Battery_Capacity()){printLCD(16,2, F("Done"));}
+  Cursor_Position(); 
 }
 
 //-------------------- Battery Type Selection and Cutoff Setup ----------------------
@@ -667,7 +679,7 @@ while (true) {  // Bucle para evitar la salida accidental
 }
 
 //---------------------- Battery Capacity Discharge Routine -------------------------
-void Battery_Capacity(void) {
+bool Battery_Capacity() {
   
   float LoadCurrent = 0;
   unsigned long currentMillis = millis();
@@ -690,7 +702,7 @@ void Battery_Capacity(void) {
   reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
   encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
 
-  if (!toggle) return;  //Si esta desconectada, salir, el resto solo si esta conectada
+  if (!toggle) return false;  //Si OFF, sale, el resto solo si ON Devuelve falso porque no se termino los criterios de descarga
 
   setCurrent = reading * 1000; // Toma el valor del encoder, por si quise hacer un ajuste, y lo setea en la carga en mA
 
@@ -707,8 +719,9 @@ void Battery_Capacity(void) {
     BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo?
     reading = 0; encoderPosition = 0; setCurrent = 0; // Reinicia todo.
     Load_ON_status(false);
-    timer_stop();
+    timer_stop(); return true; // Devuelve true porque completo la descarga
   }
+  return false; // Por si pasa otra cosa, devuelve falso
 }
 
 //---------------------------- Transcient Continuos Mode ----------------------------
@@ -730,6 +743,7 @@ if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurad
     modeInitialized = true;                     // Modo inicializado.
     Encoder_Status(false);                      // Deshabilitar el encoder
   }
+  Transcient_Cont_Timing(); 
 }
 
 //--------------------------------- Transient Mode ----------------------------------
@@ -811,6 +825,7 @@ void Transient_List_Mode(void) {
     modeInitialized = true;               // Modo inicializado.
     Encoder_Status(false);                // Deshabilitar el encoder
   }
+  Transient_List_Timing(); 
 }
 
 //------------------------------ Transcient List Setup -------------------------------

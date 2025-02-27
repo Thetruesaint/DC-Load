@@ -18,7 +18,7 @@ void DAC_Control(void);
 void Const_Current_Mode(void);
 void Const_Power_Mode(void);
 void Const_Resistance_Mode(void);
-void Battery_Capacity(void);
+bool Battery_Capacity(void);
 void Battery_Mode(void);
 void Battery_Type_Selec(void);
 void Config_Limits(void);

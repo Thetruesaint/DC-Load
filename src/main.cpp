@@ -75,12 +75,12 @@ void loop() {
   Check_Limits();
   DAC_Control();
   switch (Mode) {
-    case CC:  Const_Current_Mode(); Cursor_Position(); break;
-    case CP:  Const_Power_Mode(); Cursor_Position(); break;
-    case CR:  Const_Resistance_Mode(); Cursor_Position(); break;
-    case BC:  Battery_Mode(); Battery_Capacity(); Cursor_Position(); break;
-    case TC:  Transient_Cont_Mode(); Transcient_Cont_Timing(); break;
-    case TL:  Transient_List_Mode(); Transient_List_Timing(); break;
+    case CC:  Const_Current_Mode(); break;
+    case CP:  Const_Power_Mode(); break;
+    case CR:  Const_Resistance_Mode(); break;
+    case BC:  Battery_Mode(); break;
+    case TC:  Transient_Cont_Mode(); break;
+    case TL:  Transient_List_Mode(); break;
     case UNKNOWN: 
     default: break;
   }
