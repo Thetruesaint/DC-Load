@@ -1,15 +1,16 @@
 ## v1.71
 
 **Mejoras:**
-- Optimización de Read_Keypad.
+- Optimización de Read_Keypad Ahorro FLASH.
+- Optimización de Value_Input y Funcion TC con Ahorro FLASH.
 
 **Fixes:**
-
+- 
 **Bugs:**
 - No detectados
   
 **Trabajando:**
-- Optimización de Read_Keypad y Value_Input. Ahorro FLASH
+- Optimización de Read_Keypad 2. Ahorro FLASH
 
 **A Trabajar:**
 - No convertir ADC por rango de voltage, complicado al pedo... y peligroso. Ahorro FLASH

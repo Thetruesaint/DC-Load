@@ -78,7 +78,7 @@ void Read_Keypad(int col, int row) {
   }
 
   // Solo en los modos CC, CP y CR.
-  
+
   if (Mode == BC || Mode == TC || Mode == TL) return;
   // Números
   if (customKey >= '0' && customKey <= '9' && index < 5) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
@@ -152,7 +152,7 @@ void Read_Load_Button(void) {
 //----------------------- Key input used for UserSetUp ------------------------------- 
 bool Value_Input(int col, int row, int maxDigits, bool decimal) {  
   
-  static bool shiftPressed = false;
+  //static bool shiftPressed = false;
 
   Reset_Input_Pointers();         // Resetea los valores de entrada
   lcd.setCursor(col, row);        // Ubica el cursor en la posición especificada
@@ -161,28 +161,7 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
   while (true) { 
       customKey = Wait_Key_Pressed(); // Leer entrada de teclado
 
-      if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-        lcd.noCursor(); lcd.blink_off();
-        Mode_Selection(false);  
-        return false;
-      } 
-
-      else if (customKey == 'S') { // Detectar Shift
-        shiftPressed = true;
-        continue; // Espera la próxima tecla
-      }
-
-      else if (customKey == 'C') {  
-        continue;  // Ignora 'C' ver de darle un uso
-      }
-
-      else if (shiftPressed) {
-        shiftPressed = false;
-        Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
-        lcd.noCursor(); lcd.blink_off();
-        return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
-      }
- 
+      if (!Handle_MSC_Keys (customKey)) {return false;};
 
       if (customKey >= '0' && customKey <= '9') { 
         if (index < maxDigits) { 
@@ -727,16 +706,21 @@ void Transient_Cont_Mode(void) {
 if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
 
   if (!modeInitialized) {                       // Si es falso, prepara el LCD
-    printLCD_S(3, 2, String(LowCurrent, 3));    // Muestra el valor de la corriente baja
-    printLCD_S(14, 2, String(HighCurrent, 3));  // Muestra el valor de la corriente alta
+    printLCD_S(3, 2, String(LowCurrent, 3)); lcd.write(byte(0));
+    printLCD_S(14, 2, String(HighCurrent, 3)); lcd.write(byte(0));
     printLCD(0, 0, F("TC LOAD"));               // Muestra el titulo del modo
-    printLCD(0, 2, F("Lo="));                   // Muestra el mensaje
-    printLCD(8, 2, F("A"));                     // Muestra la unidad
-    printLCD(11, 2, F("Hi="));                  // Muestra el mensaje
-    printLCD(19, 2, F("A"));                    // Muestra la unidad
-    printLCD(0, 3, F("Time: "));                // Muestra el mensaje
-    printLCD_S(6, 3, String(transientPeriod));  // Muestra el valor del tiempo
-    printLCD(11, 3, F("mSecs"));                // Muestra la unidad
+    printLCD(0, 2, F("I1-"));                   // Muestra el mensaje
+    printLCD(11, 2, F("I2-"));                  // Muestra el mensaje
+    printLCD(2, 3, F("Time: "));                // Muestra el mensaje
+    lcd.setCursor(8, 3);
+    if (transientPeriod < 10) {Print_Spaces(8, 3, 4); lcd.print(transientPeriod);} 
+    else if (transientPeriod < 100) {Print_Spaces(8, 3, 3); lcd.print(transientPeriod);}
+    else if (transientPeriod < 1000) {Print_Spaces(8, 3, 2); lcd.print(transientPeriod);}
+    else if (transientPeriod < 10000) {Print_Spaces(8, 3); lcd.print(transientPeriod);}
+    else {lcd.print(transientPeriod);}
+
+    //printLCD_S(8, 3, String(transientPeriod));  // Muestra el valor del tiempo
+    printLCD(13, 3, F("mSecs"));                // Muestra la unidad
     modeInitialized = true;                     // Modo inicializado.
     Encoder_Status(false);                      // Deshabilitar el encoder
   }
@@ -748,20 +732,22 @@ void Transient_Cont_Setup(void) {
   lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
 
   printLCD(3, 0, F("TRANSIENT CONT."));
-  printLCD(0, 1, F("Low I (A):"));
-  z = 13; r = 1;                             // Coord. LCD
+  printLCD(5, 1, F("I1(A)"));
+  printLCD(5, 2, F("I2(A)"));
+  printLCD(3, 3, F("T(mSec)"));
+
+  z = 11;   // Alinea la Col de los Inputs.
+  r = 1;
   if (!Value_Input(z, r)) return;            // Obtiene el valor ingresado por el usuario o sale del modo
   LowCurrent = min(x, CurrentCutOff);        // Limita la corriente baja al valor de corte de corriente
   printLCDNumber(z, r, LowCurrent, 'A', 3);  // Muestra el valor de la corriente baja
 
-  printLCD(0, 2, F("High I (A):"));
-  z = 13; r = 2; 
+  r = 2;
   if (!Value_Input(z, r)) return;             // Limita la corriente baja al valor de corte de corriente
   HighCurrent = min(x, CurrentCutOff);        // Limita la corriente alta al valor de corte de corriente
   printLCDNumber(z, r, HighCurrent, 'A', 3);  // Muestra el valor de la corriente alta con tres decimales
 
-  printLCD(0, 3, F("Delay(mSec):"));
-  z = 13; r = 3;                              // Setea las posiciones de la pantalla del LCD
+  r = 3;
   if (!Value_Input(z, r, 5, false)) return;   // 5 digitos, sin decimal.
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
 
@@ -898,7 +884,7 @@ void Transient_List_Timing(void) {
 void Config_Limits(void)
 {
   Load_ON_status(false);            // Apaga la carga
-  Show_Limits();
+  Show_Limits();                    // Muestras los actuales
   delay(2000);
   lcd.clear();
 
@@ -1023,6 +1009,7 @@ void printLCDNumber(int col, int row, float number, char unit, int decimals) {
     lcd.print(unit);
   } else if (unit == 'A') {lcd.write(byte(0));}   // Escribe el carácter personalizado
 }
+
 // Imprimir n cantidad de espacios " "
 void Print_Spaces(int col, int row, byte count) {
   lcd.setCursor(col ,row);
@@ -1065,4 +1052,36 @@ void Reset_Input_Pointers (void){
   index = 0;
   numbers[index] = '\0';
   decimalPoint = ' ';
+}
+
+//------------------------------- Handle Mode Keys -----------------------------------
+bool Handle_MSC_Keys(char key) {
+  static bool shiftPressed = false;  // Bandera para detectar Shift
+
+  if (customKey == 'M') {   // Salir del modo si se presiona 'M'
+    lcd.noCursor(); lcd.blink_off();
+    Mode_Selection(false);  
+    return false;
+  } 
+
+  else if (shiftPressed) {
+    shiftPressed = false;
+    Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
+    lcd.noCursor(); lcd.blink_off();
+    return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
+  }
+
+  else if (customKey == 'S') { // Detectar Shift
+    shiftPressed = true;
+    return true; // Espera la próxima tecla
+  }
+
+  else if (customKey == 'C') {        // ojo que se puede llamar desde el mismo Config_Limits
+    if (Mode != TC && Mode != TL) {
+      Config_Limits();
+    }
+    return true; 
+  }
+
+  return true;
 }
