@@ -2,6 +2,7 @@
 #include "funciones.h"
 #include <EEPROM.h>
 
+
 //----------------------------- Load ON Status ------------------------------------
 void Load_ON_status(bool loadonoff)
 {
@@ -699,7 +700,7 @@ void Transient_Cont_Setup(void) {
   printLCD(3, 0, F("TRANSIENT CONT."));
   printLCD(5, 1, F("I1(A)"));
   printLCD(5, 2, F("I2(A)"));
-  printLCD(3, 3, F("T(mSec)"));
+  printLCD(4, 3, F("dt(mS)"));
 
   z = 11;   // Alinea la Col de los Inputs.
   r = 1;
@@ -717,7 +718,6 @@ void Transient_Cont_Setup(void) {
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
 
   lcd.clear();                                // Borra la pantalla del LCD
-  Load_ON_status(false);                      // Apaga la carga
   modeConfigured = true;                      // Se configuro el modo TC
   modeInitialized = false;                    // Pinta la plantilla TL en el LCD
 }
@@ -751,15 +751,6 @@ void Transcient_Cont_Timing() {
 void Transient_List_Mode(void) {
   static unsigned int last_transientPeriod = -1;
 
-  if(modeConfigured) {
-    printLCD_S(12, 2, String(current_step));            // Paso en curso, de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
-      if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
-      Print_Spaces(8, 3, 5);
-      printLCD_S(8, 3, String(transientPeriod));        // Nuevo valor con espacio extra
-      last_transientPeriod = transientPeriod;
-    }
-  }
-
   if(!modeConfigured) {Transient_List_Setup(); return;} // Si no esta configurado, lo configura. Sale si no se configuro
 
   if (!modeInitialized) {                 // Si es falso, prepara el LCD
@@ -767,10 +758,19 @@ void Transient_List_Mode(void) {
     printLCD(6, 2, F("Step: "));
     printLCD(13, 2, F("/"));
     printLCD_S(14, 2, String(total_steps));
-    printLCD(2, 3, F("Time: "));
-    printLCD(13, 3, F("mSecs"));          // Muestra la unidad
+    printLCD(4, 3, F("dt: "));
+    printLCD(13, 3, F("mS"));          // Muestra la unidad
     modeInitialized = true;               // Modo inicializado.
     Encoder_Status(false);                // Deshabilitar el encoder
+  }
+
+  if(modeConfigured) {
+    printLCD_S(12, 2, String(current_step));            // Paso en curso, de 0 a 9, asi no tengo que manejar el LCD, generando mas delay
+      if (transientPeriod != last_transientPeriod) {  // Solo si cambió, evitando flickering
+      Print_Spaces(8, 3, 5);
+      printLCD_S(8, 3, String(transientPeriod));        // Nuevo valor con espacio extra
+      last_transientPeriod = transientPeriod;
+    }
   }
   Transient_List_Timing(); 
 }

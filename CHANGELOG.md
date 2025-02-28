@@ -1,4 +1,6 @@
-  ###### CHANGELOG ######
+## DC LOAD based in a desing from Mr Louis Scully ##
+###### CHANGELOG ######
+
 
 ## v1.70 26/02/2025 ## MAJOR RELEASE ##
 

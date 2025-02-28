@@ -3,14 +3,15 @@
 **Mejoras:**
 - Optimización de Read_Keypad Ahorro FLASH.
 - Optimización de Value_Input y Funcion TC con Ahorro FLASH.
+- Optimización Inicialización TC y BC y Read_Keypad con Handle_MSC_Keypad
 
 **Fixes:**
 - En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
+
 **Bugs:**
 - 
-  
+
 **Trabajando:**
-- Optimización de Read_Keypad 2. Ahorro FLASH
 
 **A Trabajar:**
 - No convertir ADC por rango de voltage, complicado al pedo... y peligroso. Ahorro FLASH
