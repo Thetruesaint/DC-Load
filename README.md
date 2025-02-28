@@ -5,9 +5,9 @@
 - Optimización de Value_Input y Funcion TC con Ahorro FLASH.
 
 **Fixes:**
-- 
+- En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
 **Bugs:**
-- No detectados
+- 
   
 **Trabajando:**
 - Optimización de Read_Keypad 2. Ahorro FLASH

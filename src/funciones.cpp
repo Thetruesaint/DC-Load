@@ -49,34 +49,12 @@ void Read_Encoder()
 //---------------------------- Read Keypad Input ----------------------------------
 void Read_Keypad(int col, int row) {
 
-  static bool shiftPressed = false; // Bandera para detectar Shift
-
   customKey = customKeypad.getKey();              // Escanea el teclado
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
-
-  if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-    //lcd.noCursor(); lcd.blink_off();
-    Mode_Selection(false);  
-    //return false;
-  } 
-
-  else if (customKey == 'S') {
-    shiftPressed = true;
-    return; // Espera la próxima tecla
-  }
-
-  else if (customKey == 'C') { 
-    if (Mode != TC && Mode !=TL){ // Porque ya se consideraron durante el Setup, reiniciar el modo para el Config_Limits
-      Config_Limits(); } 
-      }
-
-  if (shiftPressed) {
-    shiftPressed = false;
-    Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
-    return;
-  }
-
+  
+  if (!Handle_MSC_Keys (customKey)) {return;};
+  
   // Solo en los modos CC, CP y CR.
 
   if (Mode == BC || Mode == TC || Mode == TL) return;
@@ -559,7 +537,9 @@ void Battery_Mode(void) {
     printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2);  // Muestro el Cutoff Voltage
     printLCD(1, 2, F("Adj->"));
     printLCD(13, 2, F("A"));
+    timer_reset();                  // Resetea el timer
     BatteryLife = 0;                            // Inicializa  la medición
+    BatteryLifePrevious = 0;                    // Resetea la vida de la batería
     printLCDNumber(6, 3, BatteryLife, ' ', 0);  // Mostrar sin decimales
     lcd.print(F("mAh"));
     printLCD_S(14, 3, BatteryType);             // Muestro el tipo de Bateria.
@@ -580,7 +560,7 @@ void Battery_Mode(void) {
 //-------------------- Battery Type Selection and Cutoff Setup ----------------------
 void Battery_Type_Selec() {
 
-  bool shiftPressed = false;
+//  bool shiftPressed = false;
 
   lcd.clear();                            // Borra la pantalla del LCD
   printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
@@ -591,16 +571,7 @@ void Battery_Type_Selec() {
 while (true) {  // Bucle para evitar la salida accidental
     customKey = Wait_Key_Pressed(); 
 
-    if (customKey == 'S') { 
-        shiftPressed = !shiftPressed;  // Alterna shift y sigue esperando otra tecla
-        continue;                      // No sale del bucle, sigue esperando una nueva tecla
-    }
-
-    // Si Shift está activado y la tecla está en el rango 1-6, llama a Mode_Selection
-    if (shiftPressed && (customKey >= '1' && customKey <= '6')) {
-        Mode_Selection(true, customKey);
-        return;
-    }
+    if (!Handle_MSC_Keys (customKey)) {return;};
 
     switch (customKey) {
         case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG; BatteryType = "Li-Po"; break;
@@ -608,13 +579,10 @@ while (true) {  // Bucle para evitar la salida accidental
         case '3': BatteryCutoffVolts = LIPO_DISC_CELL_VLTG; BatteryType = "Li-Po"; break;
         case '4': BatteryCutoffVolts = LION_DISC_CELL_VLTG; BatteryType = "Li-Ion"; break;
         case '5': BatteryType = "Custom"; break;
-        case 'M': case '<': Mode_Selection(false); return; // Salida del Modo y salta al próximo
-        case 'C': Config_Limits(); Mode_Selection(true, 4); return; // configura el limite y vuelve a llamar al modo BC.
         default: continue;  // Evita salir si la tecla es inválida
     }
     break;  // Sale del bucle si se ingresó una tecla válida
 }
-
 
   // Pedir ingresar un voltaje de corte
   if (BatteryType == "Custom") {
@@ -646,10 +614,6 @@ while (true) {  // Bucle para evitar la salida accidental
     } while (x < 1 || x > 6);                     // Asegura que solo se ingrese un número entre 1 y 6
     BatteryCutoffVolts *= x;                      // Multiplica por la cantidad de celdas
   }
-
-  timer_reset();                  // Resetea el timer
-  BatteryLifePrevious = 0;        // Resetea la vida de la batería
-  CuPo = 9;                       // Posiciona el cursor en la posición 9
   modeConfigured = true;          // Indica que se seteo el modo.
   modeInitialized = false;        // Pinta la plantilla BC en el LCD
 }
@@ -709,18 +673,19 @@ if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurad
     printLCD_S(3, 2, String(LowCurrent, 3)); lcd.write(byte(0));
     printLCD_S(14, 2, String(HighCurrent, 3)); lcd.write(byte(0));
     printLCD(0, 0, F("TC LOAD"));               // Muestra el titulo del modo
-    printLCD(0, 2, F("I1-"));                   // Muestra el mensaje
-    printLCD(11, 2, F("I2-"));                  // Muestra el mensaje
+    printLCD(0, 2, F("I1>"));                   // Muestra el mensaje
+    printLCD(11, 2, F("I2>"));                  // Muestra el mensaje
     printLCD(2, 3, F("Time: "));                // Muestra el mensaje
-    lcd.setCursor(8, 3);
-    if (transientPeriod < 10) {Print_Spaces(8, 3, 4); lcd.print(transientPeriod);} 
-    else if (transientPeriod < 100) {Print_Spaces(8, 3, 3); lcd.print(transientPeriod);}
-    else if (transientPeriod < 1000) {Print_Spaces(8, 3, 2); lcd.print(transientPeriod);}
-    else if (transientPeriod < 10000) {Print_Spaces(8, 3); lcd.print(transientPeriod);}
-    else {lcd.print(transientPeriod);}
+    
+    if (transientPeriod < 10) {Print_Spaces(7, 3, 4); lcd.print(transientPeriod);} 
+    else if (transientPeriod < 100) {Print_Spaces(7, 3, 3); lcd.print(transientPeriod);}
+    else if (transientPeriod < 1000) {Print_Spaces(7, 3, 2); lcd.print(transientPeriod);}
+    else if (transientPeriod < 10000) {Print_Spaces(7, 3); lcd.print(transientPeriod);}
+    else {lcd.setCursor(7, 3); lcd.print(transientPeriod);}
 
     //printLCD_S(8, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(13, 3, F("mSecs"));                // Muestra la unidad
+    setCurrent = 0;                             // por si quedo seteada del modo anterior
     modeInitialized = true;                     // Modo inicializado.
     Encoder_Status(false);                      // Deshabilitar el encoder
   }
@@ -753,7 +718,6 @@ void Transient_Cont_Setup(void) {
 
   lcd.clear();                                // Borra la pantalla del LCD
   Load_ON_status(false);                      // Apaga la carga
-  setCurrent = 0;                             // por si quedo seteada del modo anterior
   modeConfigured = true;                      // Se configuro el modo TC
   modeInitialized = false;                    // Pinta la plantilla TL en el LCD
 }
