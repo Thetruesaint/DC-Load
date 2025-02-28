@@ -9,7 +9,7 @@ void setup();
 void loop();
 void Load_ON_status(bool loadonoff);
 void Read_Encoder();
-void Read_Keypad();
+void Read_Keypad(int col =1, int row = 3);
 void Read_Load_Button();
 void Update_LCD();
 void Cursor_Position(void);

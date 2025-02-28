@@ -1,14 +1,15 @@
 ## v1.71
 
 **Mejoras:**
+- Optimización de Read_Keypad.
 
 **Fixes:**
 
 **Bugs:**
-- No detectados, por ahora y de haber, será en el próximo relese
+- No detectados
   
 **Trabajando:**
-- Unificar Read_Keypad e Value_Input? para que tome valores instantaneos. Ahorro FLASH
+- Optimización de Read_Keypad y Value_Input. Ahorro FLASH
 
 **A Trabajar:**
 - No convertir ADC por rango de voltage, complicado al pedo... y peligroso. Ahorro FLASH

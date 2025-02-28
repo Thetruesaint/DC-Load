@@ -47,19 +47,29 @@ void Read_Encoder()
 }
 
 //---------------------------- Read Keypad Input ----------------------------------
-void Read_Keypad(void) {
+void Read_Keypad(int col, int row) {
 
-  static int zl = 1;
   static bool shiftPressed = false; // Bandera para detectar Shift
 
   customKey = customKeypad.getKey();              // Escanea el teclado
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
 
-  if (customKey == 'S') {
+  if (customKey == 'M') {   // Salir del modo si se presiona 'M'
+    //lcd.noCursor(); lcd.blink_off();
+    Mode_Selection(false);  
+    //return false;
+  } 
+
+  else if (customKey == 'S') {
     shiftPressed = true;
     return; // Espera la próxima tecla
   }
+
+  else if (customKey == 'C') { 
+    if (Mode != TC && Mode !=TL){ // Porque ya se consideraron durante el Setup, reiniciar el modo para el Config_Limits
+      Config_Limits(); } 
+      }
 
   if (shiftPressed) {
     shiftPressed = false;
@@ -67,38 +77,27 @@ void Read_Keypad(void) {
     return;
   }
 
-  switch (customKey) {                            
-    case 'M':                       // Cambio de Modo                    
-      zl = 1;                       // Resetea la posición en el renglón
-      Mode_Selection();
-      break;                                      
-    case 'C':                       // Configuración de limites
-      if (Mode != TC && Mode !=TL){ // Porque ya se consideraron durante el Setup, reiniciar el modo para el Config_Limits
-      Config_Limits(); }
-      break;                                      
-  }
-
-  // Solo permite entrada de valores en los modos CC, CP y CR
+  // Solo en los modos CC, CP y CR.
+  
   if (Mode == BC || Mode == TC || Mode == TL) return;
-
+  // Números
   if (customKey >= '0' && customKey <= '9' && index < 5) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
+    printLCD_S(col + index, row, String(customKey));        // Muestra el número en el LCD
     numbers[index++] = customKey;                           // Almacena el número en la variable numbers
     numbers[index] = '\0';                                  // Agrega el caracter nulo al final de la cadena
-    printLCD_S(zl++, 3, String(customKey));                 // Muestra el número en el LCD
   }
-
+  // Pto. decimal
   if (customKey == '.' && decimalPoint != '*'&& index < 5) {   // Si punto decimal y no se ha ingresado uno antes y si no se llego al limite de carga
+    printLCD(col + index, 3, F("."));              // Muestra el punto decimal en el LCD
     numbers[index++] = '.';                        // Almacena el punto decimal en la variable numbers
     numbers[index] = '\0';                         // Agrega el caracter nulo al final de la cadena
-    printLCD(zl++, 3, F("."));                     // Muestra el punto decimal en el LCD
     decimalPoint = '*';                            // Marca que se ingresó un punto decimal
   }
-
+  // Enter 
   if (customKey == 'E' && index != 0) { // Confirmar entrada solo si hay un valor cargado.
     reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
-    zl = 1;                             // Resetea la posición en el renglón
-    Print_Spaces(1, 3, 5);
+    Print_Spaces(col, row, 5);
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
 
@@ -107,8 +106,7 @@ void Read_Keypad(void) {
     index--;  
     if (numbers[index] == '.') decimalPoint = ' '; // Si borramos un punto, permitimos otro  
     numbers[index] = '\0';  
-    zl--;
-    Print_Spaces(zl, 3);
+    Print_Spaces(col + index, row);
   }
 }
 
@@ -163,17 +161,28 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
   while (true) { 
       customKey = Wait_Key_Pressed(); // Leer entrada de teclado
 
-      if (customKey == 'S') { // Detectar Shift
+      if (customKey == 'M') {   // Salir del modo si se presiona 'M'
+        lcd.noCursor(); lcd.blink_off();
+        Mode_Selection(false);  
+        return false;
+      } 
+
+      else if (customKey == 'S') { // Detectar Shift
         shiftPressed = true;
         continue; // Espera la próxima tecla
       }
 
-      if (shiftPressed) {
+      else if (customKey == 'C') {  
+        continue;  // Ignora 'C' ver de darle un uso
+      }
+
+      else if (shiftPressed) {
         shiftPressed = false;
         Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
         lcd.noCursor(); lcd.blink_off();
         return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
       }
+ 
 
       if (customKey >= '0' && customKey <= '9') { 
         if (index < maxDigits) { 
@@ -200,14 +209,6 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
               lcd.noCursor(); lcd.blink_off();
               return true;  
           }
-      }
-      else if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-        lcd.noCursor(); lcd.blink_off();
-        Mode_Selection(false);  
-        return false;
-      }  
-      else if (customKey == 'C') {  
-        continue;  // Ignora 'C' ver de darle un uso
       }
 
       // Borra para evitar residuos en pantalla
@@ -593,10 +594,6 @@ void Battery_Mode(void) {
     Print_Spaces(16, 2, 4);                    // Borra "Done ", porque si cambia es porque hubo acción manual.
     BatteryLifePrevious = BatteryLife;
   }
-  /*
-  if (toggle && (voltage > BatteryCutoffVolts)){Print_Spaces(16, 2, 4);} // Borra "Done " si quedo de antes.
-  else if (!toggle && (voltage <= BatteryCutoffVolts)) {printLCD(16,2, F("Done"));}
-  */
   if (Battery_Capacity()){printLCD(16,2, F("Done"));}
   Cursor_Position(); 
 }
@@ -663,7 +660,7 @@ while (true) {  // Bucle para evitar la salida accidental
     printLCD(6, 1, F("(1-6)S?"));
 
     do {
-        z = 9; r = 2; //y = 1;
+        z = 9; r = 2;
         printLCD(z - 1, r, F(">"));
         Print_Spaces(z , r, 5);                   // Borra el espacio si hubo un valor fuera de rango
         if (!Value_Input(z, r, 1, false)) return; //1 digito, sin decimal.
@@ -835,7 +832,7 @@ void Transient_List_Setup() {
   printLCD(3, 0, F("TRANSIENT LIST"));
   printLCD(4, 1, F("Steps(2-10)?"));
   do { // Bucle para garantizar entrada válida
-    z = 9; r = 2; //y = 9;
+    z = 9; r = 2;
     printLCD(z - 1, r, F(">"));
     Print_Spaces(z, r, 2);
     if (!Value_Input(z, r, 2, false)) return; // 2 digitos, sin decimal.
