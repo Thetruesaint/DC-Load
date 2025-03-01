@@ -12,15 +12,14 @@
 - 
 
 **Trabajando:**
+- Reing. de ADC y DAC, preparaciones para Modo Calibración.
 
 **A Trabajar:**
-- No convertir ADC por rango de voltage, complicado al pedo... y peligroso. Ahorro FLASH
 - Cambiar HW para aumentar presición, no es util el conversor actual.
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
 
 **En Cola: (next Release)**
-- Modo Calibracíón incluir external voltage sense?
-- Revisar la lógica del encoder, ya no se requiere asceleración y usa dos identaciones para avanzar.
+-  Revisar la lógica del encoder, ya no se requiere asceleración y usa dos identaciones para avanzar.
 
 **Posibles Mejoras SW:**
 

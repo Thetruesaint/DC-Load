@@ -1,4 +1,5 @@
 #include "variables.h"
+//#undef WOKWI_SIMULATION
 
 // Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
@@ -17,10 +18,20 @@ volatile unsigned long maxEncoder = 999000; // sets maximum Rotary Encoder value
 
 //--------------- Variables de operacion --------------------------------- 
 
-int16_t adc1, adc3;                     // ADCs usados, adc0 y adc2 a GND
+int16_t adcv, adci;                     // Objetos para los SDC valor en binario del ADC
 unsigned long controlVoltage = 0;       // Voltage de control para el DAC que controlara al MOSFET
 float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
+
+float Sns_Volt_Calib_Fact = 1.0;        // Factor de calibración para el ADC de V
+float Sns_Volt_Calib_Offs = 0.0;        // Offset de calibracion de voltage sensado
+
+float Sns_Curr_Calib_Fact = 1.0;        // Factor de calibración para el ADC de I
+float Sns_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente sensada
+
+float Out_Curr_Calib_Fact = 1.0;        // Factor de calibración para el DAC de I
+float Out_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente máxima de salida
+
 int CuPo = 8;                           // Posicion del cursor, es 8 incialmente.
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000

@@ -1,14 +1,18 @@
 #include "variables.h"
 #include "funciones.h"
 #include <EEPROM.h>
-
+//#undef WOKWI_SIMULATION
 
 //----------------------------- Load ON Status ------------------------------------
-void Load_ON_status(bool loadonoff)
-{
-  toggle = loadonoff;
+void Load_OFF(void) {
   #ifndef WOKWI_SIMULATION
-  dac.setVoltage(loadonoff ? controlVoltage : 0, false); // Set DAC voltage based on load status
+  dac.setVoltage( 0, false); // Set DAC voltage based on load status
+  toggle = false;               // Flag off
+  dac.setVoltage( 0, false);    // Corta inmediatamente.
+  setCurrent = 0;               // Resetea por las dudas.
+  #else
+  toggle = false;               // Flag off
+  setCurrent = 0;               // Resetea por las dudas.
   #endif
 }
 
@@ -91,7 +95,7 @@ void Read_Keypad(int col, int row) {
 
 // ------------------------------ Mode Selection --------------------------------------
 void Mode_Selection(bool shiftPressed, char key) {
-  Load_ON_status(false);      // Apaga la carga siempre al cambiar o resetear modo
+  Load_OFF();      // Apaga la carga siempre al cambiar o resetear modo
   Reset_Input_Pointers();                     // Resetea el punto decimal y el indice
   modeInitialized = false;    // Fuerza reinicialización del modo
 
@@ -122,9 +126,14 @@ void Mode_Selection(bool shiftPressed, char key) {
 //----------------------- Toggle Current Load ON or OFF ----------------------------
 void Read_Load_Button(void) {
   if (digitalRead(LOADONOFF) == LOW) {
-    delay(200); // Anti-rebote
+    delay(50); // Anti-rebote
     toggle = !toggle;
-    if (!toggle) {setCurrent = 0;} // Si la carga se apaga, resetear el valor de corriente
+    if (!toggle) {
+      #ifndef WOKWI_SIMULATION
+      dac.setVoltage( 0, false);    // Corta inmediatamente.
+      #endif
+      setCurrent = 0;               // Resetea por las dudas.
+    } 
   }
 }
 
@@ -283,7 +292,7 @@ void Check_Limits() {
   else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Disipation");
 
   if (strlen(message) > 0){
-    Load_ON_status(false);              // Si hubo mensaje, apagar la carga ASAP.
+    Load_OFF();                         // Si hubo mensaje, apagar la carga ASAP.
     reading = 0; encoderPosition = 0;   // Reset de inputs
     setCurrent = 0;                     // Todo a 0 para asegurar el apagado
     for (int i = 0; i < 6; i++) {       // Parpaderá el mensaje tres veces
@@ -343,70 +352,39 @@ void Cursor_Position(void) {
 //--------------------------- Read Voltage and Current ------------------------------
 void Read_Volts_Current(void) {
 
+  #ifndef WOKWI_SIMULATION
+
+  float raw_voltage;
+  float raw_current;
+
   // static float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
   // ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
   // ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
   // ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
   // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
-  #ifndef WOKWI_SIMULATION
-  struct GainSetting
-  { // Estructura para almacenar las configuraciones de ganancia
-    float minVoltage;
-    float maxVoltage;
-    adsGain_t gain;
-    float calibrationFactor;
-  };
+  
+  ads.setGain(GAIN_ONE);                                                  // 1x gain   +/- 4.096V  1 bit = 0.125mV
 
-  const GainSetting voltageGains[] = {
-      // Configuraciones de ganancia para la lectura de voltaje
-      {0, 12, GAIN_SIXTEEN, 50.8346}, // Si es entre 0 y 12V, pongo la ganancia en x16 y vuelvo a leer para mejorar la presición
-      {12, 25, GAIN_EIGHT, 49.6135},  // Si es entre 12 y 25V, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición
-      {25, 50, GAIN_FOUR, 49.6857},   // Si es entre 25 y 50V, pongo la ganancia en x4 y vuelvo a leer para mejorar la presición
-      {50, 200, GAIN_ONE, 50.5589}    // Si es entre 50 y 200V, pongo la ganancia en x1
-  };
+  adcv = ads.readADC_SingleEnded(VLTG_SNSR);
+  raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 50V).
 
-  const GainSetting currentGains[] = {
-      // Configuraciones de ganancia para la lectura de corriente
-      {0.0, 1.9, GAIN_SIXTEEN, 10.000}, // Si es entre 0 y 1.9A, pongo la ganancia en x16 y vuelvo a leer para mejorar la presición
-      {1.9, 4.9, GAIN_EIGHT, 9.9941},   // Si es entre 1.9 y 4.9A, pongo la ganancia en x8 y vuelvo a leer para mejorar la presición
-      {4.9, 9.8, GAIN_FOUR, 9.7621},    // Si es entre 4.9 y 9.8A, pongo la ganancia en x4 y vuelvo a leer para mejorar la presición
-      {9.8, 15.0, GAIN_ONE, 9.6774}     // Si es entre 9.8 y 15A, pongo la ganancia en x1
-  };
+  if(raw_voltage < 11.0) {
+    ads.setGain(GAIN_FOUR)
+    adcv = ads.readADC_SingleEnded(VLTG_SNSR);
+    raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT; ;
+   }
+  
+  if (Mode == CA){Sns_Volt_Calib_Fact = 1.0; Sns_Volt_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
+  voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;      // Calibracion fina de voltaje
 
-  // Lectura de voltaje
-  ads.setGain(GAIN_ONE);                                                // Por 50 por el divisor resistivo y ampl. dif. para sensado remoto de 50 a 1 (Max. 200V). Calibración promedio
-  adc3 = ads.readADC_SingleEnded(VLTG_SNSR);                              // Lee el ADC
-  voltage = ads.computeVolts(adc3) * voltageGains[3].calibrationFactor; // Calcula el voltaje
-
-  for (const auto &setting : voltageGains)
-  { // Itera sobre las configuraciones de ganancia
-    if (voltage >= setting.minVoltage && voltage < setting.maxVoltage)
-    {                                                               // Encuentra la configuración de ganancia correcta
-      ads.setGain(setting.gain);                                    // Configura la ganancia correcta
-      adc3 = ads.readADC_SingleEnded(VLTG_SNSR);                      // Lee el ADC
-      voltage = ads.computeVolts(adc3) * setting.calibrationFactor; // Calcula el voltaje
-      break;                                                        // Sale del bucle
-    }
-  }
-
-  // Lectura de corriente
-  ads.setGain(GAIN_ONE);                                                // Puede ser mas de 10A, pongo la ganancia en x1 por protección
-  adc1 = ads.readADC_SingleEnded(CRR_SNSR);                              // Lee el ADC
-  current = ads.computeVolts(adc1) * currentGains[3].calibrationFactor; // Calcula la corriente
-
-  for (const auto &setting : currentGains)
-  { // Itera sobre las configuraciones de ganancia
-    if (current >= setting.minVoltage && current < setting.maxVoltage)
-    {                                                               // Encuentra la configuración de ganancia correcta
-      ads.setGain(setting.gain);                                    // Configura la ganancia correcta
-      adc1 = ads.readADC_SingleEnded(CRR_SNSR);                      // Lee el ADC
-      current = ads.computeVolts(adc1) * setting.calibrationFactor; // Calcula la corriente
-      break;                                                        // Sale del bucle
-    }
-  }
-
-  ads.setGain(GAIN_TWOTHIRDS); // Restaurar configuración predeterminada
+  ads.setGain(GAIN_FOUR)
+  adci = ads.readADC_SingleEnded(CRR_SNSR);
+  raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 5A).
+ 
+  if (Mode == CA){Sns_Curr_Calib_Fact = 1.0; Sns_Curr_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
+  current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;     // Calibracion fina de corriente
+  
   #else
 
   // Simulación de Voltaje sensado
@@ -447,17 +425,21 @@ void Read_Volts_Current(void) {
 
 //------------------------- DAC Control Voltage for Mosfet --------------------------
 void DAC_Control(void) {
+  #ifndef WOKWI_SIMULATION
+
   if (toggle) {
-    #ifndef WOKWI_SIMULATION
-    controlVoltage = setCurrent * DAC_CURR_FACTOR; 
-    dac.setVoltage(controlVoltage, false); // set DAC output voltage for Range selected
-    #endif
+    if (Mode == CA){Out_Curr_Calib_Fact = 1.0; Out_Curr_Calib_Offs = 0.0;}                  // Si estoy en modo Calibración, reseteo factor para poder ver el valor sin calibrar
+    controlVoltage = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs; // Calcula valor de salida para el DacI con los factores y offset
+    dac.setVoltage(controlVoltage, false);                                                // Setea corriente máxima de salida por el factor y POR EL MOMENTO, no lo graba en la Eprom del DacI.
   } else {
-    #ifndef WOKWI_SIMULATION
     dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
-    #endif
     setCurrent = 0;           // ##IMPORTANTE#  Que el modo se encargue de resetearlo si lo necesita.
   }
+
+  #else
+  if (!toggle) {setCurrent = 0;}
+  #endif
+
 }
 
 //----------------------- Select Constant Current LCD set up ------------------------
@@ -469,7 +451,7 @@ void Const_Current_Mode(void) {
     printLCD(1, 2, F("Set->"));            // Muestra el mensaje
     printLCD(13, 2, F("A"));               // Muestra el mensaje
     printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    Encoder_Status(true, CurrentCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
+    Encoder_Status(true, CurrentCutOff);   // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
     modeInitialized = true;                // Modo inicializado
   }
   reading = encoderPosition / 1000;            // Toma el valor del encoder
@@ -659,7 +641,7 @@ bool Battery_Capacity() {
   if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) { 
     BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo?
     reading = 0; encoderPosition = 0; setCurrent = 0; // Reinicia todo.
-    Load_ON_status(false);
+    Load_OFF();
     timer_stop(); return true; // Devuelve true porque completo la descarga
   }
   return false; // Por si pasa otra cosa, devuelve falso
@@ -847,8 +829,8 @@ void Transient_List_Timing(void) {
 //------------------------------ User set up for limits ------------------------------
 void Config_Limits(void)
 {
-  Load_ON_status(false);            // Apaga la carga
-  Show_Limits();                    // Muestras los actuales
+  Load_OFF();            // Apaga la carga
+  Show_Limits();         // Muestra los actuales
   delay(2000);
   lcd.clear();
 

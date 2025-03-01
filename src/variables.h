@@ -1,5 +1,6 @@
 #ifndef VARIABLES_H
 #define VARIABLES_H
+//#undef WOKWI_SIMULATION
 
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
@@ -38,15 +39,27 @@ extern volatile unsigned long maxEncoder; // sets maximum Rotary Encoder value a
 
 //--------------- Variables de operacion --------------------------------- 
 
-const float DAC_CURR_FACTOR = 0.386894318;  // Factor de diseño para el DAC, paso a convertir 5a1 (5V a 1V de Ref.) osea Corriente máxima 10A V1.63 = 0.4095
-const float MAX_VOLTAGE = 90.00;            // Por diseño puede medir hasta 200V, pero los MOSFET soportan solo hasta 100V
-const float MAX_RESISTOR = 999.9;           // Máximo 999.9 Ω
-const float MAX_CURRENT = 10.000;           // Máximo 10A
-const float MAX_POWER = 300.0;              // Máximo 300W
-const float MAX_TEMP = 99;                  // Máximo 99°C
+const float MAX_VOLTAGE = 50.00;           // Vltg sns hasta 51V, no veo utilidad en permitir mas (los MOSFET soportan hasta 100V).
+const float MAX_RESISTOR = 999.9;          // Máximo 999.9 Ω
+const float MAX_CURRENT = 10.000;          // Máximo 10A
+const float MAX_POWER = 300.0;             // Máximo 300W
+const float MAX_TEMP = 99;                 // Máximo 99°C
 
 
-extern int16_t adc1, adc3;                 // ADCs usados, adc0 y adc2 a GND
+const float SNS_VOLT_FACT = 12.869;        // Factor de diseño para el ADC para 50V Max 
+extern float Sns_Volt_Calib_Fact;          // Factor de calibración para el ADC de V
+extern float Sns_Volt_Calib_Offs;          // Offset de calibracion de voltage sensado
+
+const float SNS_CURR_FACT = 10;            // Factor de diseño para el ADC validar
+extern float Sns_Curr_Calib_Fact;          // Factor de calibración para el ADC de I
+extern float Sns_Curr_Calib_Offs;          // Offset de calibracion de corriente sensada
+
+const float OUT_CURR_FACT = 0.40544;       // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Verificar
+extern float Out_Curr_Calib_Fact;          // Factor de calibración para el DAC de I
+extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente máxima de salida
+
+
+extern int16_t adcv, adci;                 // Objetos para los SDC valor en binario del ADC
 extern unsigned long controlVoltage;       // Voltage de control para el DAC que controlara al MOSFET
 extern float current;                      // Corriente de Carga
 extern float voltage;                      // Voltage de Carga
@@ -58,7 +71,7 @@ extern float CurrentCutOff;                // Corriente máxima de corte seteado
 extern float PowerCutOff;                  // Potencia de corte seteado o cargado de la EEPROM
 extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM
 extern float ResistorCutOff;                      // Resistencia en Ω
-enum ModeType { CC, CP, CR, BC, TC, TL, UNKNOWN };
+enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
 extern ModeType Mode;                      // Modo de operación, CC Default
 extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores

@@ -7,7 +7,7 @@
 // Declaramos las funciones que vamos a utilizar
 void setup();
 void loop();
-void Load_ON_status(bool loadonoff);
+void Load_OFF(void);
 void Read_Encoder();
 void Read_Keypad(int col =1, int row = 3);
 void Read_Load_Button();
