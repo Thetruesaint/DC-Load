@@ -23,6 +23,7 @@ extern RTC_DS1307 rtc;
 
 const uint8_t TEMP_SNSR = A0;  // Sensado de Temperatura
 const uint8_t FAN_CTRL = A2;   // Endendido de Fans
+const uint8_t BUZZER = A6;     // Enable output control
 const uint8_t ENC_A = 3;       // Encoder Pin A
 const uint8_t ENC_B = 2;       // Encoder Pin B
 const uint8_t ENC_BTN = 4;     // Encoder Boton

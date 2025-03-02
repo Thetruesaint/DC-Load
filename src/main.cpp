@@ -23,11 +23,15 @@ pinMode(ENC_BTN, INPUT_PULLUP);
 pinMode(LOADONOFF, INPUT_PULLUP);
 pinMode(TEMP_SNSR, INPUT);
 pinMode(FAN_CTRL, OUTPUT);
+pinMode (BUZZER, OUTPUT);
 
 //------------------------------------Pantalla Inicio--------------------------------------------------
 DateTime now = rtc.now();                                                                   // Obtiene la fecha y hora actual del RTC
 String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());     // Formatea la fecha
 String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()); // Formatea la hora
+
+beepBuzzer();   // Buzzer Test
+
 lcd.clear();
 lcd.backlight(); // Turn on the LCD screen backlight
 printLCD(0, 0, F("*DC Electronic Load*"));
@@ -65,6 +69,7 @@ delay(500);     //Para probar mas rapido
   PowerCutOff = 300;
   tempCutOff = 80;
 #endif
+
 }
 
 //------------------------------------- Bucle Principal-------------------------------------------------

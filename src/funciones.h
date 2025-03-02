@@ -49,5 +49,6 @@ void Mode_Selection(bool shiftPressed = false, char key = '\0');
 void Encoder_Status(bool encOnOff, float limit = 0);
 void Print_Spaces(int col, int row, byte count = 1);
 bool Handle_MSC_Keys(char key);
+void beepBuzzer(void);
 
 #endif

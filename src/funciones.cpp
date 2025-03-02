@@ -369,16 +369,10 @@ void Read_Volts_Current(void) {
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 50V).
 
-  if(raw_voltage < 11.0) {
-    ads.setGain(GAIN_FOUR)
-    adcv = ads.readADC_SingleEnded(VLTG_SNSR);
-    raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT; ;
-   }
-  
   if (Mode == CA){Sns_Volt_Calib_Fact = 1.0; Sns_Volt_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
   voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;      // Calibracion fina de voltaje
 
-  ads.setGain(GAIN_FOUR)
+  ads.setGain(GAIN_FOUR);
   adci = ads.readADC_SingleEnded(CRR_SNSR);
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 5A).
  
@@ -1030,4 +1024,13 @@ bool Handle_MSC_Keys(char key) {
   }
 
   return true;
+}
+//------------------------------- Handle Buzzer -----------------------------------
+void beepBuzzer(void) {
+  for (int i = 0; i < 2; i++) {  // Repetir dos veces
+      digitalWrite(BUZZER, HIGH);  // Encender el buzzer
+      delay(300);                  // Esperar 100ms
+      digitalWrite(BUZZER, LOW);   // Apagar el buzzer
+      delay(300);                  // Pausa entre los pitidos
+  }
 }
