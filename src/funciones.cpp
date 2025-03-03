@@ -6,9 +6,8 @@
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
   #ifndef WOKWI_SIMULATION
-  dac.setVoltage( 0, false); // Set DAC voltage based on load status
-  toggle = false;               // Flag off
   dac.setVoltage( 0, false);    // Corta inmediatamente.
+  toggle = false;               // Flag off
   setCurrent = 0;               // Resetea por las dudas.
   #else
   toggle = false;               // Flag off
@@ -126,7 +125,7 @@ void Mode_Selection(bool shiftPressed, char key) {
 //----------------------- Toggle Current Load ON or OFF ----------------------------
 void Read_Load_Button(void) {
   if (digitalRead(LOADONOFF) == LOW) {
-    delay(50); // Anti-rebote
+    delay(200); // Anti-rebote
     toggle = !toggle;
     if (!toggle) {
       #ifndef WOKWI_SIMULATION
@@ -1028,9 +1027,9 @@ bool Handle_MSC_Keys(char key) {
 //------------------------------- Handle Buzzer -----------------------------------
 void beepBuzzer(void) {
   for (int i = 0; i < 2; i++) {  // Repetir dos veces
-      digitalWrite(BUZZER, HIGH);  // Encender el buzzer
-      delay(300);                  // Esperar 100ms
-      digitalWrite(BUZZER, LOW);   // Apagar el buzzer
-      delay(300);                  // Pausa entre los pitidos
+      digitalWrite(BUZZER, HIGH);  // Encender el buzzer  
+      delay(200);                  // Pausa entre los pitidos
+      digitalWrite(BUZZER, LOW);  // Encender el buzzer  
+      delay(200);                  // Pausa entre los pitidos
   }
 }

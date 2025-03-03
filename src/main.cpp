@@ -32,8 +32,23 @@ String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now
 
 beepBuzzer();   // Buzzer Test
 
-lcd.clear();
 lcd.backlight(); // Turn on the LCD screen backlight
+
+#ifndef WOKWI_SIMULATION
+lcd.clear();
+if (dac.begin(0x60)){                        // initialize dac, default address 0x60 
+  lcd.setCursor(0,0);
+  lcd.print("dac OK");
+  }                            
+  else{
+  lcd.setCursor(0,0);
+  lcd.print("dac NDT");
+  Serial.print("dac NDT");
+  }
+delay (2000);
+#endif
+
+lcd.clear();
 printLCD(0, 0, F("*DC Electronic Load*"));
 lcd.setCursor(0, 1); lcd.print(date + " - " + time);
 #ifndef WOKWI_SIMULATION
@@ -41,7 +56,7 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.71b")); // Version Beta para testear en equipo Real
+printLCD(0, 3, F("v1.71b_test DAC")); // Version Beta para testear en equipo Real
 
 #ifndef WOKWI_SIMULATION
 delay (2000);

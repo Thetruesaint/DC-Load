@@ -23,7 +23,7 @@ extern RTC_DS1307 rtc;
 
 const uint8_t TEMP_SNSR = A0;  // Sensado de Temperatura
 const uint8_t FAN_CTRL = A2;   // Endendido de Fans
-const uint8_t BUZZER = A6;     // Enable output control
+const uint8_t BUZZER = A3;     // 
 const uint8_t ENC_A = 3;       // Encoder Pin A
 const uint8_t ENC_B = 2;       // Encoder Pin B
 const uint8_t ENC_BTN = 4;     // Encoder Boton
@@ -147,6 +147,5 @@ extern int current_step;             // Utilizado en el modo de Transient List M
 const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)
 const int ADD_POWER_CUT_OFF = 4;        // 4 bytes (0-3)
 const int ADD_TEMP_CUT_OFF = 8;         // 4 bytes (8-11)
-
 
 #endif

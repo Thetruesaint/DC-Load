@@ -16,7 +16,7 @@
 - No detectados aún
 
 **Trabajando:**
-- Testing en HW
+- Testing en HW, queme el DAC, rutina de test y debugs de problemas eléctricos. Ajustes menores de antirebote y Load_OFF
 
 **A Trabajar:**
 - Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
