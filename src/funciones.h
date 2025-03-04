@@ -50,5 +50,8 @@ void Encoder_Status(bool encOnOff, float limit = 0);
 void Print_Spaces(int col, int row, byte count = 1);
 bool Handle_MSC_Keys(char key);
 void beepBuzzer(void);
+void Calibration_Mode(void);
+void Calibration_Setup(void);
+void Calibrate(bool calV, float realValue);
 
 #endif

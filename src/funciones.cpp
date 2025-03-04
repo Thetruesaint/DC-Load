@@ -79,6 +79,7 @@ void Read_Keypad(int col, int row) {
   if (customKey == 'E' && index != 0) { // Confirmar entrada solo si hay un valor cargado.
     reading = atof(numbers);            // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
+    if (Mode == CA) {Calibrate(calibrateVoltage, reading);} //usa el valor de readig para calibrar
     Print_Spaces(col, row, 5);
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
@@ -116,6 +117,7 @@ void Mode_Selection(bool shiftPressed, char key) {
       case '4': functionIndex = 3; Mode = BC; modeConfigured = false; break;
       case '5': functionIndex = 4; Mode = TC; modeConfigured = false; break;
       case '6': functionIndex = 5; Mode = TL; modeConfigured = false; break;
+      case 'C': Mode = CA; modeConfigured = false; break; // Activa modo Calibración con Shift+C
       case '<': modeConfigured = false; break; // Solo resetea el modo actual
       default: return; // Ignora otras teclas con Shift
     }
@@ -205,7 +207,7 @@ void Update_LCD(void) {
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
   printLCDNumber(7, 1, voltage, 'v', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
-  if (Mode != BC) {   // lo reemplazo por BatteryCutoffVolts
+  if (Mode != BC && Mode != CA) {   // lo reemplazo por BatteryCutoffVolts
     lcd.setCursor(14,1);
     if (power < 10) {Print_Spaces(14, 1); lcd.print(power, 2);} 
     else if (power < 100) {lcd.print(power, 2);} 
@@ -387,11 +389,11 @@ void Read_Volts_Current(void) {
   static unsigned long lastDecreaseTime = 0;  // Variable para medir el tiempo del último decremento
   unsigned long currentMillis = millis();
   
-  if (Mode != BC){                                             // Para todos los demas modos
+  if (Mode != BC && Mode != CA){                                             // Para todos los demas modos
     simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
     voltage = simulatedVoltage;                                // Asigna el valor de v simulado
   }
-  else { 
+  else if (Mode == BC) { 
     // En modo BC Si toggle es true, reduce el voltaje simulado en 0.01V. Luego ver si puede ser proporcional a la corriente
     if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
     lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
@@ -404,11 +406,20 @@ void Read_Volts_Current(void) {
       voltage = simulatedVoltage; 
     }
   }
+  else if (Mode == CA){
+    simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;              // Convertir el rango 0-1023 a 30V-0V
+    float error_voltage = simulatedVoltage * 1.05;                         // Asigna el valor de v simulado con error del 5% por arriba.
+    voltage = error_voltage * Sns_Volt_Calib_Fact; 
+  }
   
   // Simulación de corriente sensada.
 
   if (toggle) {
     current = setCurrent / 1000;   // Lo pasa a Amperes.
+    if (Mode == CA){
+      float error_current = current * 0.95;     // Error inducido solo en medicio, luego simular para setCurrent
+      current = error_current  * Sns_Curr_Calib_Fact;
+    }
   } else {
     current = 0;
     }
@@ -632,10 +643,11 @@ bool Battery_Capacity() {
 
   // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
   if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) { 
-    BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo?
+    BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo
     reading = 0; encoderPosition = 0; setCurrent = 0; // Reinicia todo.
     Load_OFF();
-    timer_stop(); return true; // Devuelve true porque completo la descarga
+    timer_stop(); 
+    beepBuzzer(); return true; // Devuelve true porque completo la descarga
   }
   return false; // Por si pasa otra cosa, devuelve falso
 }
@@ -877,6 +889,74 @@ void Show_Limits(void) {
   lcd.print(char(0xDF)); lcd.print("C");
 }
 
+//--------------------------------- Calibration Mode ---------------------------------
+void Calibration_Mode() {
+
+  if(!modeConfigured) {Calibration_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
+  
+  if (!modeInitialized) {                    // Si es falso, prepara el LCD
+    lcd.clear();
+  if (x == 1 || x == 2) { calibrateVoltage = (x == 1);}
+      printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
+      printLCD(1, 2, F("Adj->"));             // Muestra el mensaje
+      printLCD(13, 2, F("A"));                // Muestra el mensaje
+      printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
+      printLCD(6, 3, F("<Set real"));
+      Encoder_Status(true, CurrentCutOff);    // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
+      modeInitialized = true;                 // Modo inicializado
+  }
+  reading = encoderPosition / 1000;            // Toma el valor del encoder
+  reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
+  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
+  Cursor_Position();
+
+  if (!toggle) return;
+  setCurrent = reading * 1000;                // lo pasa a mA
+}
+
+//--------------------------------- Calibration Setup --------------------------------
+void Calibration_Setup(void){
+  lcd.clear();
+  printLCD(4, 0, F("CALIBRATION"));
+  printLCD(0, 1, F("1) Voltage"));
+  printLCD(0, 2, F("2) Current"));
+ 
+  do { // Bucle para garantizar entrada válida
+    z = 1; r = 3;
+    printLCD(z - 1, r, F(">"));
+    Print_Spaces(z, r, 1);
+    if (!Value_Input(z, r, 1, false)) return; // 1 digitos, sin decimal.
+  } while (x < 1 || x > 2);
+  modeConfigured = true;    // Se configuro el modo CA
+  modeInitialized = false;  // Pinta la plantilla TC en el LCD
+}
+//--------------------------------- Calibrate ---------------------------------------
+void Calibrate(bool calV, float realValue){
+
+  float measuredValue = calV ? voltage : current;
+  float factor = realValue / measuredValue;
+  
+  if (calV) {
+      Sns_Volt_Calib_Fact = factor;
+
+      //saveToEEPROM(12, factor);
+     //saveToEEPROM(16, offset);
+  } else {
+      Sns_Curr_Calib_Fact = factor;
+      Out_Curr_Calib_Fact = realValue / setCurrent;
+      Serial.println(Out_Curr_Calib_Fact);
+
+      //saveToEEPROM(20, factor);
+      //saveToEEPROM(24, offset);
+  }
+  
+  lcd.clear();
+  printLCD(0, 1, F("Calibrated!"));
+  modeInitialized = false;  // Pinta la plantilla CA, reseteando la plantilla
+  delay(2000);
+}
+
+
 //-------------------------- Funciones para el Timer (RTC) ---------------------------
 
 void timer_start() {
@@ -1026,10 +1106,10 @@ bool Handle_MSC_Keys(char key) {
 }
 //------------------------------- Handle Buzzer -----------------------------------
 void beepBuzzer(void) {
-  for (int i = 0; i < 2; i++) {  // Repetir dos veces
-      digitalWrite(BUZZER, HIGH);  // Encender el buzzer  
-      delay(200);                  // Pausa entre los pitidos
+  for (int i = 0; i < 2; i++) {   // Repetir dos veces
+      digitalWrite(BUZZER, HIGH); // Encender el buzzer  
+      delay(200);                 // Pausa entre los pitidos
       digitalWrite(BUZZER, LOW);  // Encender el buzzer  
-      delay(200);                  // Pausa entre los pitidos
+      delay(200);                 // Pausa entre los pitidos
   }
 }

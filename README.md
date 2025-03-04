@@ -7,19 +7,21 @@
 - Reing. de ADC y DAC, reaguste de ganancias y factores de diseño. CAMBIO EN HW
 - Cbio Q de Fans por MOSFET
 - Buzzer en A3, Caps en VDD de DAC y ADC
+- Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
+- GND con Cap de 1uF a Tierra, resolvio ruido de sensor de Voltage con carga apagada.
 
 **Fixes:**
 - En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
 - Saco el E-Control no funciono bien en tests
 
 **Bugs:**
-- No detectados aún
+- Config_Limits puede ser llamada a si misma varias veces.
 
 **Trabajando:**
-- Testing en HW, queme el DAC, rutina de test y debugs de problemas eléctricos. Ajustes menores de antirebote y Load_OFF
+- Testing en HW, queme el DAC, rutina de test. Ajustes menores de antirebote y Load_OFF
+- Rutina de Calibrado de un solo punto, sin offset. Probado con Voltage, con corriente falta revisar, no funciona.
 
 **A Trabajar:**
-- Uso para Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
 
 **En Cola: (next Release)**
 - Cooler mas grande contra el Disipador.
@@ -35,7 +37,6 @@
 - En TC, ajustar timing con encoder?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
 - Heald Checks en setup e informar errores con periféricos I2C, temp., etc. llamar a Check_Limits?
-- Anuncio de limite excedido, hacer "blimk" del valor excedido.
 - Activar el LOAD ON OFF por interrupción?
 -  Setear hora y fecha del RTC y poder mirarla boton Shift?.
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //

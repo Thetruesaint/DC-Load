@@ -41,10 +41,11 @@ float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de 
 float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
 ModeType Mode = CC;                     // Modo de operación, CC Default
-const char* ModeNames[] = { "CC", "CP", "CR", "BC", "TC", "TL", "NA" };
+//const char* ModeNames[] = { "CC", "CP", "CR", "BC", "TC", "TL", "CA" };
 bool modeInitialized = false;           // Para reimplirmir la plantilla del modo y/o inicializar valores
 bool modeConfigured = false;            // Para BC, TC o TL, indica que hay que seterarlos
 int functionIndex = 0;                  // Para seleccionar los Modos.
+bool calibrateVoltage = false;          // Que estoy calibrando
 
 //--------------- Modos CC, CR y CP --------------------------------------
 

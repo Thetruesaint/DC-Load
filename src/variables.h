@@ -78,6 +78,7 @@ extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
 extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
 extern int functionIndex;                  // Para seleccionar los Modos.
+extern bool calibrateVoltage;                     // Que estoy calibrando
 
 //--------------- Modos CC, CR y CP --------------------------------------
 
@@ -147,5 +148,11 @@ extern int current_step;             // Utilizado en el modo de Transient List M
 const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)
 const int ADD_POWER_CUT_OFF = 4;        // 4 bytes (0-3)
 const int ADD_TEMP_CUT_OFF = 8;         // 4 bytes (8-11)
+const int ADD_SNS_VOLT_FAC_CAL = 12;    // Dirección para Sns_Volt_Calib_Fact
+const int ADD_SNS_CURR_FAC_CAL = 16;    // Dirección para Sns_Curr_Calib_Fact
+const int ADD_OUT_CURR_FAC_CAL = 20;    // Dirección para Out_Curr_Calib_Fact
+const int ADD_SNS_VOLT_OFF_CAL = 24;    // Dirección para Sns_Volt_Calib_Offs
+const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
+const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif

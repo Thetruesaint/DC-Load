@@ -102,6 +102,7 @@ void loop() {
     case BC:  Battery_Mode(); break;
     case TC:  Transient_Cont_Mode(); break;
     case TL:  Transient_List_Mode(); break;
+    case CA:  Calibration_Mode(); break;
     case UNKNOWN: 
     default: break;
   }
