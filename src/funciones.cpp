@@ -219,7 +219,7 @@ void Update_LCD(void) {
   if (Mode != TC && Mode != TL) {  // Evitar mostrar el encoder en modos transitorios
 
     lcd.setCursor(6, 2);
-    if (Mode == CC || Mode == BC){
+    if (Mode == CC || Mode == BC || Mode == CA){
       if (reading < 100) Print_Spaces(6, 2);
       if (reading < 10) Print_Spaces(7, 2);
       lcd.print(reading, 3);
@@ -333,7 +333,7 @@ void Cursor_Position(void) {
   if (CuPo == unitPosition + 1) CuPo++;
 
   // Volver a la posición inicial si excede el rango permitido
-  if ((Mode == CC || Mode == BC) && CuPo > 12) CuPo = unitPosition;
+  if ((Mode == CC || Mode == BC || Mode == CA) && CuPo > 12) CuPo = unitPosition;
   if ((Mode == CP || Mode == CR) && CuPo > 10) CuPo = unitPosition - 2;
 
   // Asignar factor según la posición del cursor y el modo
@@ -341,8 +341,8 @@ void Cursor_Position(void) {
       case 6:   factor = 100000;  break;  // Centenas (Solo CP y CR)
       case 7:   factor = 10000;  break;   // Decenas (Solo CP y CR)
       case 10:  factor = 100;   break;    // Décimas
-      case 11:  factor = 10;    break;    // Centésimas (Solo CC y BC)
-      case 12:  factor = 1;     break;    // Milésimas (Solo CC y BC)
+      case 11:  factor = 10;    break;    // Centésimas (Solo CC, BC y CA)
+      case 12:  factor = 1;     break;    // Milésimas (Solo CC, BC y CA)
       default:  factor = 1000;            // Unidades por defecto CuPo = 8
   }
   last_CuPo = CuPo;
@@ -357,6 +357,15 @@ void Read_Volts_Current(void) {
 
   float raw_voltage;
   float raw_current;
+  static float filtered_voltage = 0;
+  static float filtered_current = 0;
+  const float alpha = 0.1; // Factor de suavizado para el Promedio Móvil Exponencial (0.0 - 1.0)
+
+  /*
+  Si querés ajustar la suavidad, podés cambiar el valor de alpha:
+  Mayor (0.2 - 0.3) → Más rápido pero menos estable.
+  Menor (0.05 - 0.1) → Más estable pero más lento.
+  */
 
   // static float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
   // ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
@@ -365,20 +374,24 @@ void Read_Volts_Current(void) {
   // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
   
-  ads.setGain(GAIN_ONE);                                                  // 1x gain   +/- 4.096V  1 bit = 0.125mV
+  ads.setGain(GAIN_ONE);                                                   // 1x gain   +/- 4.096V  1 bit = 0.125mV
 
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
-  raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 50V).
+  raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 50V).
+
+  filtered_voltage = alpha * raw_voltage + (1 - alpha) * filtered_voltage; // Aplicar Promedio Móvil Exponencial
 
   if (Mode == CA){Sns_Volt_Calib_Fact = 1.0; Sns_Volt_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
-  voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;      // Calibracion fina de voltaje
+  voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;       // Calibracion fina de voltaje
 
   ads.setGain(GAIN_FOUR);
   adci = ads.readADC_SingleEnded(CRR_SNSR);
-  raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                   // Por ampl. dif. para sensado remoto de (Max. 5A).
+  raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 5A).
+
+  filtered_current = alpha * raw_current + (1 - alpha) * filtered_current; // Aplicar Promedio Móvil Exponencial
  
   if (Mode == CA){Sns_Curr_Calib_Fact = 1.0; Sns_Curr_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
-  current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;     // Calibracion fina de corriente
+  current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;      // Calibracion fina de corriente
   
   #else
 
@@ -408,18 +421,14 @@ void Read_Volts_Current(void) {
   }
   else if (Mode == CA){
     simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;              // Convertir el rango 0-1023 a 30V-0V
-    float error_voltage = simulatedVoltage * 1.05;                         // Asigna el valor de v simulado con error del 5% por arriba.
-    voltage = error_voltage * Sns_Volt_Calib_Fact; 
+    float error_voltage = simulatedVoltage * 1.05 - 0.1;                   // Asigna el valor de v simulado con error del 5% por arriba y offset
+    voltage = error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;  
   }
   
   // Simulación de corriente sensada.
 
   if (toggle) {
     current = setCurrent / 1000;   // Lo pasa a Amperes.
-    if (Mode == CA){
-      float error_current = current * 0.95;     // Error inducido solo en medicio, luego simular para setCurrent
-      current = error_current  * Sns_Curr_Calib_Fact;
-    }
   } else {
     current = 0;
     }
@@ -898,8 +907,9 @@ void Calibration_Mode() {
     lcd.clear();
   if (x == 1 || x == 2) { calibrateVoltage = (x == 1);}
       printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
-      printLCD(1, 2, F("Adj->"));             // Muestra el mensaje
-      printLCD(13, 2, F("A"));                // Muestra el mensaje
+      printLCD(14, 1, F("Set P1"));
+      printLCD(1, 2, F("Adj->"));
+      printLCD(13, 2, F("A"));
       printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
       printLCD(6, 3, F("<Set real"));
       Encoder_Status(true, CurrentCutOff);    // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
@@ -927,33 +937,58 @@ void Calibration_Setup(void){
     Print_Spaces(z, r, 1);
     if (!Value_Input(z, r, 1, false)) return; // 1 digitos, sin decimal.
   } while (x < 1 || x > 2);
+  firstPointTaken = false;  // Reinicia pto. 1
   modeConfigured = true;    // Se configuro el modo CA
   modeInitialized = false;  // Pinta la plantilla TC en el LCD
 }
 //--------------------------------- Calibrate ---------------------------------------
 void Calibrate(bool calV, float realValue){
 
+  static float measuredValue1 = 0, realValue1 = 0;
+  static float measuredValue2 = 0, realValue2 = 0;
+  static float setCurrent1 = 0;
+  static float setCurrent2 = 0;
+
   float measuredValue = calV ? voltage : current;
-  float factor = realValue / measuredValue;
-  
-  if (calV) {
-      Sns_Volt_Calib_Fact = factor;
 
-      //saveToEEPROM(12, factor);
-     //saveToEEPROM(16, offset);
+  if (!firstPointTaken) {
+    // Guardamos el primer punto
+    measuredValue1 = measuredValue;
+    realValue1 = realValue;
+    setCurrent1 = setCurrent;
+    firstPointTaken = true;
+    printLCD(14, 1, F("Set P2"));
+    return;
   } else {
-      Sns_Curr_Calib_Fact = factor;
-      Out_Curr_Calib_Fact = realValue / setCurrent;
-      Serial.println(Out_Curr_Calib_Fact);
+    // Guardamos el segundo punto y calculamos
+    measuredValue2 = measuredValue;
+    realValue2 = realValue;
+    setCurrent2 = setCurrent;
+    firstPointTaken = false;
+    
+    float factor = (realValue2 - realValue1) / (measuredValue2 - measuredValue1);
+    float offset = realValue1 - (measuredValue1 * factor);
 
-      //saveToEEPROM(20, factor);
-      //saveToEEPROM(24, offset);
-  }
-  
+    if (calV) {
+        Sns_Volt_Calib_Fact = factor;
+        Sns_Volt_Calib_Offs = offset;
+        //saveToEEPROM(12, factor);
+        ///saveToEEPROM(16, offset);
+    } else {
+        Sns_Curr_Calib_Fact = factor;
+        Sns_Curr_Calib_Offs = offset;
+        Out_Curr_Calib_Fact = (realValue2 - realValue1) / (setCurrent2 - setCurrent1);
+        Out_Curr_Calib_Offs = realValue1 - (setCurrent1 * factor);
+        //saveToEEPROM(20, factor);
+        //saveToEEPROM(24, offset);
+    }
+
   lcd.clear();
   printLCD(0, 1, F("Calibrated!"));
+  firstPointTaken = false;
   modeInitialized = false;  // Pinta la plantilla CA, reseteando la plantilla
   delay(2000);
+  }
 }
 
 

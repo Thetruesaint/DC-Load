@@ -9,6 +9,7 @@
 - Buzzer en A3, Caps en VDD de DAC y ADC
 - Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
 - GND con Cap de 1uF a Tierra, resolvio ruido de sensor de Voltage con carga apagada.
+- Beeps al terminar de descargar baterias.
 
 **Fixes:**
 - En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
@@ -18,8 +19,9 @@
 - Config_Limits puede ser llamada a si misma varias veces.
 
 **Trabajando:**
+- Promedio Móvil Exponencial (EMA) para medición de voltage y corriente, probar.
 - Testing en HW, queme el DAC, rutina de test. Ajustes menores de antirebote y Load_OFF
-- Rutina de Calibrado de un solo punto, sin offset. Probado con Voltage, con corriente falta revisar, no funciona.
+- Rutina de Calibrado de dos puntos con offset, falta cargar y grabar en EEPROM y Testear.
 
 **A Trabajar:**
 

@@ -46,7 +46,6 @@ const float MAX_CURRENT = 10.000;          // Máximo 10A
 const float MAX_POWER = 300.0;             // Máximo 300W
 const float MAX_TEMP = 99;                 // Máximo 99°C
 
-
 const float SNS_VOLT_FACT = 12.869;        // Factor de diseño para el ADC para 50V Max 
 extern float Sns_Volt_Calib_Fact;          // Factor de calibración para el ADC de V
 extern float Sns_Volt_Calib_Offs;          // Offset de calibracion de voltage sensado
@@ -78,7 +77,8 @@ extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
 extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
 extern int functionIndex;                  // Para seleccionar los Modos.
-extern bool calibrateVoltage;                     // Que estoy calibrando
+extern bool calibrateVoltage;              // True si estoy calibrando V, I si es false
+extern bool firstPointTaken;               // Flag de pto uno tomado
 
 //--------------- Modos CC, CR y CP --------------------------------------
 
