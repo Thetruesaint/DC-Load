@@ -52,7 +52,7 @@ void Read_Encoder()
 
 //---------------------------- Read Keypad Input ----------------------------------
 void Read_Keypad(int col, int row) {
-
+  int maxDigits = (Mode == CA) ? 6 : 5;
   customKey = customKeypad.getKey();              // Escanea el teclado
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
@@ -63,13 +63,13 @@ void Read_Keypad(int col, int row) {
 
   if (Mode == BC || Mode == TC || Mode == TL) return;
   // Números
-  if (customKey >= '0' && customKey <= '9' && index < 5) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
+  if (customKey >= '0' && customKey <= '9' && index < maxDigits) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
     printLCD_S(col + index, row, String(customKey));        // Muestra el número en el LCD
     numbers[index++] = customKey;                           // Almacena el número en la variable numbers
     numbers[index] = '\0';                                  // Agrega el caracter nulo al final de la cadena
   }
   // Pto. decimal
-  if (customKey == '.' && decimalPoint != '*'&& index < 5) {   // Si punto decimal y no se ha ingresado uno antes y si no se llego al limite de carga
+  if (customKey == '.' && decimalPoint != '*'&& index < maxDigits) {   // Si punto decimal y no se ha ingresado uno antes y si no se llego al limite de carga
     printLCD(col + index, 3, F("."));              // Muestra el punto decimal en el LCD
     numbers[index++] = '.';                        // Almacena el punto decimal en la variable numbers
     numbers[index] = '\0';                         // Agrega el caracter nulo al final de la cadena
@@ -83,7 +83,7 @@ void Read_Keypad(int col, int row) {
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     }
     else {Calibrate(x);} //usa el valor de readig para calibrar
-    Print_Spaces(col, row, 5);
+    Print_Spaces(col, row, maxDigits);
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
 
@@ -378,13 +378,10 @@ void Read_Volts_Current(void) {
   // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
   
   ads.setGain(GAIN_ONE);                                                   // 1x gain   +/- 4.096V  1 bit = 0.125mV
-
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 50V).
 
   filtered_voltage = alpha * raw_voltage + (1 - alpha) * filtered_voltage; // Aplicar Promedio Móvil Exponencial
-
-  if (Mode == CA){Sns_Volt_Calib_Fact = 1.0; Sns_Volt_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
   voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;       // Calibracion fina de voltaje
 
   ads.setGain(GAIN_FOUR);
@@ -392,8 +389,6 @@ void Read_Volts_Current(void) {
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 5A).
 
   filtered_current = alpha * raw_current + (1 - alpha) * filtered_current; // Aplicar Promedio Móvil Exponencial
- 
-  if (Mode == CA){Sns_Curr_Calib_Fact = 1.0; Sns_Curr_Calib_Offs = 0.0;}   // Si estoy en modo Calibración, reseteo a 1 el factor para poder leer el valor sin calibrar
   current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;      // Calibracion fina de corriente
   
   #else
@@ -907,16 +902,24 @@ void Calibration_Mode() {
   if(!modeConfigured) {Calibration_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
   
   if (!modeInitialized) {                    // Si es falso, prepara el LCD
-    lcd.clear();
-  if (x == 1 || x == 2) { calibrateVoltage = (x == 1);}
-      printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
-      printLCD(14, 1, firstPointTaken? F("Set P2") : F("Set P1"));
-      printLCD(1, 2, F("Adj->"));
-      printLCD(13, 2, F("A"));
-      printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-      printLCD(6, 3, F("<Set real"));
-      Encoder_Status(true, CurrentCutOff);    // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-      modeInitialized = true;                 // Modo inicializado
+    if (x == 1) {                 // Resetea Volt Calibration
+      calibrateVoltage = true;
+      Sns_Volt_Calib_Fact = 1.0;
+      Sns_Volt_Calib_Offs = 0.0;}
+    else if (x == 2){             // Resetea Curr Calibration
+      calibrateVoltage = false;
+      Sns_Curr_Calib_Fact = 1.0;
+      Sns_Curr_Calib_Offs = 0.0;
+    }
+    lcd.clear();    
+    printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
+    printLCD(14, 1, firstPointTaken? F("Set P2") : F("Set P1"));
+    printLCD(1, 2, F("Adj->"));
+    printLCD(13, 2, F("A"));
+    printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
+    printLCD(7, 3, F("<Set real"));
+    Encoder_Status(true, CurrentCutOff);    // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
+    modeInitialized = true;                 // Modo inicializado
   }
   reading = encoderPosition / 1000;            // Toma el valor del encoder
   reading = min(maxReading, max(0, reading));  // Limita reading dinámicamente a CurrentCutOff
@@ -947,8 +950,8 @@ void Calibration_Setup(void){
     Load_Calibration(ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Voltaje
     Load_Calibration(ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Corriente
     Load_Calibration(ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para seteo de Corriente
-    printLCD(4, 3, F("Loaded!"));
-    delay(1000);
+    printLCD(12, 3, F("Loaded!"));
+    delay(1500);
     modeConfigured = false;  // Se vuelve a este menu con Calibraciónes cargadas.
   }
   if (x == 4){
@@ -958,8 +961,8 @@ void Calibration_Setup(void){
     Save_Calibration(ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs);    // Guarda Offset de Calibración de la EEPROM para sensado de Voltaje
     Save_Calibration(ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs);    // Guarda Offset de Calibración de la EEPROM para sensado de Corriente
     Save_Calibration(ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs);    // Guarda Offset de Calibración de la EEPROM para seteo de Corriente
-    printLCD(4, 3, F("Saved!"));
-    delay(1000);
+    printLCD(12, 3, F("Saved!"));
+    delay(1500);
     modeConfigured = false;  // Se vuelve a este menu con Calibraciónes cargadas.
   }
   firstPointTaken = false;  // Reinicia pto. 1
@@ -1000,8 +1003,8 @@ void Calibrate(float realValue){
     } else {
         Sns_Curr_Calib_Fact = factor;
         Sns_Curr_Calib_Offs = offset;
-        Out_Curr_Calib_Fact = max(0.9, min(1.1, ((realValue2 - realValue1) / (setCurrent2 - setCurrent1))));
-        Out_Curr_Calib_Offs = max(-0.1, min(0.1, realValue1 - (setCurrent1 * factor)));
+        Out_Curr_Calib_Fact = max(0.9, min(1.1, (realValue2 - realValue1) / (setCurrent2 - setCurrent1)));
+        Out_Curr_Calib_Offs = max(-0.1, min(0.1, realValue1 - (setCurrent1 * Out_Curr_Calib_Fact)));
     }
   lcd.clear();
   printLCD(4, 1, F("Calibrated!"));

@@ -18,10 +18,15 @@
 
 **Bugs:**
 - Config_Limits puede ser llamada a si misma varias veces.
+- Mientras este en modo CA, no voy a ver la calibración. Salir del modo?
+
 
 **Trabajando:**
 - Promedio Móvil Exponencial (EMA) para medición de voltage y corriente. Test en HW
 - Rutina de Calibrado de dos puntos con offset, con lectura y grabado en EEPROM. Test en HW
+- Fallo Test en HW, no lee bien la EEPROM, Tuve que inicializar las posiciones de la EEPROM
+- Amplio maxDigits en Read_Keypad para precisión de calibración y saco reseteo de Calib de Read_Voltage_Current
+- Calib. ok en V y en I sense. Error en formula de out I con el factor. péro no esta siendo lineal, revisar circuito y resistencia de pulldown
 
 **A Trabajar:**
 

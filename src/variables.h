@@ -54,7 +54,8 @@ const float SNS_CURR_FACT = 10;            // Factor de diseño para el ADC vali
 extern float Sns_Curr_Calib_Fact;          // Factor de calibración para el ADC de I
 extern float Sns_Curr_Calib_Offs;          // Offset de calibracion de corriente sensada
 
-const float OUT_CURR_FACT = 0.40544;       // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Verificar
+//const float OUT_CURR_FACT = 0.40544;     // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Verificar
+const float OUT_CURR_FACT = 0.393277;      // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Recalculado
 extern float Out_Curr_Calib_Fact;          // Factor de calibración para el DAC de I
 extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente máxima de salida
 

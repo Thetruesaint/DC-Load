@@ -14,7 +14,12 @@ rtc.begin();        // Inicializa el RTC en teoría en address 0x68
 ads.begin();                 // Inicializa el ADC con address 0x48
 ads.setGain(GAIN_TWOTHIRDS); // Setea la ganancia del ADC a 2/3x gain +/- 6.144V  1 bit = 0.1875mV
 dac.begin(0x60);             // Inicializa el DAC con address 0x60
+dac.setVoltage(0,true);      // IMPORTANTE, grabar en 0 para que apague la carga apenas se encienca. Cambio a "True" para que guarde este valor en la Emprom.
 #endif
+
+ //----------------------------------------Configuraciones iniciales de única vez----------------------------------------------
+
+
 
 //-------------------------------------Inicializa I/O---------------------------------------------------
 pinMode(ENC_A, INPUT_PULLUP);
@@ -41,16 +46,18 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.71b")); // Version Beta para testear en equipo Real
+printLCD(0, 3, F("v1.71")); // Version definitiva, para testear en HW
 
 #ifndef WOKWI_SIMULATION
 delay (2000);
+
 Load_Calibration(ADD_SNS_VOLT_FAC_CAL, Sns_Volt_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Voltaje
 Load_Calibration(ADD_SNS_CURR_FAC_CAL, Sns_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Corriente
 Load_Calibration(ADD_OUT_CURR_FAC_CAL, Out_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para seteo de Corriente
 Load_Calibration(ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Voltaje
 Load_Calibration(ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Corriente
 Load_Calibration(ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para seteo de Corriente
+
 #else
 delay(500);     //Para probar mas rapido
 #endif
