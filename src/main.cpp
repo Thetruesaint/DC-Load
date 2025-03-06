@@ -33,21 +33,6 @@ String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now
 beepBuzzer();   // Buzzer Test
 
 lcd.backlight(); // Turn on the LCD screen backlight
-
-#ifndef WOKWI_SIMULATION
-lcd.clear();
-if (dac.begin(0x60)){                        // initialize dac, default address 0x60 
-  lcd.setCursor(0,0);
-  lcd.print("dac OK");
-  }                            
-  else{
-  lcd.setCursor(0,0);
-  lcd.print("dac NDT");
-  Serial.print("dac NDT");
-  }
-delay (2000);
-#endif
-
 lcd.clear();
 printLCD(0, 0, F("*DC Electronic Load*"));
 lcd.setCursor(0, 1); lcd.print(date + " - " + time);
@@ -56,10 +41,16 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.71b_test DAC")); // Version Beta para testear en equipo Real
+printLCD(0, 3, F("v1.71b")); // Version Beta para testear en equipo Real
 
 #ifndef WOKWI_SIMULATION
 delay (2000);
+Load_Calibration(ADD_SNS_VOLT_FAC_CAL, Sns_Volt_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Voltaje
+Load_Calibration(ADD_SNS_CURR_FAC_CAL, Sns_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Corriente
+Load_Calibration(ADD_OUT_CURR_FAC_CAL, Out_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para seteo de Corriente
+Load_Calibration(ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Voltaje
+Load_Calibration(ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Corriente
+Load_Calibration(ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para seteo de Corriente
 #else
 delay(500);     //Para probar mas rapido
 #endif

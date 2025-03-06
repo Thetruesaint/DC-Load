@@ -41,8 +41,7 @@ float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de 
 float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
 ModeType Mode = CC;                     // Modo de operación, CC Default
-//const char* ModeNames[] = { "CC", "CP", "CR", "BC", "TC", "TL", "CA" };
-bool modeInitialized = false;           // Para reimplirmir la plantilla del modo y/o inicializar valores
+bool modeInitialized = false;           // Para reimprimir la plantilla del modo y/o inicializar valores
 bool modeConfigured = false;            // Para BC, TC o TL, indica que hay que seterarlos
 int functionIndex = 0;                  // Para seleccionar los Modos.
 bool calibrateVoltage = false;          // True si estoy calibrando V, I si es false
@@ -73,8 +72,8 @@ byte index = 0;    // poicion para el caranter de la variable numbers
 float x = 0;       // Valor que entrega la función Value_Input()
 
 //---------------- Variables LCD -----------------------------------------
-int z = 1; // Posición en renglón (En CC,CP y CR dejo lugar para poner caracter ">"), aun no lo puse
-int r = 0; // Renglon
+int z = 1;        // Posición en renglón (En CC,CP y CR dejo lugar para poner caracter ">"), aun no lo puse
+int r = 0;        // Renglon
 
 byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar valores que pueden cambiar. Los de Set son con mayusculas comunes
     0b00000,  //      

@@ -10,6 +10,7 @@
 - Shift+C para ir al un nuevo modo: CALIBRACION (MILSTONE)
 - GND con Cap de 1uF a Tierra, resolvio ruido de sensor de Voltage con carga apagada.
 - Beeps al terminar de descargar baterias.
+- Cooler adicional, mas grande contra el Disipador.
 
 **Fixes:**
 - En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
@@ -19,15 +20,12 @@
 - Config_Limits puede ser llamada a si misma varias veces.
 
 **Trabajando:**
-- Promedio Móvil Exponencial (EMA) para medición de voltage y corriente, probar.
-- Testing en HW, queme el DAC, rutina de test. Ajustes menores de antirebote y Load_OFF
-- Rutina de Calibrado de dos puntos con offset, falta cargar y grabar en EEPROM y Testear.
+- Promedio Móvil Exponencial (EMA) para medición de voltage y corriente. Test en HW
+- Rutina de Calibrado de dos puntos con offset, con lectura y grabado en EEPROM. Test en HW
 
 **A Trabajar:**
 
-**En Cola: (next Release)**
-- Cooler mas grande contra el Disipador.
-
+**En Cola:**
 
 **Posibles Mejoras SW:**
 
@@ -46,4 +44,4 @@
 
 **Posibles Mejoras de HW:**
 - Medir frecuencia máxima TC y TL con el osciloscopio a ver hasta donde llega, usar Lipo.
-- habiliar control externo de MOSFETs?
+- habilitar control externo de MOSFETs?

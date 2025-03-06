@@ -52,6 +52,8 @@ bool Handle_MSC_Keys(char key);
 void beepBuzzer(void);
 void Calibration_Mode(void);
 void Calibration_Setup(void);
-void Calibrate(bool calV, float realValue);
+void Calibrate(float realValue);
+void Load_Calibration(int address, float &variable);
+void Save_Calibration(int address, float value);
 
 #endif
