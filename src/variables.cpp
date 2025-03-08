@@ -19,7 +19,7 @@ volatile unsigned long maxEncoder = 999000; // sets maximum Rotary Encoder value
 //--------------- Variables de operacion --------------------------------- 
 
 int16_t adcv, adci;                     // Objetos para los SDC valor en binario del ADC
-unsigned long controlVoltage = 0;       // Voltage de control para el DAC que controlara al MOSFET
+unsigned long setDAC = 0;       // Voltage de control para el DAC que controlara al MOSFET
 float current = 0;                      // Corriente de Carga
 float voltage = 0;                      // Voltage de Carga
 

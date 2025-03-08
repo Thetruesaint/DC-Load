@@ -82,7 +82,7 @@ void Read_Keypad(int col, int row) {
     reading = x;                        // Convierte cadena de caracteres en número y lo asigna a reading 
     encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
     }
-    else {Calibrate(x);} //usa el valor de readig para calibrar
+    else {Calibrate(x);} //usa el valor de x para calibrar
     Print_Spaces(col, row, maxDigits);
     Reset_Input_Pointers();             // Resetea el punto decimal y el indice
   }
@@ -200,17 +200,17 @@ void Update_LCD(void) {
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
   
   // Evitar valores negativos por errores de medición
+  
+  if (voltage < 0.011 && Mode != CA) voltage = 0.0; // Ruido electrico pero quiero verlo en CA
+  if (current < 0.006 && Mode != CA) current = 0.0; // Ruido electrico pero quiero verlo en CA
   float power = voltage * current;
-  if (power < 0) power = 0;
-  if (voltage < 0.0) voltage = 0.0;
-  if (current < 0.0) current = 0.0;
 
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));  // Indica el estado de la carga
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
-  printLCDNumber(0, 1, current, 'A', (current < 10.0) ? 3 : 2);
-  printLCDNumber(7, 1, voltage, 'v', (voltage < 10.0) ? 3 : (voltage < 100.0) ? 2 : 1);
-  if (Mode != BC && Mode != CA) {   // lo reemplazo por BatteryCutoffVolts
+  printLCDNumber(0, 1, current, 'A', (current < 10.00) ? 3 : 2);
+  printLCDNumber(7, 1, voltage, 'v', (voltage < 10.00) ? 3 : (voltage < 100.0) ? 2 : 1);
+  if (Mode != BC && Mode != CA) {   // lo reemplazo por BatteryCutoffVolts y en modo CA muestro el Punto a muestrar.
     lcd.setCursor(14,1);
     if (power < 10) {Print_Spaces(14, 1); lcd.print(power, 2);} 
     else if (power < 100) {lcd.print(power, 2);} 
@@ -360,9 +360,9 @@ void Read_Volts_Current(void) {
 
   float raw_voltage;
   float raw_current;
-  static float filtered_voltage = 0;
-  static float filtered_current = 0;
-  const float alpha = 0.1; // Factor de suavizado para el Promedio Móvil Exponencial (0.0 - 1.0)
+ // static float filtered_voltage = 0;
+  //static float filtered_current = 0;
+  //const float alpha = 0.3; // Factor de suavizado para el Promedio Móvil Exponencial (0.0 - 1.0)
 
   /*
   Si querés ajustar la suavidad, podés cambiar el valor de alpha:
@@ -381,14 +381,14 @@ void Read_Volts_Current(void) {
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 50V).
 
-  filtered_voltage = alpha * raw_voltage + (1 - alpha) * filtered_voltage; // Aplicar Promedio Móvil Exponencial
+  //filtered_voltage = alpha * raw_voltage + (1 - alpha) * filtered_voltage; // Aplicar Promedio Móvil Exponencial
   voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;       // Calibracion fina de voltaje
 
-  ads.setGain(GAIN_FOUR);
+  ads.setGain(GAIN_EIGHT);
   adci = ads.readADC_SingleEnded(CRR_SNSR);
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 5A).
 
-  filtered_current = alpha * raw_current + (1 - alpha) * filtered_current; // Aplicar Promedio Móvil Exponencial
+  //filtered_current = alpha * raw_current + (1 - alpha) * filtered_current; // Aplicar Promedio Móvil Exponencial
   current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;      // Calibracion fina de corriente
   
   #else
@@ -439,9 +439,8 @@ void DAC_Control(void) {
   #ifndef WOKWI_SIMULATION
 
   if (toggle) {
-    if (Mode == CA){Out_Curr_Calib_Fact = 1.0; Out_Curr_Calib_Offs = 0.0;}                  // Si estoy en modo Calibración, reseteo factor para poder ver el valor sin calibrar
-    controlVoltage = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs; // Calcula valor de salida para el DacI con los factores y offset
-    dac.setVoltage(controlVoltage, false);                                                // Setea corriente máxima de salida por el factor y POR EL MOMENTO, no lo graba en la Eprom del DacI.
+    setDAC = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs;  // Calcula valor de salida para el DacI con los factores y offset
+    dac.setVoltage(setDAC, false);        // Setea corriente máxima de salida por el factor y POR EL MOMENTO, no lo graba en la Eprom del DacI.
   } else {
     dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
     setCurrent = 0;           // ##IMPORTANTE#  Que el modo se encargue de resetearlo si lo necesita.
@@ -910,6 +909,8 @@ void Calibration_Mode() {
       calibrateVoltage = false;
       Sns_Curr_Calib_Fact = 1.0;
       Sns_Curr_Calib_Offs = 0.0;
+      Out_Curr_Calib_Fact = 1.0;
+      Out_Curr_Calib_Offs = 0.0;
     }
     lcd.clear();    
     printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
@@ -983,7 +984,7 @@ void Calibrate(float realValue){
     // Guardamos el primer punto
     measuredValue1 = measuredValue;
     realValue1 = realValue;
-    setCurrent1 = setCurrent;
+    setCurrent1 = setCurrent / 1000; //En Amperes
     firstPointTaken = true;     // Flag de P1
     modeInitialized = false;    // Reinicia pidiendo el P2
     return;
@@ -991,7 +992,8 @@ void Calibrate(float realValue){
     // Guardamos el segundo punto y calculamos
     measuredValue2 = measuredValue;
     realValue2 = realValue;
-    setCurrent2 = setCurrent;
+    setCurrent2 = setCurrent / 1000; //En Amperes
+    Load_OFF();
     firstPointTaken = false;
     
     float factor = max(0.9, min(1.1, (realValue2 - realValue1) / (measuredValue2 - measuredValue1)));

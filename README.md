@@ -11,24 +11,34 @@
 - GND con Cap de 1uF a Tierra, resolvio ruido de sensor de Voltage con carga apagada.
 - Beeps al terminar de descargar baterias.
 - Cooler adicional, mas grande contra el Disipador.
+- ADC directo a medición de Shunt, cambio de Shunt Resistor a 0.05ohm. Podría ser menos aún ya que en mas 7,5A deriva.
+- Rutina de Calibrado de dos puntos con offset, con lectura y grabado en EEPROM.
+- Promedio Móvil Exponencial (EMA) para medición de voltage y corriente. Test en HW no convence, no veo cambios.
+- Subo el FAN_ON_DRTN a 60 Seg.
 
 **Fixes:**
 - En BC Setup, Shift + "<" saltaba a TC, cambio a Handle_DSC_keys.
 - Saco el E-Control no funciono bien en tests
+- Calib. ok en V y en I sense. Error en formula de out I con el factor.
+- Fallo Test en HW, no lee bien la EEPROM, Tuve que inicializar las posiciones de la EEPROM. Hacer esto cada cambio de Nano.
+- Amplio maxDigits en Read_Keypad para precisión de calibración y saco reseteo de Calib de Read_Voltage_Current
+- Saco reseteo de Calib de DAC_Control. Se hace todo en modo CA.
+- No apagaba la carga despues de tomar P2.
+- Calibraba el Out con mA y A. Paso todo a A.
+- Calibraciòn en 10A saturo el DAC. Recalculo el factor para que contemple el out_curr_factor de 1.1
+- CRR_STEP_RDCTN = 10 para que pueda bajar mas rápido la descarga si lo necesita.
 
 **Bugs:**
 - Config_Limits puede ser llamada a si misma varias veces.
-- Mientras este en modo CA, no voy a ver la calibración. Salir del modo?
-
+- Mientras este en modo CA, no voy a ver el resultado de la calibración.
+- A veces lee 10.000v y queda la v en el LCD.
+- Calib. Current en P2 deriva la corriente por el R Shunt pedorro. Buscar uno bueno.
 
 **Trabajando:**
-- Promedio Móvil Exponencial (EMA) para medición de voltage y corriente. Test en HW
-- Rutina de Calibrado de dos puntos con offset, con lectura y grabado en EEPROM. Test en HW
-- Fallo Test en HW, no lee bien la EEPROM, Tuve que inicializar las posiciones de la EEPROM
-- Amplio maxDigits en Read_Keypad para precisión de calibración y saco reseteo de Calib de Read_Voltage_Current
-- Calib. ok en V y en I sense. Error en formula de out I con el factor. péro no esta siendo lineal, revisar circuito y resistencia de pulldown
+- No mas para este Release
 
 **A Trabajar:**
+- No mas Storage, liberar.
 
 **En Cola:**
 

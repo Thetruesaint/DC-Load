@@ -50,18 +50,17 @@ const float SNS_VOLT_FACT = 12.869;        // Factor de diseño para el ADC para
 extern float Sns_Volt_Calib_Fact;          // Factor de calibración para el ADC de V
 extern float Sns_Volt_Calib_Offs;          // Offset de calibracion de voltage sensado
 
-const float SNS_CURR_FACT = 10;            // Factor de diseño para el ADC validar
+const float SNS_CURR_FACT = 27.620;        // Factor de diseño para el ADC con un Shunt de 0.0353 ohms + calibracion manual
 extern float Sns_Curr_Calib_Fact;          // Factor de calibración para el ADC de I
 extern float Sns_Curr_Calib_Offs;          // Offset de calibracion de corriente sensada
 
-//const float OUT_CURR_FACT = 0.40544;     // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Verificar
-const float OUT_CURR_FACT = 0.393277;      // Factor de diseño para el DAC, 5V a 1.1V -> Corriente máxima 10.1A Teórica. Recalculado
+const float OUT_CURR_FACT = 0.3722;        // Conviente 10000mA a 4095 para el DAC control, dividido por 1.1, que es el max Out_Curr Fact. El ajuste de I real es por pote.
 extern float Out_Curr_Calib_Fact;          // Factor de calibración para el DAC de I
 extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente máxima de salida
 
 
 extern int16_t adcv, adci;                 // Objetos para los SDC valor en binario del ADC
-extern unsigned long controlVoltage;       // Voltage de control para el DAC que controlara al MOSFET
+extern unsigned long setDAC;               // Voltage de control para el DAC que controlara al MOSFET
 extern float current;                      // Corriente de Carga
 extern float voltage;                      // Voltage de Carga
 extern int CuPo;                           // Posicion inicial del cursor
@@ -115,7 +114,7 @@ const float LIPO_DISC_CELL_VLTG = 3.6;  // Voltage mínimo de descarga para bate
 const float LION_DISC_CELL_VLTG = 3.5;  // Voltage mínimo de descarga para baterías Li-Ion
 const float LIPO_STOR_CELL_VLTG = 3.8;  // Voltage mínimo de almacenamiento para baterías LiPo
 const float LION_STOR_CELL_VLTG = 3.7;  // Voltage mínimo de almacenamiento para baterías Li-Ion
-const unsigned long CRR_STEP_RDCTN = 5;    // Reducción de corriente en 100mA
+const unsigned long CRR_STEP_RDCTN = 10;    // Reducción de corriente en 10mA 
 const float VLTG_DROP_MARGIN = 0.02;      // ⚡ Margen por debajo de BatteryCutoffVolts para cortar
 const float MIN_DISC_CURR = 100;     // 🔋 Corriente mínima antes de desconectar la carga (en mA)
 
@@ -131,7 +130,7 @@ extern float BatteryCurrent;        // Corriente máxima de descargga de bateria
 extern String BatteryType;          // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------
-const int FAN_ON_DRTN = 30000;      // Tiempo en miliseg. para mantener los fans encendidos (30 segundos)
+const unsigned long FAN_ON_DRTN = 60000;    // Tiempo en miliseg. para mantener los fans encendidos (60 segundos)
 const int TMP_CHK_TIME = 1000;      // Perdíodo de control de temperatura (miliseg.)
 
 extern int temp;                    // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
