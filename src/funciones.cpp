@@ -360,9 +360,6 @@ void Read_Volts_Current(void) {
 
   float raw_voltage;
   float raw_current;
- // static float filtered_voltage = 0;
-  //static float filtered_current = 0;
-  //const float alpha = 0.3; // Factor de suavizado para el Promedio Móvil Exponencial (0.0 - 1.0)
 
   /*
   Si querés ajustar la suavidad, podés cambiar el valor de alpha:
@@ -381,14 +378,12 @@ void Read_Volts_Current(void) {
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 50V).
 
-  //filtered_voltage = alpha * raw_voltage + (1 - alpha) * filtered_voltage; // Aplicar Promedio Móvil Exponencial
   voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;       // Calibracion fina de voltaje
 
   ads.setGain(GAIN_EIGHT);
   adci = ads.readADC_SingleEnded(CRR_SNSR);
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;                    // Por ampl. dif. para sensado remoto de (Max. 5A).
 
-  //filtered_current = alpha * raw_current + (1 - alpha) * filtered_current; // Aplicar Promedio Móvil Exponencial
   current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;      // Calibracion fina de corriente
   
   #else
