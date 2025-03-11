@@ -1,20 +1,21 @@
 ## v1.72
 
 **Mejoras:**
+- lecturas de EEPROM "nan" son inicializadas a 0 o a 1
+- Rediseño de funciones Load y Save Calibration, mas eficientes.
 
 **Fixes:**
 
 **Bugs:**
 - Config_Limits puede ser llamada a si misma varias veces.
 - Mientras este en modo CA, no voy a ver el resultado de la calibración.
-- A veces lee 10.000v y queda la v en el LCD.
+- A veces lee 10.000v o 10.000ay queda la v y la a en el LCD.
 - Calib. Current en P2 deriva la corriente por el R Shunt pedorro. Buscar uno bueno.
 
 **Trabajando:**
+- Liberando espacio y eficiencia.
 
 **A Trabajar:**
-
-No mas Storage, liberar.
 
 **En Cola:**
 

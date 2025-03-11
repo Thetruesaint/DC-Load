@@ -39,8 +39,8 @@ void Transient_List_Timing(void);
 void printLCD_S(int col, int row, const String &message);
 void printLCD(int col, int row, const __FlashStringHelper *message);
 void printLCDNumber (int col, int row, float number, char unit = '\0' , int decimals = 2);
-void saveToEEPROM(int address, float value);
-float loadFromEEPROM(int address);
+void Save_EEPROM(int address, float value);
+float Load_EEPROM(int address);
 void Check_Limits();
 char Wait_Key_Pressed();
 void Temp_Control();
@@ -53,7 +53,7 @@ void beepBuzzer(void);
 void Calibration_Mode(void);
 void Calibration_Setup(void);
 void Calibrate(float realValue);
-void Load_Calibration(int address, float &variable);
-void Save_Calibration(int address, float value);
+void Load_Calibration(void);
+void Save_Calibration(void);
 
 #endif

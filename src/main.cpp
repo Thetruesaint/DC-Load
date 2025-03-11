@@ -46,29 +46,22 @@ printLCD(0, 2, F("By Guy Nardin"));
 #else
 printLCD(0, 2, F("Para SIMULACION"));
 #endif
-printLCD(0, 3, F("v1.71")); // Version definitiva, para testear en HW
+printLCD(0, 3, F("v1.72b")); // En Beta
 
 #ifndef WOKWI_SIMULATION
 delay (2000);
-
-Load_Calibration(ADD_SNS_VOLT_FAC_CAL, Sns_Volt_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Voltaje
-Load_Calibration(ADD_SNS_CURR_FAC_CAL, Sns_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para sensado de Corriente
-Load_Calibration(ADD_OUT_CURR_FAC_CAL, Out_Curr_Calib_Fact);    // Carga Factor de Calibración de la EEPROM para seteo de Corriente
-Load_Calibration(ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Voltaje
-Load_Calibration(ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para sensado de Corriente
-Load_Calibration(ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs);    // Carga Offset de Calibración de la EEPROM para seteo de Corriente
-
 #else
+Load_Calibration();
 delay(500);     //Para probar mas rapido
 #endif
 
 //---------------------------------------Chequea y Muestra los límites configurados----------------------
 #ifndef WOKWI_SIMULATION
-  CurrentCutOff = loadFromEEPROM(ADD_CURRENT_CUT_OFF); // Carga CurrentCutOff desde la EEPROM
-  PowerCutOff = loadFromEEPROM(ADD_POWER_CUT_OFF);     // Carga PowerCutOff desde la EEPROM
-  tempCutOff = loadFromEEPROM(ADD_TEMP_CUT_OFF);       // Carga tempCutOff desde la EEPROM
-  if (CurrentCutOff < 1 || CurrentCutOff > 10 ||       // Chequea que los valores de los límites estén en el rango correcto
-      PowerCutOff < 1 || PowerCutOff > 300 ||
+  CurrentCutOff = Load_EEPROM(ADD_CURRENT_CUT_OFF); // Carga CurrentCutOff desde la EEPROM
+  PowerCutOff = Load_EEPROM(ADD_POWER_CUT_OFF);     // Carga PowerCutOff desde la EEPROM
+  tempCutOff = Load_EEPROM(ADD_TEMP_CUT_OFF);       // Carga tempCutOff desde la EEPROM
+  if (CurrentCutOff <= 1 || CurrentCutOff > 10 ||   // Chequea que los valores de los límites estén en el rango correcto, pudieron quedar en 1 si eran nan.
+      PowerCutOff <= 1 || PowerCutOff > 300 ||
       tempCutOff < 30 || tempCutOff > 99)
   {
     Config_Limits();
