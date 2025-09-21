@@ -1,7 +1,7 @@
 ## DC LOAD based in a desing from Mr Louis Scully ##
 ###### CHANGELOG ######
 
-## v1.71 ## CALIBRATION TIME ##
+## v1.71 ## CALIBRATION TIME ## 09/03/2025
 
 **Mejoras:**
 - Optimización de Read_Keypad Ahorro FLASH.

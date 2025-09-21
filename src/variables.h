@@ -40,7 +40,7 @@ extern volatile unsigned long maxEncoder; // sets maximum Rotary Encoder value a
 
 //--------------- Variables de operacion --------------------------------- 
 
-const float MAX_VOLTAGE = 50.00;           // Vltg sns hasta 51V, no veo utilidad en permitir mas (los MOSFET soportan hasta 100V).
+const float MAX_VOLTAGE = 50.00;           // Vltg sns hasta 51V, no veo utilidad en permitir mas (los MOSFET IRF3205 soportan hasta 55V).
 const float MAX_RESISTOR = 999.9;          // Máximo 999.9 Ω
 const float MAX_CURRENT = 10.000;          // Máximo 10A
 const float MAX_POWER = 300.0;             // Máximo 300W

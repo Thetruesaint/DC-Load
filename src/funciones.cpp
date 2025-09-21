@@ -18,7 +18,7 @@ void Load_OFF(void) {
 //---------------------------- Encoder Status -------------------------------------
 void Encoder_Status(bool encOnOff, float limit) {
   if (encOnOff) {
-    CuPo = 8;                              // Inbicializa la posicion del cursor, puede venir de otro modo.
+    CuPo = 8;                              // Inicializa la posicion del cursor, puede venir de otro modo.
     reading = 0; encoderPosition = 0;      // Resetea la posición del encoder y cualquier valor de reading
     maxReading = limit;                    // Asigna el limite
     maxEncoder = maxReading * 1000;        // Lo recalcula para el encoder
@@ -208,8 +208,8 @@ void Update_LCD(void) {
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));  // Indica el estado de la carga
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
-  printLCDNumber(0, 1, current, 'A', (current < 10.00) ? 3 : 2);
-  printLCDNumber(7, 1, voltage, 'v', (voltage < 10.00) ? 3 : (voltage < 100.0) ? 2 : 1);
+  printLCDNumber(0, 1, current, 'A', (current <= 9.999) ? 3 : 2);
+  printLCDNumber(7, 1, voltage, 'v', (voltage <= 9.999) ? 3 : (voltage <= 99.99) ? 2 : 1);
   if (Mode != BC && Mode != CA) {   // lo reemplazo por BatteryCutoffVolts y en modo CA muestro el Punto a muestrar.
     lcd.setCursor(14,1);
     if (power < 10) {Print_Spaces(14, 1); lcd.print(power, 2);} 
@@ -281,9 +281,9 @@ void Temp_Control(void) {
 //--------------------------- Check and Enforce Limits ------------------------------
 void Check_Limits() {
   char message[20] = "";
-  float power = voltage * current;
-  float maxpwrdis = constrain(140 - 0.80 * temp, 0, 120);     // Limite por MOSFET IRF540
-  float actpwrdis = max(0, power / 4);                        // Por los 4 MOSFET IRF540
+  float power = voltage * current;                         // Estima la potencia disipada en los MOSFET pero sin contar la del Rshunt y las R del source
+  float maxpwrdis = constrain(232.5 - 1.3 * temp, 0, 200); // Limite por MOSFET IRF3205, resumida de 200 - 1.3 * (temp - 25)
+  float actpwrdis = max(0, power / 4);                     // Por los 4 MOSFET IRF3205
   bool vlimit = false;
   bool ilimit = false;
   bool plimit = false;
@@ -361,12 +361,6 @@ void Read_Volts_Current(void) {
   float raw_voltage;
   float raw_current;
 
-  /*
-  Si querés ajustar la suavidad, podés cambiar el valor de alpha:
-  Mayor (0.2 - 0.3) → Más rápido pero menos estable.
-  Menor (0.05 - 0.1) → Más estable pero más lento.
-  */
-
   // static float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
   // ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
   // ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
@@ -395,8 +389,8 @@ void Read_Volts_Current(void) {
   static unsigned long lastDecreaseTime = 0;  // Variable para medir el tiempo del último decremento
   unsigned long currentMillis = millis();
   
-  if (Mode != BC && Mode != CA){                                             // Para todos los demas modos
-    simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
+  if (Mode != BC && Mode != CA){                               // Para todos los demas modos
+    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;  // Convertir el rango 0-1023 a 55V-0V
     voltage = simulatedVoltage;                                // Asigna el valor de v simulado
   }
   else if (Mode == BC) { 
@@ -408,12 +402,12 @@ void Read_Volts_Current(void) {
     voltage = simulatedVoltage;                     // Asigna el valor de v simulado
     }
     else if (!toggle) {
-      simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;  // Convertir el rango 0-1023 a 30V-0V
+      simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;  // Convertir el rango 0-1023 a 55V-0V
       voltage = simulatedVoltage; 
     }
   }
   else if (Mode == CA){
-    simulatedVoltage = map(potValue, 0, 1023, 300, 0) / 10.0;              // Convertir el rango 0-1023 a 30V-0V
+    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;              // Convertir el rango 0-1023 a 55V-0V
     float error_voltage = simulatedVoltage * 1.05 - 0.1;                   // Asigna el valor de v simulado con error del 5% por arriba y offset
     voltage = error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;  
   }
@@ -873,11 +867,13 @@ void Config_Limits(void)
 void Show_Limits(void) {
   lcd.clear();
   
+  #ifndef WOKWI_SIMULATION
   // Los lee de la EEPROM
   CurrentCutOff = Load_EEPROM(ADD_CURRENT_CUT_OFF);
   PowerCutOff = Load_EEPROM(ADD_POWER_CUT_OFF);
   tempCutOff = Load_EEPROM(ADD_TEMP_CUT_OFF);
-
+  #else
+  #endif
   // Los muestra
   printLCD(1, 0, F("Limits")); // Muestra el titulo
   printLCD(0, 1, F("Current:"));
@@ -895,7 +891,7 @@ void Calibration_Mode() {
 
   if(!modeConfigured) {Calibration_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
   
-  if (!modeInitialized) {                    // Si es falso, prepara el LCD
+  if (!modeInitialized) {         // Si es falso, prepara el LCD
     if (x == 1) {                 // Resetea Volt Calibration
       calibrateVoltage = true;
       Sns_Volt_Calib_Fact = 1.0;
@@ -909,7 +905,7 @@ void Calibration_Mode() {
     }
     lcd.clear();    
     printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
-    printLCD(14, 1, firstPointTaken? F("Set P2") : F("Set P1"));
+    printLCD(14, 1, firstPointTaken ? F("Set P2") : F("Set P1"));
     printLCD(1, 2, F("Adj->"));
     printLCD(13, 2, F("A"));
     printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
@@ -998,86 +994,6 @@ void Calibrate(float realValue){
   modeConfigured = false;   // Vuelve al Menu de Calibración. 
   firstPointTaken = false;
   delay(2000);
-  }
-}
-
-//-------------------------- Funciones para el Timer (RTC) ---------------------------
-
-void timer_start() {
-  if (!timerStarted) {
-    startTime = rtc.now();        // Toma referencia de tiempo
-    timerStarted = true;          // flag de que inició el cronometro
-  }
-}
-
-void timer_stop() {
-  if (timerStarted) {
-    DateTime now = rtc.now();
-    TimeSpan elapsedTime = now - startTime;
-    elapsedSeconds += elapsedTime.totalseconds();
-    timerStarted = false;
-  }
-}
-
-void timer_reset() {
-  elapsedSeconds = 0.0;
-  timerStarted = false;
-}
-
-float timer_getTotalSeconds() {
-  if (timerStarted) {
-    DateTime now = rtc.now();
-    TimeSpan elapsedTime = now - startTime;
-    return elapsedSeconds + elapsedTime.totalseconds();
-  }
-  else { return elapsedSeconds; }
-}
-
-String timer_getTime() {
-  int totalSeconds = static_cast<int>(timer_getTotalSeconds());
-
-  int minutes = (totalSeconds / 60);
-  int seconds = (totalSeconds % 60);
-
-  String formattedTime = "";
-
-  if (minutes < 10) { formattedTime += "0"; }
-  formattedTime += String(minutes) + ":";
-
-  if (seconds < 10) { formattedTime += "0"; }
-  formattedTime += String(seconds);
-
-  return formattedTime;
-}
-
-//--------------------------- Funciones para el LCD -----------------------------------
-// Imprimir un mensaje de texto variable
-void printLCD_S(int col, int row, const String &message) {
-    lcd.setCursor(col, row);
-    lcd.print(message);
-  }
-
-// Imprimir un mensaje con texto almacenado en FLASH
-void printLCD(int col, int row, const __FlashStringHelper *message) {
-  lcd.setCursor(col, row);
-    lcd.print(message);
-}
-
-// Imprimir un mensaje con texto almacenado en FLASH
-void printLCDNumber(int col, int row, float number, char unit, int decimals) {
-  lcd.setCursor(col, row);
-  lcd.print(number, decimals);  // Imprime el número con los decimales especificados
-  
-  if (unit != '\0' && unit != ' ' && unit != 'A') {  // Solo imprime la unidad si no es nula o espacio en blanco o si no es A
-    lcd.print(unit);
-  } else if (unit == 'A') {lcd.write(byte(0));}   // Escribe el carácter personalizado
-}
-
-// Imprimir n cantidad de espacios " "
-void Print_Spaces(int col, int row, byte count) {
-  lcd.setCursor(col ,row);
-  for (byte i = 0; i < count; i++) {
-    lcd.print(F(" "));
   }
 }
 
@@ -1218,5 +1134,84 @@ void Save_Calibration() {
       if (abs(d.variable - eeprom_read_Cal) > 0.0001) {
           Save_EEPROM(d.address, d.variable);
       }
+  }
+}
+
+//-------------------------- Funciones para el Timer (RTC) ---------------------------
+void timer_start() {
+  if (!timerStarted) {
+    startTime = rtc.now();        // Toma referencia de tiempo
+    timerStarted = true;          // flag de que inició el cronometro
+  }
+}
+
+void timer_stop() {
+  if (timerStarted) {
+    DateTime now = rtc.now();
+    TimeSpan elapsedTime = now - startTime;
+    elapsedSeconds += elapsedTime.totalseconds();
+    timerStarted = false;
+  }
+}
+
+void timer_reset() {
+  elapsedSeconds = 0.0;
+  timerStarted = false;
+}
+
+float timer_getTotalSeconds() {
+  if (timerStarted) {
+    DateTime now = rtc.now();
+    TimeSpan elapsedTime = now - startTime;
+    return elapsedSeconds + elapsedTime.totalseconds();
+  }
+  else { return elapsedSeconds; }
+}
+
+String timer_getTime() {
+  int totalSeconds = static_cast<int>(timer_getTotalSeconds());
+
+  int minutes = (totalSeconds / 60);
+  int seconds = (totalSeconds % 60);
+
+  String formattedTime = "";
+
+  if (minutes < 10) { formattedTime += "0"; }
+  formattedTime += String(minutes) + ":";
+
+  if (seconds < 10) { formattedTime += "0"; }
+  formattedTime += String(seconds);
+
+  return formattedTime;
+}
+
+//--------------------------- Funciones para el LCD -----------------------------------
+// Imprimir un mensaje de texto variable
+void printLCD_S(int col, int row, const String &message) {
+    lcd.setCursor(col, row);
+    lcd.print(message);
+  }
+
+// Imprimir un mensaje con texto almacenado en FLASH
+void printLCD(int col, int row, const __FlashStringHelper *message) {
+  lcd.setCursor(col, row);
+    lcd.print(message);
+}
+
+// Imprimir un mensaje con texto almacenado en FLASH
+void printLCDNumber(int col, int row, float number, char unit, int decimals) {
+  lcd.setCursor(col, row);
+  lcd.print(number, decimals);  // Imprime el número con los decimales especificados
+  
+  if (unit != '\0' && unit != ' ' && unit != 'A') {  // Solo imprime la unidad si no es nula o espacio en blanco o si no es A
+    lcd.print(unit);
+  } else if (unit == 'A') {lcd.write(byte(0));}   // Escribe el carácter personalizado
+}
+
+// Imprimir n cantidad de espacios " "
+void Print_Spaces(int col, int row, byte count) {
+  lcd.setCursor(col ,row);
+  for (byte i = 0; i < count; i++) {
+    lcd.print(F(" "));
   }
 }

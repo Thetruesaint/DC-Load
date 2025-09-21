@@ -44,15 +44,14 @@ lcd.setCursor(0, 1); lcd.print(date + " - " + time);
 #ifndef WOKWI_SIMULATION
 printLCD(0, 2, F("By Guy Nardin"));
 #else
-printLCD(0, 2, F("Para SIMULACION"));
+printLCD(0, 2, F("SIMULACION"));
 #endif
 printLCD(0, 3, F("v1.72b")); // En Beta
 
 #ifndef WOKWI_SIMULATION
 delay (2000);
 #else
-Load_Calibration();
-delay(500);     //Para probar mas rapido
+delay(1000);     //Para probar mas rapido
 #endif
 
 //---------------------------------------Chequea y Muestra los límites configurados----------------------
@@ -67,6 +66,7 @@ delay(500);     //Para probar mas rapido
     Config_Limits();
   }
   Show_Limits();
+  Load_Calibration();
   delay(2000);
   lcd.clear();
 #else
@@ -74,6 +74,7 @@ delay(500);     //Para probar mas rapido
   CurrentCutOff = 10;
   PowerCutOff = 300;
   tempCutOff = 80;
+  Load_Calibration();
 #endif
 
 }
