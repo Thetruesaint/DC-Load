@@ -1,20 +1,27 @@
-## v2.0 ## AN ALL NEW WORLD
+## v2.00b ## AN ALL NEW WORLD
+
+## Hardware Versions
+
+- v2.x → ESP32 (Plataforma actual)
+- v1.x → Arduino Nano (legacy - ver rama nano-legacy)
 
 **Trabajando:**
 - Simulacion WOKWI: no funciona con el TFT se complica con el real.
-- Resta pruebas adicionales de menues y ajustar las funciones relacionadas con el encoder a ver si generan algun bug (nueva librería) e integrar placa de potencia.
-- Armar y probar placa de potencia
-
+- Placa de potencia incorporada, tuve que independizar la alimentación de los coolers porque metia mucho ruido, pero ya funciona.
+- En OFF, el ADC registra 6mA pero no hay consumo. A veces por algun motivo que desconozco, consume 24mA de la fuente, pero no es siempre.
+- La Calibración de corriente no funciona bien, queda con un offset mayor a 0 y mide mas de lo seteado.
 
 **A Trabajar:**
+- Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
 
     
 **En Cola:**
+- Pasar de LCD a TFT
 - Hacer un solo menu de configuracion para Limits y Calibación!! como en Fuente Lineal
 - Dejar solo TL?.. TC se puede hacer con TL.
 
 **Mejoras**
-- Nueva placa de Potencia, pero tengo que separar la alimentación de los Coolers, meten ruido.
+- Nueva placa de Potencia, Separe la alimentación de los Coolers, sino meten ruido.
 - Nuevo parámetros de protección para IRFP250N
 - El ESP32 o el LCD se cuelga a veces con el encendido de +-5V o sensado de tensión. Si se enciende parejo no hay problema
 - Voltages de Celda para descargas de Baterias: LIPO_DISC_CELL_VLTG = 3.6 y LION_DISC_CELL_VLTG = 3.5
