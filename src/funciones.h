@@ -3,6 +3,7 @@
 
 #include "variables.h"
 #include "ui_lcd.h"
+#include "storage_eeprom.h"
 
 /*
 void Read_Encoder();
@@ -43,8 +44,6 @@ void Transient_List_Mode();
 void Transient_List_Setup();
 void Transcient_Cont_Timing();
 void Transient_List_Timing(void);
-void Save_EEPROM(int address, float value);
-float Load_EEPROM(int address);
 void Check_Limits();
 char Wait_Key_Pressed();
 void Temp_Control();
@@ -56,8 +55,6 @@ void beepBuzzer(void);
 void Calibration_Mode(void);
 void Calibration_Setup(void);
 void Calibrate(float realValue);
-void Load_Calibration(void);
-void Save_Calibration(void);
 void Test_Keypad();
 void Update_TFT(void);
 void printTFT_Number(int col, int row, float number, char unit = '\0', int decimals = 2);
