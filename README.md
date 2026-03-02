@@ -22,6 +22,7 @@
 - Liberando espacio y eficiencia.
 
 **A Trabajar:**
+- La funcion "Read_Load_Button" tiene un delay(200) para rebote, implementarlo de otra manera para que apague mas rapido
 
 **En Cola:**
 - Hacer un solo menu de configuracion para Limits y Calibación!! como en Fuente Lineal

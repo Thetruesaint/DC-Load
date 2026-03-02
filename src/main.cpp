@@ -17,7 +17,7 @@ dac.begin(0x60);             // Inicializa el DAC con address 0x60
 dac.setVoltage(0,true);      // IMPORTANTE, grabar en 0 para que apague la carga apenas se encienca. Cambio a "True" para que guarde este valor en la Emprom.
 #endif
 
- //----------------------------------------Configuraciones iniciales de única vez----------------------------------------------
+//----------------------------------------Configuraciones iniciales de única vez----------------------------------------------
 
 
 
