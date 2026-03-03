@@ -1,4 +1,4 @@
-## v2.00b ## AN ALL NEW WORLD
+## v2.00 ## AN ALL NEW WORLD
 
 ## Hardware Versions
 
