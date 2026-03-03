@@ -34,8 +34,9 @@ const uint8_t ENC_A = 14;      // Encoder Pin A
 const uint8_t ENC_B = 13;      // Encoder Pin B
 const uint8_t ENC_BTN = 32;    // Encoder Boton
 const uint8_t LOADONOFF = 16;  // Input A1 used as a digital pin to set Load ON/OFF
-
-#ifndef WOKWI_SIMULATION
+#ifdef WOKWI_SIMULATION
+const uint8_t VSIM = 4;        // Pin para simular el voltaje de carga con un potenciómetro en la simulación. Ajusta el pin según tu conexión.
+#else
 const uint8_t CRR_SNSR = 1;    // Input A1 from ADC (real hardware ADS1115)
 const uint8_t VLTG_SNSR = 3;   // Input A3 from ADC (real hardware ADS1115)
 #endif

@@ -17,6 +17,10 @@ void setup() {
   pinMode(FAN_CTRL, OUTPUT);
   pinMode (BUZZER, OUTPUT);
 
+  #ifdef WOKWI_SIMULATION
+  pinMode(VSIM, INPUT);   // Pin para simular el voltaje de carga con un potenciómetro en la simulación. Ajusta el pin según tu conexión.
+  #endif
+
   //-------------------------------------Inicializa perifericos-------------------------------------------
   EEPROM.begin(64);   // tamaño en bytes (mínimo 64)
   Serial.begin(115200);
@@ -24,7 +28,6 @@ void setup() {
   lcd.begin(20, 4);             // initialize the lcd, default address 0x27
   lcd.backlight(); // Turn on the LCD screen backlight
   lcd.createChar(0, amp_char);  // Guarda el carácter en la posición 0
-  
   beepBuzzer();   // Buzzer Test
 
   #ifndef WOKWI_SIMULATION
@@ -107,7 +110,7 @@ void setup() {
   #else
   printLCD(0, 2, F("SIMULACION"));
   #endif
-  printLCD(0, 3, F("v2.00b")); // En beta, para pruebas
+  printLCD(0, 3, F("v2.00")); // Ajustes finales
 
   #ifndef WOKWI_SIMULATION
   delay (2000);

@@ -53,7 +53,24 @@ void Read_Keypad(int col, int row) {
   
   // Solo en los modos CC, CP y CR.
 
-  if (Mode == BC || Mode == TC || Mode == TL) return;
+  if (Mode == TC || Mode == TL) return;
+
+  if (customKey == 'U') { // Aumentar setpoint
+    encoderPosition = encoderPosition + factor;
+    encoderPosition = constrain(encoderPosition, 0, maxEncoder);
+    return;
+  }
+
+  if (customKey == 'D') { // Disminuir setpoint
+    encoderPosition = encoderPosition - factor;
+    return;
+  }
+  
+  if (customKey == 'L') { CuPo--; return; } // Cursor a la izquierda
+  if (customKey == 'R') { CuPo++; return; } // Cursor a la derecha
+
+  if (Mode == BC) return;
+
   // Números
   if (customKey >= '0' && customKey <= '9' && c_index < maxDigits) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
     printLCD_S(col + c_index, row, String(customKey));        // Muestra el número en el LCD
@@ -86,20 +103,6 @@ void Read_Keypad(int col, int row) {
     numbers[c_index] = '\0';  
     Print_Spaces(col + c_index, row);
   }
-
-    if (customKey == 'U') { // Aumentar setpoint
-    encoderPosition = encoderPosition + factor;
-    encoderPosition = constrain(encoderPosition, 0, maxEncoder);
-    return;
-  }
-
-  if (customKey == 'D') { // Disminuir setpoint
-    encoderPosition = encoderPosition - factor;
-    return;
-  }
-  
-  if (customKey == 'L') { CuPo--; return; } // Cursor a la izquierda
-  if (customKey == 'R') { CuPo++; return; } // Cursor a la derecha
 }
 
 // ------------------------------ Mode Selection --------------------------------------
@@ -335,7 +338,7 @@ void Read_Volts_Current(void) {
 
   // Simulación de Voltaje sensado
 
-  int potValue = analogRead(39);  // Leer el potenciómetro en A2
+  int potValue = analogRead(VSIM);  // Leer el potenciómetro en pin 33 para simular el voltaje de carga. Ajusta el pin según tu conexión.
   static float simulatedVoltage = 0;  // Variable persistente para almacenar el voltage simulado
   static unsigned long lastDecreaseTime = 0;  // Variable para medir el tiempo del último decremento
   unsigned long currentMillis = millis();
@@ -1000,9 +1003,9 @@ bool Handle_MSC_Keys(char key) {
 void beepBuzzer(void) {
   for (int i = 0; i < 2; i++) {   // Repetir dos veces
       digitalWrite(BUZZER, HIGH); // Encender el buzzer  
-      delay(200);                 // Pausa entre los pitidos
+      delay(150);                 // Pausa entre los pitidos
       digitalWrite(BUZZER, LOW);  // Encender el buzzer  
-      delay(200);                 // Pausa entre los pitidos
+      delay(150);                 // Pausa entre los pitidos
   }
 }
 

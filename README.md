@@ -6,10 +6,11 @@
 - v1.x → Arduino Nano (legacy - ver rama nano-legacy)
 
 **Trabajando:**
-- Simulacion WOKWI: no funciona con el TFT se complica con el real.
+- Simulacion WOKWI, haciendo que funcione con LCD
 - Placa de potencia incorporada, tuve que independizar la alimentación de los coolers porque metia mucho ruido, pero ya funciona.
 - En OFF, el ADC registra 6mA pero no hay consumo. A veces por algun motivo que desconozco, consume 24mA de la fuente, pero no es siempre.
 - La Calibración de corriente no funciona bien, queda con un offset mayor a 0 y mide mas de lo seteado.
+- En BC las teclas de dirección no funcionan
 
 **A Trabajar:**
 - Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
@@ -19,6 +20,9 @@
 - Pasar de LCD a TFT
 - Hacer un solo menu de configuracion para Limits y Calibación!! como en Fuente Lineal
 - Dejar solo TL?.. TC se puede hacer con TL.
+
+**Bugs**
+- En BC las teclas de dirección no funcionan
 
 **Mejoras**
 - Nueva placa de Potencia, Separe la alimentación de los Coolers, sino meten ruido.
