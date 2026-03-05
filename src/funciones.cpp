@@ -931,7 +931,35 @@ void Calibrate(float realValue){
     setCurrent2 = setCurrent / 1000; //En Amperes
     Load_OFF();
     firstPointTaken = false;
-    
+
+    // Proteccion: evita calibraciones numericamente inestables o fuera de rango esperado
+    float measuredDelta = fabsf(measuredValue2 - measuredValue1);
+    float setCurrentDelta = fabsf(setCurrent2 - setCurrent1);
+
+    bool pointsTooClose = calibrateVoltage
+      ? (measuredDelta < CAL_MIN_VOLTAGE_DELTA)
+      : (setCurrentDelta < CAL_MIN_CURRENT_DELTA);
+
+    // Solo aplica a calibracion de corriente (sensor + salida)
+    float errRatio1 = 0.0f;
+    float errRatio2 = 0.0f;
+    bool pointMismatch = false;
+    if (!calibrateVoltage) {
+      errRatio1 = fabsf(measuredValue1 - setCurrent1) / max(setCurrent1, 0.001f);
+      errRatio2 = fabsf(measuredValue2 - setCurrent2) / max(setCurrent2, 0.001f);
+      pointMismatch = (errRatio1 > CAL_MAX_POINT_ERROR_RATIO) || (errRatio2 > CAL_MAX_POINT_ERROR_RATIO);
+    }
+
+    if (pointsTooClose || pointMismatch) {
+      clearLCD();
+      printLCD(0, 1, F("Calib Abort"));
+      if (pointsTooClose) printLCD(0, 2, F("P1/P2 too close"));
+      else printLCD(0, 2, F("Set/Read >10%"));
+      modeInitialized = false;
+      delay(2000);
+      return;
+    }
+
     float factor = max(0.9f, min(1.1f, (realValue2 - realValue1) / (measuredValue2 - measuredValue1)));
     float offset = max(-0.1f, min(0.1f, realValue1 - (measuredValue1 * factor)));
 
