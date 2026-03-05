@@ -3,6 +3,21 @@
 
 #include "variables.h"
 
+void initLCD(void);
+void clearLCD(void);
+void setCursorLCD(int col, int row);
+void blinkOnLCD(void);
+void blinkOffLCD(void);
+void noCursorLCD(void);
+void writeLCD(byte value);
+void printLCDRaw(const String &message);
+void printLCDRaw(const char *message);
+void printLCDRaw(const __FlashStringHelper *message);
+void printLCDRaw(char value);
+void printLCDRaw(int value);
+void printLCDRaw(unsigned long value);
+void printLCDRaw(float value, int decimals = 2);
+
 void Update_LCD(void);
 void printLCD_S(int col, int row, const String &message);
 void printLCD(int col, int row, const __FlashStringHelper *message);

@@ -25,9 +25,7 @@ void setup() {
   EEPROM.begin(64);   // tamaño en bytes (mínimo 64)
   Serial.begin(115200);
   Wire.begin(21, 22);   // SDA=21, SCL=22, fuerza modo Master
-  lcd.begin(20, 4);             // initialize the lcd, default address 0x27
-  lcd.backlight(); // Turn on the LCD screen backlight
-  lcd.createChar(0, amp_char);  // Guarda el carácter en la posición 0
+  initLCD();
   beepBuzzer();   // Buzzer Test
 
   #ifndef WOKWI_SIMULATION
@@ -50,8 +48,7 @@ void setup() {
 
   if (ads.begin()){                             // initialize the ads, default address 0x48
       ads.setGain(GAIN_TWOTHIRDS);              // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
-      lcd.setCursor(0,1);
-      lcd.print("ads OK");
+      printLCD(0,1, F("ads OK"));
   } else{
       printLCD(0,1, F("ads NDT")); hlth = false;
       Serial.print("ads NDT");
@@ -69,10 +66,7 @@ void setup() {
 
   temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR; // Convertir a Celsius con factor para ADC@0dB (Vmax≈1.1V)
     
-  lcd.setCursor(11,1);                       // Mostrar Sensado de Temperatura
-  lcd.print(temp);
-  lcd.print((char)0xDF);
-  lcd.print("C");
+  printLCD_S(11, 1, String(temp) + String((char)0xDF) + "C");
 
   // tft.setCursor(11 * cellW, 1 * cellH);  
   // tft.print(temp);
@@ -100,17 +94,17 @@ void setup() {
   String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());     // Formatea la fecha
   String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()); // Formatea la hora
 
-  lcd.clear();
+  clearLCD();
   // tft.fillScreen(TFT_BLACK);
   printLCD(0, 0, F("*DC Electronic Load*"));
-  lcd.setCursor(0, 1); lcd.print(date + " - " + time);
+  printLCD_S(0, 1, date + " - " + time);
   // tft.setCursor(0 * cellW, 1 * cellH); tft.print(date + " - " + time);
   #ifndef WOKWI_SIMULATION
   printLCD(0, 2, F("By Guy Nardin"));
   #else
   printLCD(0, 2, F("SIMULACION"));
   #endif
-  printLCD(0, 3, F("v2.00")); // Ajustes finales
+  printLCD(0, 3, F("v2.01")); // Ajustes de estructura y calibracion.
 
   #ifndef WOKWI_SIMULATION
   delay (2000);
@@ -132,7 +126,7 @@ void setup() {
     Show_Limits();
     Load_Calibration();
     delay(2000);
-    lcd.clear();
+    clearLCD();
     // tft.fillScreen(TFT_BLACK);
 
   #else
