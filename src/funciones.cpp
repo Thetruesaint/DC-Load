@@ -156,8 +156,8 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
   //static bool shiftPressed = false;
 
   Reset_Input_Pointers();         // Resetea los valores de entrada
-  lcd.setCursor(col, row);        // Ubica el cursor en la posición especificada
-   lcd.blink_on();   // Muestra el cursor para la entrada
+  setCursorLCD(col, row);        // Ubica el cursor en la posición especificada
+   blinkOnLCD();   // Muestra el cursor para la entrada
 
   while (true) { 
       customKey = Wait_Key_Pressed(); // Leer entrada de teclado
@@ -186,7 +186,7 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
           if (c_index > 0) {  
               x = atof(numbers); 
               Reset_Input_Pointers();  
-              lcd.noCursor(); lcd.blink_off();
+              noCursorLCD(); blinkOffLCD();
               return true;  
           }
       }
@@ -222,10 +222,10 @@ void Temp_Control(void) {
     fans_on = false;
   }
   // Actualiza la Temperatura solo cuando la chequea
-  lcd.setCursor( 16, 0);
-  if (temp < 10){lcd.print(" ");}
-  lcd.print(temp);
-  lcd.print(char(0xDF)); lcd.print("C");
+  setCursorLCD( 16, 0);
+  if (temp < 10){printLCDRaw(" ");}
+  printLCDRaw(temp);
+  printLCDRaw(char(0xDF)); printLCDRaw("C");
 }
 
 //--------------------------- Check and Enforce Limits ------------------------------
@@ -258,10 +258,10 @@ void Check_Limits() {
       else if(climit){Print_Spaces(19,0);}
       delay(250);
       Print_Spaces(0, 3, 18);
-      if (vlimit){lcd.setCursor(12,1); lcd.print(F("v"));}
-      else if(ilimit){lcd.setCursor(5,1); lcd.write(byte(0));}
-      else if(plimit){lcd.setCursor(19,1); lcd.print(F("w"));}
-      else if(climit){lcd.setCursor(19,0); lcd.print(F("C"));}
+      if (vlimit){setCursorLCD(12,1); printLCDRaw(F("v"));}
+      else if(ilimit){setCursorLCD(5,1); writeLCD(byte(0));}
+      else if(plimit){setCursorLCD(19,1); printLCDRaw(F("w"));}
+      else if(climit){setCursorLCD(19,0); printLCDRaw(F("C"));}
       delay(250);
     }
     Reset_Input_Pointers();           
@@ -304,7 +304,7 @@ void Cursor_Position(void) {
   }
   last_CuPo = CuPo;
 
-  lcd.setCursor(CuPo, 2);
+  setCursorLCD(CuPo, 2);
 }
 
 //--------------------------- Read Voltage and Current ------------------------------
@@ -382,7 +382,8 @@ void DAC_Control(void) {
   #ifndef WOKWI_SIMULATION
 
   if (toggle) {
-    setDAC = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs;  // Calcula valor de salida para el DacI con los factores y offset
+    //setDAC = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs;
+    setDAC = (unsigned long)(constrain(setCurrent * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs, 0.0f, 12000.0f) * OUT_CURR_FACT);  // Calcula valor de salida para el DacI con los factores y offset
     dac.setVoltage(setDAC, false);        // Setea corriente máxima de salida por el factor y POR EL MOMENTO, no lo graba en la Eprom del DacI.
   } else {
     dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
@@ -399,7 +400,7 @@ void DAC_Control(void) {
 void Const_Current_Mode(void) {
 
   if (!modeInitialized) {
-    lcd.clear();
+    clearLCD();
     printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
     printLCD(1, 2, F("Set->"));            // Muestra el mensaje
     printLCD(13, 2, F("A"));               // Muestra el mensaje
@@ -420,7 +421,7 @@ void Const_Current_Mode(void) {
 void Const_Power_Mode(void) {
 
   if (!modeInitialized) {
-    lcd.clear();
+    clearLCD();
     printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
     printLCD(0, 2, F("Set->"));            // Muestra el mensaje
     printLCD(11, 2, F("W"));               // Muestra el mensaje
@@ -442,7 +443,7 @@ void Const_Power_Mode(void) {
 void Const_Resistance_Mode(void) {
 
  if (!modeInitialized) {
-    lcd.clear();
+    clearLCD();
     printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
     printLCD(0, 2, F("Set->"));             // Muestra el mensaje
     printLCD_S(11, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
@@ -467,9 +468,9 @@ void Battery_Mode(void) {
   if (!modeConfigured) {Battery_Type_Selec(); return;}  // Probar bien si aca no tiene problemas, en algunas pruebas queda fliqueando con carga en ON
 
   if (!modeInitialized){
-    lcd.clear();
+    clearLCD();
     printLCD(0, 0, F("BC LOAD"));
-    lcd.setCursor(13,1);lcd.print(F(">"));
+    setCursorLCD(13,1);printLCDRaw(F(">"));
     printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2);  // Muestro el Cutoff Voltage
     printLCD(1, 2, F("Adj->"));
     printLCD(13, 2, F("A"));
@@ -477,7 +478,7 @@ void Battery_Mode(void) {
     BatteryLife = 0;                            // Inicializa  la medición
     BatteryLifePrevious = 0;                    // Resetea la vida de la batería
     printLCDNumber(6, 3, BatteryLife, ' ', 0);  // Mostrar sin decimales
-    lcd.print(F("mAh"));
+    printLCDRaw(F("mAh"));
     printLCD_S(14, 3, BatteryType);             // Muestro el tipo de Bateria.
     Encoder_Status(true, CurrentCutOff);        // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
     modeInitialized = true;                     // Modo inicializado
@@ -485,7 +486,7 @@ void Battery_Mode(void) {
   
   if (BatteryLife > BatteryLifePrevious) {      // Solo si cambia el valor
     printLCDNumber(6, 3, BatteryLife, ' ', 0);
-    lcd.print(F("mAh"));
+    printLCDRaw(F("mAh"));
     Print_Spaces(16, 2, 4);                    // Borra "Done ", porque si cambia es porque hubo acción manual.
     BatteryLifePrevious = BatteryLife;
   }
@@ -498,7 +499,7 @@ void Battery_Type_Selec() {
 
 //  bool shiftPressed = false;
 
-  lcd.clear();                            // Borra la pantalla del LCD
+  clearLCD();                            // Borra la pantalla del LCD
   printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
   printLCD(0, 1, F("Stor. 1)LiPo 2)LiIOn"));
   printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
@@ -522,7 +523,7 @@ while (true) {  // Bucle para evitar la salida accidental
 
   // Pedir ingresar un voltaje de corte
   if (BatteryType == "Custom") {
-    lcd.clear();
+    clearLCD();
     printLCD_S(3, 0, BatteryType + " Batt");
     printLCD(2, 1, F("Voltage Cutoff?"));
     printLCD(5, 2, F("(0.1-25)V"));
@@ -538,7 +539,7 @@ while (true) {  // Bucle para evitar la salida accidental
 
   // Pedir ingresar la cantidad de celdas
   if (BatteryType != "Custom") {
-    lcd.clear();
+    clearLCD();
     printLCD_S(3, 0, BatteryType + " Batt");
     printLCD(6, 1, F("(1-6)S?"));
 
@@ -607,18 +608,18 @@ void Transient_Cont_Mode(void) {
 if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurado, lo configura. Sale si no se configuro
 
   if (!modeInitialized) {                       // Si es falso, prepara el LCD
-    printLCD_S(3, 2, String(LowCurrent, 3)); lcd.write(byte(0));
-    printLCD_S(14, 2, String(HighCurrent, 3)); lcd.write(byte(0));
+    printLCD_S(3, 2, String(LowCurrent, 3)); writeLCD(byte(0));
+    printLCD_S(14, 2, String(HighCurrent, 3)); writeLCD(byte(0));
     printLCD(0, 0, F("TC LOAD"));               // Muestra el titulo del modo
     printLCD(0, 2, F("I1>"));                   // Muestra el mensaje
     printLCD(11, 2, F("I2>"));                  // Muestra el mensaje
     printLCD(2, 3, F("Time: "));                // Muestra el mensaje
     
-    if (transientPeriod < 10) {Print_Spaces(7, 3, 4); lcd.print(transientPeriod);} 
-    else if (transientPeriod < 100) {Print_Spaces(7, 3, 3); lcd.print(transientPeriod);}
-    else if (transientPeriod < 1000) {Print_Spaces(7, 3, 2); lcd.print(transientPeriod);}
-    else if (transientPeriod < 10000) {Print_Spaces(7, 3); lcd.print(transientPeriod);}
-    else {lcd.setCursor(7, 3); lcd.print(transientPeriod);}
+    if (transientPeriod < 10) {Print_Spaces(7, 3, 4); printLCDRaw(transientPeriod);} 
+    else if (transientPeriod < 100) {Print_Spaces(7, 3, 3); printLCDRaw(transientPeriod);}
+    else if (transientPeriod < 1000) {Print_Spaces(7, 3, 2); printLCDRaw(transientPeriod);}
+    else if (transientPeriod < 10000) {Print_Spaces(7, 3); printLCDRaw(transientPeriod);}
+    else {setCursorLCD(7, 3); printLCDRaw(transientPeriod);}
 
     //printLCD_S(8, 3, String(transientPeriod));  // Muestra el valor del tiempo
     printLCD(13, 3, F("mSecs"));                // Muestra la unidad
@@ -631,7 +632,7 @@ if(!modeConfigured) {Transient_Cont_Setup(); return;}   // Si no esta configurad
 
 //--------------------------------- Transient Mode ----------------------------------
 void Transient_Cont_Setup(void) {
-  lcd.clear(); // Apaga el cursor y borra la pantalla del LCD
+  clearLCD(); // Apaga el cursor y borra la pantalla del LCD
 
   printLCD(3, 0, F("TRANSIENT CONT."));
   printLCD(5, 1, F("I1(A)"));
@@ -653,7 +654,7 @@ void Transient_Cont_Setup(void) {
   if (!Value_Input(z, r, 5, false)) return;   // 5 digitos, sin decimal.
   transientPeriod = x;                        // Guarda el valor del tiempo de transitorio
 
-  lcd.clear();                                // Borra la pantalla del LCD
+  clearLCD();                                // Borra la pantalla del LCD
   modeConfigured = true;                      // Se configuro el modo TC
   modeInitialized = false;                    // Pinta la plantilla TL en el LCD
 }
@@ -713,7 +714,7 @@ void Transient_List_Mode(void) {
 
 //------------------------------ Transcient List Setup -------------------------------
 void Transient_List_Setup() {
-  lcd.clear(); // Apaga el cursor y borra la pantalla
+  clearLCD(); // Apaga el cursor y borra la pantalla
   // Pregunta por cuantos saltos se desean cargar
   printLCD(3, 0, F("TRANSIENT LIST"));
   printLCD(4, 1, F("Steps(2-10)?"));
@@ -727,7 +728,7 @@ void Transient_List_Setup() {
   total_steps = x - 1;   // Guarda el número total de instrucciones
 
   // configurar cada paso:
-  lcd.clear();
+  clearLCD();
   for (int i = 0; i <= total_steps; i++) {      // Bucle para obtener los valores de la lista
     printLCD(3, 0, F("TRANSIENT LIST"));        // Mantengo el titulo para que se vea bien el modo que se está configurando
     printLCD_S(5, 1, "Set step " + String(i));  // Muestra la instrucción a configurar
@@ -743,7 +744,7 @@ void Transient_List_Setup() {
     z = 13; r = 3;                            // Ubica la toma del valor de mSec
     if (!Value_Input(z, r, 5, false)) return; // 5 digitos, sin decimal.
     transientList[i][1] = x;                  // Guarda el valor del tiempo en ms
-    lcd.clear();                              // Borra la pantalla, para configurar la siguiente instrucción
+    clearLCD();                              // Borra la pantalla, para configurar la siguiente instrucción
   }
   setCurrent = 0;           // por si quedo seteada del modo anterior
   current_step = 0;         // Resetea el contador de pasos porque finalizo la configuración
@@ -786,14 +787,14 @@ void Config_Limits(void)
   Load_OFF();            // Apaga la carga
   Show_Limits();         // Muestra los actuales
   delay(2000);
-  lcd.clear();
+  clearLCD();
 
   printLCD(4, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
   z = 12; r = 1;
   if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 9.999 o 10.00 salir del Modo
   CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1.000A y 10.00A
-  printLCDNumber(z, r, CurrentCutOff,' ',3);lcd.print(F("A")); // A normal porque es valor fijo.
+  printLCDNumber(z, r, CurrentCutOff,' ',3);printLCDRaw(F("A")); // A normal porque es valor fijo.
   
   printLCD(0, 2, F("Power(W):"));
   r = 2; z = 12;
@@ -819,7 +820,7 @@ void Config_Limits(void)
 
 //----------------- Show limits Stored Data for Current, Power and Temp --------------
 void Show_Limits(void) {
-  lcd.clear();
+  clearLCD();
   
   #ifndef WOKWI_SIMULATION
   // Los lee de la EEPROM
@@ -832,12 +833,12 @@ void Show_Limits(void) {
   printLCD(1, 0, F("Limits")); // Muestra el titulo
   printLCD(0, 1, F("Current:"));
   // 3 decimales, ej.: 1.234, 9.999 o 10.00
-  printLCDNumber(9, 1, CurrentCutOff,' ',3);lcd.print(F("A")); // A normal porque es valor fijo.
+  printLCDNumber(9, 1, CurrentCutOff,' ',3);printLCDRaw(F("A")); // A normal porque es valor fijo.
   printLCD(0, 2, F("Power:"));
   printLCDNumber(9, 2, PowerCutOff, 'W', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
   printLCD(0, 3, F("Temp.:"));
   printLCDNumber(9, 3, tempCutOff, ' ', 0);     // 0 decimales, ej.: 10 a 99
-  lcd.print(char(0xDF)); lcd.print("C");
+  printLCDRaw(char(0xDF)); printLCDRaw("C");
 }
 
 //--------------------------------- Calibration Mode ---------------------------------
@@ -857,7 +858,7 @@ void Calibration_Mode() {
       Out_Curr_Calib_Fact = 1.0;
       Out_Curr_Calib_Offs = 0.0;
     }
-    lcd.clear();    
+    clearLCD();    
     printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
     printLCD(14, 1, firstPointTaken ? F("Set P2") : F("Set P1"));
     printLCD(1, 2, F("Adj->"));
@@ -878,7 +879,7 @@ void Calibration_Mode() {
 
 //--------------------------------- Calibration Setup --------------------------------
 void Calibration_Setup(void){
-  lcd.clear();
+  clearLCD();
   printLCD(4, 0, F("CALIBRATION"));
   printLCD(0, 1, F("1-Voltage 2-Current"));
   printLCD(0, 2, F("3-Load    4-Save"));
@@ -941,9 +942,9 @@ void Calibrate(float realValue){
         Sns_Curr_Calib_Fact = factor;
         Sns_Curr_Calib_Offs = offset;
         Out_Curr_Calib_Fact = max(0.9f, min(1.1f, (realValue2 - realValue1) / (setCurrent2 - setCurrent1)));
-        Out_Curr_Calib_Offs = max(-0.1f, min(0.1f, realValue1 - (setCurrent1 * Out_Curr_Calib_Fact)));
+        Out_Curr_Calib_Offs = max(-0.1f, min(0.1f, realValue1 - (setCurrent1 * Out_Curr_Calib_Fact)))*1000; // Lo paso a mA para que tenga sentido en la corrección de la salida, que se maneja en mA
     }
-  lcd.clear();
+  clearLCD();
   printLCD(4, 1, F("Calibrated!"));
   modeConfigured = false;   // Vuelve al Menu de Calibración. 
   firstPointTaken = false;
@@ -972,7 +973,7 @@ bool Handle_MSC_Keys(char key) {
   static bool shiftPressed = false;  // Bandera para detectar Shift
 
   if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-    lcd.noCursor(); lcd.blink_off();
+    noCursorLCD(); blinkOffLCD();
     Mode_Selection(false);  
     return false;
   } 
@@ -980,7 +981,7 @@ bool Handle_MSC_Keys(char key) {
   else if (shiftPressed) {
     shiftPressed = false;
     Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
-    lcd.noCursor(); lcd.blink_off();
+    noCursorLCD(); blinkOffLCD();
     return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
   }
 

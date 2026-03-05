@@ -42,20 +42,29 @@ void Load_Calibration() {
   for (CalibrationData &d : data) {
     d.variable = Load_EEPROM(d.address);
 
-    if (!d.isOffset) {  // Es un FAC_CAL (factor de calibración)
-        if (d.variable < 0.9 || d.variable > 1.1) {
-            d.variable = 1.0;  // Restaurar al valor por defecto
-        }
-    } else {  // Es un OFF_CAL (offset de calibración)
-        if (d.variable < -0.1 || d.variable > 0.1) {
-            d.variable = 0.0;  // Restaurar al valor por defecto
-        }
+    if (!d.isOffset) {  // Es un FAC_CAL (factor de calibracion)
+      if (d.variable < 0.9 || d.variable > 1.1) {
+        d.variable = 1.0;  // Restaurar al valor por defecto
+      }
+    } else {  // Es un OFF_CAL
+      float minOffset = -0.1f;
+      float maxOffset = 0.1f;
+
+      // Out_Curr_Calib_Offs se almacena en mA; los demas offsets en unidades base (V o A)
+      if (d.address == ADD_OUT_CURR_OFF_CAL) {
+        minOffset = -100.0f;
+        maxOffset = 100.0f;
+      }
+
+      if (d.variable < minOffset || d.variable > maxOffset) {
+        d.variable = 0.0f;  // Restaurar al valor por defecto
+      }
     }
   }
 
 }
 
-//----------------------------------------- Validar Calibración y grabar en EEPROM --------------------------------------------
+//----------------------------------------- Validar Calibracion y grabar en EEPROM --------------------------------------------
 void Save_Calibration() {
   float eeprom_read_Cal;
 
