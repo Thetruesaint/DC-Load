@@ -1,4 +1,4 @@
-## v2.01 ##
+## v2.01 ## CALIBRATIOS BUG FIX
 
 ## Hardware Versions
 
@@ -7,7 +7,7 @@
 
 **Trabajando:**
 - Simulacion WOKWI, haciendo que funcione con LCD, el teclado funciona pero responde muy lento
-- Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
+- Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
 
 **A Trabajar:**
 - Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
@@ -20,8 +20,12 @@
 - La Calibración de corriente no funciona bien, queda con un offset mayor a 0 y mide mas de lo seteado.
 - En OFF, el ADC registra 6mA pero no hay consumo. A veces por algun motivo que desconozco, consume 24mA de la fuente, pero no es siempre.
 
-**Mejoras**
+**Fixes**
+- Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
+- Se agregaron protecciónes para los puntos de calibración. 
 
+**Mejoras**
+- Se pasaron todas las funciones "lcd." a ui_lcd lo mismo para el manejo de EEPROM
 
 **Posibles Mejoras SW:**
 - Dejar solo TL?.. TC se puede hacer con TL.
