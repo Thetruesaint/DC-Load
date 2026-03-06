@@ -1,4 +1,4 @@
-## v2.01 ## CALIBRATIOS BUG FIX
+## v2.01 ## CALIBRATION BUG FIX
 
 ## Hardware Versions
 
@@ -13,12 +13,10 @@
 - Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
     
 **En Cola:**
-
 - Hacer un solo menu de configuracion para Limits y Calibación!! como en Fuente Lineal
 
 **Bugs**
-- La Calibración de corriente no funciona bien, queda con un offset mayor a 0 y mide mas de lo seteado.
-- En OFF, el ADC registra 6mA pero no hay consumo. A veces por algun motivo que desconozco, consume 24mA de la fuente, pero no es siempre.
+- 
 
 **Fixes**
 - Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
@@ -26,6 +24,7 @@
 
 **Mejoras**
 - Se pasaron todas las funciones "lcd." a ui_lcd lo mismo para el manejo de EEPROM
+- En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
 
 **Posibles Mejoras SW:**
 - Dejar solo TL?.. TC se puede hacer con TL.
