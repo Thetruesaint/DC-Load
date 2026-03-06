@@ -149,9 +149,9 @@ const unsigned long FAN_ON_DRTN = 60000;                    // Tiempo en miliseg
 const int TMP_CHK_TIME = 1000;                              // Perdíodo de control de temperatura (miliseg.)
 extern int temp;                                            // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
 //----------------- Parametros de validacion para calibracion -------------------
-const float CAL_MIN_VOLTAGE_DELTA = 10.0f;     // Voltios minimos entre P1 y P2 en calibracion de voltaje
-const float CAL_MIN_CURRENT_DELTA = 4.0f;      // Amperes minimos entre P1 y P2 en calibracion de corriente/salida
-const float CAL_MAX_POINT_ERROR_RATIO = 0.10f; // Error relativo maximo permitido entre setpoint y medicion por punto
+const float CAL_MIN_VOLTAGE_DELTA = 10.0f;                  // Voltios minimos entre P1 y P2 en calibracion de voltaje
+const float CAL_MIN_CURRENT_DELTA = 4.0f;                   // Amperes minimos entre P1 y P2 en calibracion de corriente/salida
+const float CAL_MAX_POINT_ERROR_RATIO = 0.20f;              // Error relativo maximo permitido entre setpoint y medicion por punto
 
 #ifndef WOKWI_SIMULATION
 #define TEMP_CONVERSION_FACTOR 0.02686202686202686f // Convierte lectura de LM35

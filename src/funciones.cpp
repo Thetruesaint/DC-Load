@@ -954,7 +954,7 @@ void Calibrate(float realValue){
       clearLCD();
       printLCD(0, 1, F("Calib Abort"));
       if (pointsTooClose) printLCD(0, 2, F("P1/P2 too close"));
-      else printLCD(0, 2, F("Set/Read >10%"));
+      else printLCD(0, 2, F("Set/Read >20%"));
       modeInitialized = false;
       delay(2000);
       return;
