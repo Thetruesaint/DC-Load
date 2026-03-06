@@ -1,5 +1,15 @@
 **DC LOAD based in a desing from Mr Louis Scully**
 
+## v2.01 ## CALIBRATION BUG FIX
+
+**Fixes**
+- Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
+- Se agregaron protecciónes para los puntos de calibración. 
+
+**Mejoras**
+- Se pasaron todas las funciones "lcd." a ui_lcd lo mismo para el manejo de EEPROM
+- En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
+
 ## v2.00 ## THE ESP32 HAS LANDED
 
 **Fixes**

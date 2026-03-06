@@ -104,7 +104,7 @@ void setup() {
   #else
   printLCD(0, 2, F("SIMULACION"));
   #endif
-  printLCD(0, 3, F("v2.01")); // Ajustes de estructura y calibracion.
+  printLCD(0, 3, F("v2.10b")); // Prueba migración a TFT
 
   #ifndef WOKWI_SIMULATION
   delay (2000);

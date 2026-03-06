@@ -8,7 +8,7 @@
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_MCP4725.h>
 #endif
-// #include <TFT_eSPI.h>
+#include <TFT_eSPI.h>
 #include <SPI.h>
 #include <RTClib.h>
 #include <Keypad.h>
@@ -21,7 +21,7 @@ extern Adafruit_MCP4725 dac;
 extern Adafruit_ADS1115 ads;
 #endif
 extern LiquidCrystal_I2C lcd;
-// extern TFT_eSPI tft;
+extern TFT_eSPI tft;
 extern RTC_DS1307 rtc;
 extern ESP32Encoder encoder;
 

@@ -8,7 +8,7 @@ Adafruit_MCP4725 dac; // Objeto DAC para el MP4725
 Adafruit_ADS1115 ads; // Objeto ADS para el ADS1115
 #endif
 LiquidCrystal_I2C lcd(0x27, 20, 4); // Objeto LCD 20x4 Address 0x27
-// TFT_eSPI tft = TFT_eSPI(); // Objeto TFT para la pantalla
+TFT_eSPI tft = TFT_eSPI(); // Objeto TFT para la pantalla
 RTC_DS1307 rtc; // Objeto RTC para el DS1307
 ESP32Encoder encoder; // Objeto Encoder para el ESP32Encoder
 

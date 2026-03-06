@@ -1,4 +1,4 @@
-## v2.01 ## CALIBRATION BUG FIX
+## v2.10 ## BY LCD HELLOW TFT
 
 ## Hardware Versions
 
@@ -6,8 +6,8 @@
 - v1.x → Arduino Nano (legacy - ver rama nano-legacy)
 
 **Trabajando:**
-- Simulacion WOKWI, haciendo que funcione con LCD, el teclado funciona pero responde muy lento
 - Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
+- Prueba migración a TFT
 
 **A Trabajar:**
 - Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
