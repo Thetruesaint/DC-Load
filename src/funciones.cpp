@@ -997,27 +997,27 @@ bool Handle_MSC_Keys(char key) {
 
   if (customKey == 'M') {   // Salir del modo si se presiona 'M'
     noCursorLCD(); blinkOffLCD();
-    Mode_Selection(false);  
+    app_push_action(ActionType::ModeSelect, 0, '\0');
     return false;
-  } 
+  }
 
   else if (shiftPressed) {
     shiftPressed = false;
-    Mode_Selection(true, customKey); // Llama con Shift activo y la tecla presionada
+    app_push_action(ActionType::ModeSelect, 1, customKey); // Shift + tecla via core_dispatch
     noCursorLCD(); blinkOffLCD();
-    return false;     // ##Ojo## si Mode_Selection con con key C, ".", E, 7, 8, 9, 0, que no hacen nada, va a salir del modo y se va a reiniciar.
+    return false;     // Mantiene el comportamiento actual: cualquier Shift+tecla sale del modo actual.
   }
 
   else if (customKey == 'S') { // Detectar Shift
     shiftPressed = true;
-    return true; // Espera la prÃ³xima tecla
+    return true; // Espera la próxima tecla
   }
 
   else if (customKey == 'C') {        // ojo que se puede llamar desde el mismo Config_Limits
     if (Mode != TC && Mode != TL) {
       Config_Limits();
     }
-    return true; 
+    return true;
   }
 
   return true;
@@ -1080,3 +1080,4 @@ String timer_getTime() {
 
   return formattedTime;
 }
+

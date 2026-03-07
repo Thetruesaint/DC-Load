@@ -8,7 +8,8 @@ enum class ActionType : uint8_t {
   EncoderDelta,
   EncoderButtonPress,
   KeyPressed,
-  LoadToggle
+  LoadToggle,
+  ModeSelect
 };
 
 struct UserAction {

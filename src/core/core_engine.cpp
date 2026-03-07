@@ -51,6 +51,10 @@ void core_dispatch(const UserAction &action) {
       }
       break;
 
+    case ActionType::ModeSelect:
+      core_mode_apply_selection(&g_state, action.value != 0, action.key);
+      break;
+
     case ActionType::None:
     default:
       return;
