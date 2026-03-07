@@ -15,6 +15,10 @@ SystemState legacy_capture_state() {
   state.temp_C = static_cast<float>(temp);
 
   state.encoderPositionRaw = encoderPosition;
+  state.encoderStep = factor;
+  state.encoderMaxRaw = static_cast<float>(maxEncoder);
+  state.currentCutOffA = CurrentCutOff;
+
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
   state.loadToggleEvent = false;
@@ -33,6 +37,8 @@ void legacy_apply_state(const SystemState &state) {
   static bool initialized = false;
 
   const bool previous = initialized ? lastAppliedLoadEnabled : toggle;
+
+  encoderPosition = state.encoderPositionRaw;
   toggle = state.loadEnabled;
 
   if (!toggle) {

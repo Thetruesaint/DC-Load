@@ -14,6 +14,10 @@ struct SystemState {
   float temp_C;
 
   float encoderPositionRaw;
+  float encoderStep;
+  float encoderMaxRaw;
+  float currentCutOffA;
+
   int32_t lastEncoderDelta;
   char lastKeyPressed;
   bool loadToggleEvent;

@@ -35,10 +35,8 @@ void Read_Encoder() {
   int32_t newCount = encoder.getCount();
   int32_t diff = newCount - lastCount;
 
-  // Cada paso físico puede dar ±4 flancos; ajusta si tu encoder da ±2
+  // Produce evento; el ajuste de setpoint lo decide core_dispatch.
   if (abs(diff) >= 4) {
-    encoderPosition += (diff > 0 ? factor : -factor);
-    encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     lastCount = newCount;
     app_push_action(ActionType::EncoderDelta, diff, '\0');
   }

@@ -5,6 +5,7 @@
 namespace {
 SystemState g_state = {0};
 unsigned long g_lastTickMs = 0;
+constexpr uint8_t MODE_CC = 0;
 }
 
 void core_init() {
@@ -19,6 +20,20 @@ void core_dispatch(const UserAction &action) {
   switch (action.type) {
     case ActionType::EncoderDelta:
       g_state.lastEncoderDelta = action.value;
+      if (g_state.mode == MODE_CC) {
+        if (action.value > 0) {
+          g_state.encoderPositionRaw += g_state.encoderStep;
+        } else if (action.value < 0) {
+          g_state.encoderPositionRaw -= g_state.encoderStep;
+        }
+
+        if (g_state.encoderPositionRaw < 0.0f) {
+          g_state.encoderPositionRaw = 0.0f;
+        }
+        if (g_state.encoderPositionRaw > g_state.encoderMaxRaw) {
+          g_state.encoderPositionRaw = g_state.encoderMaxRaw;
+        }
+      }
       break;
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
