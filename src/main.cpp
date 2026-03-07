@@ -1,6 +1,7 @@
 
 #include "variables.h"
 #include "funciones.h"
+#include "app/app_loop.h"
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
@@ -137,6 +138,7 @@ void setup() {
     Load_Calibration();
   #endif
 
+  app_init();
 }
 
 //------------------------------------- Bucle Principal-------------------------------------------------
@@ -163,4 +165,5 @@ void loop() {
   #ifndef WOKWI_SIMULATION
   // Update_TFT();
   #endif
+  app_tick();
 }
