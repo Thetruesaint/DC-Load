@@ -46,7 +46,7 @@ void legacy_apply_state(const SystemState &state) {
   reading = state.readingValue;
   toggle = state.loadEnabled;
 
-  if (state.mode == CC || state.mode == CP || state.mode == CR) {
+  if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {
     setCurrent = state.setCurrent_mA;
     setPower = state.setPower_W;
     setResistance = state.setResistance_Ohm;
