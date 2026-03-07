@@ -5,6 +5,8 @@ constexpr uint8_t MODE_CC = 0;
 constexpr uint8_t MODE_CP = 1;
 constexpr uint8_t MODE_CR = 2;
 constexpr uint8_t MODE_BC = 3;
+constexpr uint8_t MODE_TC = 4;
+constexpr uint8_t MODE_TL = 5;
 constexpr uint8_t MODE_CA = 6;
 constexpr int DECIMAL_CURSOR_COL = 9;
 
@@ -125,5 +127,40 @@ void core_mode_update_setpoints(SystemState *state) {
     state->setCurrent_mA = (state->measuredVoltage_V / reading) * 1000.0f;
   } else {
     state->setCurrent_mA = 0.0f;
+  }
+}
+
+void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) {
+  if (state == nullptr) return;
+
+  // Shared behavior: leaving current mode always turns load off and re-inits template.
+  state->loadEnabled = false;
+  state->setCurrent_mA = 0.0f;
+  state->modeInitialized = false;
+
+  if (!shiftPressed) {
+    state->functionIndex = (state->functionIndex + 1) % 6;
+    switch (state->functionIndex) {
+      case 0: state->mode = MODE_CC; break;
+      case 1: state->mode = MODE_CP; break;
+      case 2: state->mode = MODE_CR; break;
+      case 3: state->mode = MODE_BC; state->modeConfigured = false; break;
+      case 4: state->mode = MODE_TC; state->modeConfigured = false; break;
+      case 5: state->mode = MODE_TL; state->modeConfigured = false; break;
+      default: break;
+    }
+    return;
+  }
+
+  switch (key) {
+    case '1': state->functionIndex = 0; state->mode = MODE_CC; break;
+    case '2': state->functionIndex = 1; state->mode = MODE_CP; break;
+    case '3': state->functionIndex = 2; state->mode = MODE_CR; break;
+    case '4': state->functionIndex = 3; state->mode = MODE_BC; state->modeConfigured = false; break;
+    case '5': state->functionIndex = 4; state->mode = MODE_TC; state->modeConfigured = false; break;
+    case '6': state->functionIndex = 5; state->mode = MODE_TL; state->modeConfigured = false; break;
+    case 'C': state->mode = MODE_CA; state->modeConfigured = false; break;
+    case '<': state->modeConfigured = false; break;
+    default: break;
   }
 }

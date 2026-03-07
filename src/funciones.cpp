@@ -2,6 +2,7 @@
 #include "funciones.h"
 #include "app/app_loop.h"
 #include "core/core_modes.h"
+#include "legacy/legacy_bridge.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -112,33 +113,11 @@ void Read_Keypad(int col, int row) {
 
 // ------------------------------ Mode Selection --------------------------------------
 void Mode_Selection(bool shiftPressed, char key) {
-  Load_OFF();                 // Apaga la carga siempre al cambiar o resetear modo
   Reset_Input_Pointers();     // Resetea el punto decimal y el indice
-  modeInitialized = false;    // Fuerza reinicialización del modo
 
-  if (!shiftPressed) {        // Cambio cíclico con tecla 'M'
-    functionIndex = (functionIndex + 1) % 6;
-    switch (functionIndex) {
-      case 0: Mode = CC; break;
-      case 1: Mode = CP; break;
-      case 2: Mode = CR; break;
-      case 3: Mode = BC; modeConfigured = false; break; // BC necesita reconfiguración
-      case 4: Mode = TC; modeConfigured = false; break; // TC necesita reconfiguración
-      case 5: Mode = TL; modeConfigured = false; break; // TL necesita reconfiguración
-    }
-  } else {                    // Shift está activo
-    switch (key) {
-      case '1': functionIndex = 0; Mode = CC; break;
-      case '2': functionIndex = 1; Mode = CP; break;
-      case '3': functionIndex = 2; Mode = CR; break;
-      case '4': functionIndex = 3; Mode = BC; modeConfigured = false; break;
-      case '5': functionIndex = 4; Mode = TC; modeConfigured = false; break;
-      case '6': functionIndex = 5; Mode = TL; modeConfigured = false; break;
-      case 'C': Mode = CA; modeConfigured = false; break; // Activa modo Calibración con Shift+C
-      case '<': modeConfigured = false; break; // Solo resetea el modo actual
-      default: return; // Ignora otras teclas con Shift
-    }
-  }
+  SystemState state = legacy_capture_state();
+  core_mode_apply_selection(&state, shiftPressed, key);
+  legacy_apply_state(state);
 }
 
 //----------------------- Toggle Current Load ON or OFF ----------------------------

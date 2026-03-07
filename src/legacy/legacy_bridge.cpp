@@ -20,6 +20,7 @@ SystemState legacy_capture_state() {
   state.encoderMaxRaw = static_cast<float>(maxEncoder);
   state.currentCutOffA = CurrentCutOff;
   state.cursorPosition = CuPo;
+  state.functionIndex = functionIndex;
 
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
@@ -43,6 +44,10 @@ void legacy_apply_state(const SystemState &state) {
   encoderPosition = state.encoderPositionRaw;
   factor = state.encoderStep;
   CuPo = state.cursorPosition;
+  functionIndex = state.functionIndex;
+  Mode = static_cast<ModeType>(state.mode);
+  modeInitialized = state.modeInitialized;
+  modeConfigured = state.modeConfigured;
   reading = state.readingValue;
   toggle = state.loadEnabled;
 

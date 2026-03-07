@@ -20,6 +20,7 @@ struct SystemState {
   float currentCutOffA;
 
   int cursorPosition;
+  int functionIndex;
 
   int32_t lastEncoderDelta;
   char lastKeyPressed;
