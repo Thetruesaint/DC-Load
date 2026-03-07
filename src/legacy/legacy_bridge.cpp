@@ -14,6 +14,7 @@ SystemState legacy_capture_state() {
   state.measuredPower_W = voltage * current;
   state.temp_C = static_cast<float>(temp);
 
+  state.readingValue = reading;
   state.encoderPositionRaw = encoderPosition;
   state.encoderStep = factor;
   state.encoderMaxRaw = static_cast<float>(maxEncoder);
@@ -42,7 +43,14 @@ void legacy_apply_state(const SystemState &state) {
   encoderPosition = state.encoderPositionRaw;
   factor = state.encoderStep;
   CuPo = state.cursorPosition;
+  reading = state.readingValue;
   toggle = state.loadEnabled;
+
+  if (state.mode == CC || state.mode == CP || state.mode == CR) {
+    setCurrent = state.setCurrent_mA;
+    setPower = state.setPower_W;
+    setResistance = state.setResistance_Ohm;
+  }
 
   if (!toggle) {
     setCurrent = 0;

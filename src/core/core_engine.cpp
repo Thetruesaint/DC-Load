@@ -74,6 +74,48 @@ void normalizeManagedModeState() {
   }
   g_state.encoderStep = factorForCursor(g_state.cursorPosition);
 }
+
+void updateManagedSetpoints() {
+  if (!modeUsesSetpointCursor(g_state.mode)) return;
+
+  const float minReading = (g_state.mode == MODE_CR) ? 0.1f : 0.0f;
+  float maxReading = g_state.encoderMaxRaw / 1000.0f;
+  if (maxReading < minReading) maxReading = minReading;
+
+  float reading = g_state.encoderPositionRaw / 1000.0f;
+  if (reading < minReading) reading = minReading;
+  if (reading > maxReading) reading = maxReading;
+
+  g_state.readingValue = reading;
+  g_state.encoderPositionRaw = reading * 1000.0f;
+
+  if (!g_state.loadEnabled) {
+    g_state.setCurrent_mA = 0.0f;
+    return;
+  }
+
+  if (g_state.mode == MODE_CC) {
+    g_state.setCurrent_mA = reading * 1000.0f;
+    return;
+  }
+
+  if (g_state.mode == MODE_CP) {
+    g_state.setPower_W = reading * 1000.0f;
+    if (g_state.measuredVoltage_V > 0.05f) {
+      g_state.setCurrent_mA = g_state.setPower_W / g_state.measuredVoltage_V;
+    } else {
+      g_state.setCurrent_mA = 0.0f;
+    }
+    return;
+  }
+
+  g_state.setResistance_Ohm = reading;
+  if (reading > 0.0f) {
+    g_state.setCurrent_mA = (g_state.measuredVoltage_V / reading) * 1000.0f;
+  } else {
+    g_state.setCurrent_mA = 0.0f;
+  }
+}
 }
 
 void core_init() {
@@ -83,6 +125,7 @@ void core_init() {
 void core_sync_from_legacy(const SystemState &state) {
   g_state = state;
   normalizeManagedModeState();
+  updateManagedSetpoints();
 }
 
 void core_dispatch(const UserAction &action) {
@@ -128,6 +171,7 @@ void core_dispatch(const UserAction &action) {
       return;
   }
 
+  updateManagedSetpoints();
   g_state.actionCounter++;
 }
 

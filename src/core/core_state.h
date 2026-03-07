@@ -13,6 +13,7 @@ struct SystemState {
   float measuredPower_W;
   float temp_C;
 
+  float readingValue;
   float encoderPositionRaw;
   float encoderStep;
   float encoderMaxRaw;

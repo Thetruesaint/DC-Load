@@ -433,8 +433,7 @@ void Const_Current_Mode(void) {
   encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
   Cursor_Position();
 
-  if (!toggle) return;
-  setCurrent = reading * 1000;             // lo pasa a mA 
+  // Setpoint de CC lo calcula core y se aplica via legacy_apply_state.
 }
 
 //------------------------ Select Constant Power LCD set up -------------------------
@@ -454,9 +453,7 @@ void Const_Power_Mode(void) {
   encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
   Cursor_Position(); 
 
-  if (!toggle) return;
-  setPower = reading * 1000;               // Conversión a mW
-  setCurrent = setPower / voltage;         // Conversión a mA 
+  // Setpoint de CP lo calcula core y se aplica via legacy_apply_state.
 }
 
 //---------------------- Select Constant Resistance LCD set up ----------------------
@@ -477,9 +474,7 @@ void Const_Resistance_Mode(void) {
   encoderPosition = reading * 1000;             // pasa el valor a encoder si lo limitó
   Cursor_Position();
   
-  if (!toggle) return;
-  setResistance =  reading;                       // en ohms (Ω)
-  setCurrent = (voltage / setResistance) * 1000;  // convirte a mA
+  // Setpoint de CR lo calcula core y se aplica via legacy_apply_state.
 }
 
 //-------------------- Select Battery Capacity Testing LCD set up -------------------
