@@ -2,7 +2,6 @@
 #include "funciones.h"
 #include "app/app_loop.h"
 #include "core/core_modes.h"
-#include "legacy/legacy_bridge.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -111,14 +110,6 @@ void Read_Keypad(int col, int row) {
   }
 }
 
-// ------------------------------ Mode Selection --------------------------------------
-void Mode_Selection(bool shiftPressed, char key) {
-  Reset_Input_Pointers();     // Resetea el punto decimal y el indice
-
-  SystemState state = legacy_capture_state();
-  core_mode_apply_selection(&state, shiftPressed, key);
-  legacy_apply_state(state);
-}
 
 //----------------------- Toggle Current Load ON or OFF ----------------------------
 void Read_Load_Button(void) {
@@ -1080,4 +1071,5 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
 

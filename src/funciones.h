@@ -48,7 +48,6 @@ void Check_Limits();
 char Wait_Key_Pressed();
 void Temp_Control();
 void Reset_Input_Pointers();
-void Mode_Selection(bool shiftPressed = false, char key = '\0');
 void Encoder_Status(bool encOnOff, float limit = 0);
 bool Handle_MSC_Keys(char key);
 void beepBuzzer(void);
