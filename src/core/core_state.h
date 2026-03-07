@@ -13,6 +13,12 @@ struct SystemState {
   float measuredPower_W;
   float temp_C;
 
+  float encoderPositionRaw;
+  int32_t lastEncoderDelta;
+  char lastKeyPressed;
+  bool loadToggleEvent;
+  uint32_t actionCounter;
+
   bool loadEnabled;
   uint8_t mode;
   bool modeInitialized;

@@ -15,6 +15,25 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state = state;
 }
 
+void core_dispatch(const UserAction &action) {
+  switch (action.type) {
+    case ActionType::EncoderDelta:
+      g_state.lastEncoderDelta = action.value;
+      break;
+    case ActionType::KeyPressed:
+      g_state.lastKeyPressed = action.key;
+      break;
+    case ActionType::LoadToggle:
+      g_state.loadToggleEvent = true;
+      break;
+    case ActionType::None:
+    default:
+      return;
+  }
+
+  g_state.actionCounter++;
+}
+
 void core_tick_10ms() {
   const unsigned long now = millis();
   if ((now - g_lastTickMs) < 10UL) return;
