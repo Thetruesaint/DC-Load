@@ -6,8 +6,16 @@ namespace {
 SystemState g_state = {0};
 unsigned long g_lastTickMs = 0;
 constexpr uint8_t MODE_CC = 0;
+constexpr uint8_t MODE_CP = 1;
+constexpr uint8_t MODE_CR = 2;
 constexpr int CC_CURSOR_MIN = 8;
 constexpr int CC_CURSOR_MAX = 12;
+constexpr int CPCR_CURSOR_MIN = 6;
+constexpr int CPCR_CURSOR_MAX = 10;
+
+bool modeUsesSetpointCursor(uint8_t mode) {
+  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR;
+}
 
 void applyEncoderStep(int direction) {
   if (direction > 0) {
@@ -23,6 +31,17 @@ void applyEncoderStep(int direction) {
     g_state.encoderPositionRaw = g_state.encoderMaxRaw;
   }
 }
+
+void clampCursorByMode() {
+  if (g_state.mode == MODE_CC) {
+    if (g_state.cursorPosition < CC_CURSOR_MIN) g_state.cursorPosition = CC_CURSOR_MIN;
+    if (g_state.cursorPosition > CC_CURSOR_MAX) g_state.cursorPosition = CC_CURSOR_MAX;
+    return;
+  }
+
+  if (g_state.cursorPosition < CPCR_CURSOR_MIN) g_state.cursorPosition = CPCR_CURSOR_MIN;
+  if (g_state.cursorPosition > CPCR_CURSOR_MAX) g_state.cursorPosition = CPCR_CURSOR_MAX;
+}
 }
 
 void core_init() {
@@ -37,14 +56,14 @@ void core_dispatch(const UserAction &action) {
   switch (action.type) {
     case ActionType::EncoderDelta:
       g_state.lastEncoderDelta = action.value;
-      if (g_state.mode == MODE_CC) {
+      if (modeUsesSetpointCursor(g_state.mode)) {
         applyEncoderStep((action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
       }
       break;
 
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
-      if (g_state.mode == MODE_CC) {
+      if (modeUsesSetpointCursor(g_state.mode)) {
         if (action.key == 'U') {
           applyEncoderStep(1);
         } else if (action.key == 'D') {
@@ -55,8 +74,7 @@ void core_dispatch(const UserAction &action) {
           g_state.cursorPosition++;
         }
 
-        if (g_state.cursorPosition < CC_CURSOR_MIN) g_state.cursorPosition = CC_CURSOR_MIN;
-        if (g_state.cursorPosition > CC_CURSOR_MAX) g_state.cursorPosition = CC_CURSOR_MAX;
+        clampCursorByMode();
       }
       break;
 
