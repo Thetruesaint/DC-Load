@@ -18,6 +18,7 @@ SystemState legacy_capture_state() {
   state.encoderStep = factor;
   state.encoderMaxRaw = static_cast<float>(maxEncoder);
   state.currentCutOffA = CurrentCutOff;
+  state.cursorPosition = CuPo;
 
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
@@ -39,6 +40,7 @@ void legacy_apply_state(const SystemState &state) {
   const bool previous = initialized ? lastAppliedLoadEnabled : toggle;
 
   encoderPosition = state.encoderPositionRaw;
+  CuPo = state.cursorPosition;
   toggle = state.loadEnabled;
 
   if (!toggle) {

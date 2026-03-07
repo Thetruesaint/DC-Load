@@ -58,18 +58,20 @@ void Read_Keypad(int col, int row) {
   if (Mode == TC || Mode == TL) return;
 
   if (customKey == 'U') { // Aumentar setpoint
+    if (Mode == CC) return;
     encoderPosition = encoderPosition + factor;
     encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     return;
   }
 
   if (customKey == 'D') { // Disminuir setpoint
+    if (Mode == CC) return;
     encoderPosition = encoderPosition - factor;
     return;
   }
   
-  if (customKey == 'L') { CuPo--; return; } // Cursor a la izquierda
-  if (customKey == 'R') { CuPo++; return; } // Cursor a la derecha
+  if (customKey == 'L') { if (Mode == CC) return; CuPo--; return; } // Cursor a la izquierda
+  if (customKey == 'R') { if (Mode == CC) return; CuPo++; return; } // Cursor a la derecha
 
   if (Mode == BC) return;
 

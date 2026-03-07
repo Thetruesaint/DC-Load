@@ -18,6 +18,8 @@ struct SystemState {
   float encoderMaxRaw;
   float currentCutOffA;
 
+  int cursorPosition;
+
   int32_t lastEncoderDelta;
   char lastKeyPressed;
   bool loadToggleEvent;
