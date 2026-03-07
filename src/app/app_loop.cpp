@@ -53,5 +53,6 @@ void app_tick() {
   }
 
   core_tick_10ms();
+  legacy_apply_state(core_get_state());
   ui_render(core_get_state());
 }

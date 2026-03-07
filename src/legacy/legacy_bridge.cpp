@@ -27,3 +27,24 @@ SystemState legacy_capture_state() {
 
   return state;
 }
+
+void legacy_apply_state(const SystemState &state) {
+  static bool lastAppliedLoadEnabled = false;
+  static bool initialized = false;
+
+  const bool previous = initialized ? lastAppliedLoadEnabled : toggle;
+  toggle = state.loadEnabled;
+
+  if (!toggle) {
+    setCurrent = 0;
+  }
+
+#ifndef WOKWI_SIMULATION
+  if (initialized && previous != toggle && !toggle) {
+    dac.setVoltage(0, false);
+  }
+#endif
+
+  lastAppliedLoadEnabled = toggle;
+  initialized = true;
+}

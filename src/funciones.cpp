@@ -142,19 +142,23 @@ void Mode_Selection(bool shiftPressed, char key) {
 
 //----------------------- Toggle Current Load ON or OFF ----------------------------
 void Read_Load_Button(void) {
-  if (digitalRead(LOADONOFF) == LOW) {
-    delay(200); // Anti-rebote
-    toggle = !toggle;
-    app_push_action(ActionType::LoadToggle, 0, '\0');
-    if (!toggle) {
-      #ifndef WOKWI_SIMULATION
-      dac.setVoltage( 0, false);    // Corta inmediatamente.
-      #endif
-      setCurrent = 0;               // Resetea por las dudas.
-    } 
+  static bool lastButtonLow = false;
+  const bool buttonLow = (digitalRead(LOADONOFF) == LOW);
+
+  // Detecta flanco de bajada para evitar multiples toggles por tecla sostenida.
+  if (buttonLow && !lastButtonLow) {
+    delay(40); // Anti-rebote
+    if (digitalRead(LOADONOFF) == LOW) {
+      app_push_action(ActionType::LoadToggle, 0, '\0');
+      lastButtonLow = true;
+      return;
+    }
+  }
+
+  if (!buttonLow) {
+    lastButtonLow = false;
   }
 }
-
 //----------------------- Key input used for UserSetUp ------------------------------- 
 bool Value_Input(int col, int row, int maxDigits, bool decimal) {  
   

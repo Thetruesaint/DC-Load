@@ -24,7 +24,11 @@ void core_dispatch(const UserAction &action) {
       g_state.lastKeyPressed = action.key;
       break;
     case ActionType::LoadToggle:
+      g_state.loadEnabled = !g_state.loadEnabled;
       g_state.loadToggleEvent = true;
+      if (!g_state.loadEnabled) {
+        g_state.setCurrent_mA = 0.0f;
+      }
       break;
     case ActionType::None:
     default:
