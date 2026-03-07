@@ -25,6 +25,7 @@
 **Mejoras**
 - Se pasaron todas las funciones "lcd." a ui_lcd lo mismo para el manejo de EEPROM
 - En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
+- Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
 
 **Posibles Mejoras SW:**
 - Dejar solo TL?.. TC se puede hacer con TL.
