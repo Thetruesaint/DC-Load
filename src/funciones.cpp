@@ -1,5 +1,6 @@
 #include "variables.h"
 #include "funciones.h"
+#include "app/app_loop.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -39,6 +40,7 @@ void Read_Encoder() {
     encoderPosition += (diff > 0 ? factor : -factor);
     encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     lastCount = newCount;
+    app_push_action(ActionType::EncoderDelta, diff, '\0');
   }
 }
 
@@ -48,6 +50,8 @@ void Read_Keypad(int col, int row) {
   customKey = customKeypad.getKey();              // Escanea el teclado
   
   if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
+
+  app_push_action(ActionType::KeyPressed, 0, customKey);
   
   if (!Handle_MSC_Keys (customKey)) {return;};
   
@@ -141,6 +145,7 @@ void Read_Load_Button(void) {
   if (digitalRead(LOADONOFF) == LOW) {
     delay(200); // Anti-rebote
     toggle = !toggle;
+    app_push_action(ActionType::LoadToggle, 0, '\0');
     if (!toggle) {
       #ifndef WOKWI_SIMULATION
       dac.setVoltage( 0, false);    // Corta inmediatamente.

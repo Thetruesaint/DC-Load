@@ -1,22 +1,55 @@
 #include "app_loop.h"
+#include <cstddef>
 
-#include "../core/core_actions.h"
 #include "../core/core_engine.h"
 #include "../legacy/legacy_bridge.h"
 #include "../ui/ui_renderer.h"
 
+namespace {
+constexpr size_t ACTION_QUEUE_CAPACITY = 16;
+UserAction g_actionQueue[ACTION_QUEUE_CAPACITY] = {};
+size_t g_queueHead = 0;
+size_t g_queueTail = 0;
+
+bool enqueueAction(const UserAction &action) {
+  const size_t nextTail = (g_queueTail + 1U) % ACTION_QUEUE_CAPACITY;
+  if (nextTail == g_queueHead) {
+    return false;
+  }
+
+  g_actionQueue[g_queueTail] = action;
+  g_queueTail = nextTail;
+  return true;
+}
+
+bool dequeueAction(UserAction *action) {
+  if (action == nullptr || g_queueHead == g_queueTail) {
+    return false;
+  }
+
+  *action = g_actionQueue[g_queueHead];
+  g_queueHead = (g_queueHead + 1U) % ACTION_QUEUE_CAPACITY;
+  return true;
+}
+}
+
 void app_init() {
   core_init();
-  legacy_reset_action_poll();
+  g_queueHead = 0;
+  g_queueTail = 0;
+}
+
+void app_push_action(ActionType type, int32_t value, char key) {
+  const UserAction action = {type, value, key};
+  (void)enqueueAction(action);
 }
 
 void app_tick() {
   core_sync_from_legacy(legacy_capture_state());
 
-  UserAction actions[6] = {};
-  const size_t actionCount = legacy_poll_actions(actions, 6);
-  for (size_t i = 0; i < actionCount; ++i) {
-    core_dispatch(actions[i]);
+  UserAction action = {ActionType::None, 0, '\0'};
+  while (dequeueAction(&action)) {
+    core_dispatch(action);
   }
 
   core_tick_10ms();
