@@ -58,20 +58,20 @@ void Read_Keypad(int col, int row) {
   if (Mode == TC || Mode == TL) return;
 
   if (customKey == 'U') { // Aumentar setpoint
-    if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) return;
+    if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) return;
     encoderPosition = encoderPosition + factor;
     encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     return;
   }
 
   if (customKey == 'D') { // Disminuir setpoint
-    if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) return;
+    if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) return;
     encoderPosition = encoderPosition - factor;
     return;
   }
   
-  if (customKey == 'L') { if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) return; CuPo--; return; } // Cursor a la izquierda
-  if (customKey == 'R') { if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) return; CuPo++; return; } // Cursor a la derecha
+  if (customKey == 'L') { if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) return; CuPo--; return; } // Cursor a la izquierda
+  if (customKey == 'R') { if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) return; CuPo++; return; } // Cursor a la derecha
 
   if (Mode == BC) return;
 
@@ -287,7 +287,7 @@ void Cursor_Position(void) {
   // Verifica boton del encoder y delega al core en modos ya desacoplados.
   if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
       lastPressTime = millis();
-      if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) {
+      if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) {
         app_push_action(ActionType::EncoderButtonPress, 0, '\0');
       } else {
         CuPo++;  // Legacy para modos aun no desacoplados.
@@ -296,8 +296,8 @@ void Cursor_Position(void) {
 
   if (last_CuPo == CuPo) return;
 
-  // En CC/CP/CR el core ya normaliza cursor/factor, aqui solo se dibuja.
-  if (Mode == CC || Mode == CP || Mode == CR || Mode == CA) {
+  // En CC/CP/CR/BC/CA el core ya normaliza cursor/factor, aqui solo se dibuja.
+  if (Mode == CC || Mode == CP || Mode == CR || Mode == BC || Mode == CA) {
     last_CuPo = CuPo;
     setCursorLCD(CuPo, 2);
     return;

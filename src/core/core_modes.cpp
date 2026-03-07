@@ -4,15 +4,24 @@ namespace {
 constexpr uint8_t MODE_CC = 0;
 constexpr uint8_t MODE_CP = 1;
 constexpr uint8_t MODE_CR = 2;
+constexpr uint8_t MODE_BC = 3;
 constexpr uint8_t MODE_CA = 6;
 constexpr int DECIMAL_CURSOR_COL = 9;
 
+bool mode_uses_managed_input(uint8_t mode) {
+  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_BC || mode == MODE_CA;
+}
+
+bool mode_uses_managed_setpoints(uint8_t mode) {
+  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_CA;
+}
+
 int cursor_min_by_mode(uint8_t mode) {
-  return (mode == MODE_CC || mode == MODE_CA) ? 8 : 6;
+  return (mode == MODE_CP || mode == MODE_CR) ? 6 : 8;
 }
 
 int cursor_max_by_mode(uint8_t mode) {
-  return (mode == MODE_CC || mode == MODE_CA) ? 12 : 10;
+  return (mode == MODE_CP || mode == MODE_CR) ? 10 : 12;
 }
 
 float factor_for_cursor(int cursor) {
@@ -36,11 +45,11 @@ void wrap_cursor_by_mode(SystemState *state) {
 }
 
 bool core_mode_is_managed(uint8_t mode) {
-  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_CA;
+  return mode_uses_managed_input(mode);
 }
 
 void core_mode_normalize_state(SystemState *state) {
-  if (state == nullptr || !core_mode_is_managed(state->mode)) return;
+  if (state == nullptr || !mode_uses_managed_input(state->mode)) return;
 
   wrap_cursor_by_mode(state);
   if (state->cursorPosition == DECIMAL_CURSOR_COL) {
@@ -50,7 +59,7 @@ void core_mode_normalize_state(SystemState *state) {
 }
 
 void core_mode_apply_encoder_delta(SystemState *state, int direction) {
-  if (state == nullptr || !core_mode_is_managed(state->mode)) return;
+  if (state == nullptr || !mode_uses_managed_input(state->mode)) return;
 
   if (direction > 0) {
     state->encoderPositionRaw += state->encoderStep;
@@ -63,7 +72,7 @@ void core_mode_apply_encoder_delta(SystemState *state, int direction) {
 }
 
 void core_mode_move_cursor(SystemState *state, int direction) {
-  if (state == nullptr || !core_mode_is_managed(state->mode)) return;
+  if (state == nullptr || !mode_uses_managed_input(state->mode)) return;
 
   if (direction > 0) {
     state->cursorPosition++;
@@ -78,7 +87,7 @@ void core_mode_move_cursor(SystemState *state, int direction) {
 }
 
 void core_mode_update_setpoints(SystemState *state) {
-  if (state == nullptr || !core_mode_is_managed(state->mode)) return;
+  if (state == nullptr || !mode_uses_managed_setpoints(state->mode)) return;
 
   const float minReading = (state->mode == MODE_CR) ? 0.1f : 0.0f;
   float maxReading = state->encoderMaxRaw / 1000.0f;
