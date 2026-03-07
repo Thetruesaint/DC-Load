@@ -30,14 +30,7 @@ void setup() {
   beepBuzzer();   // Buzzer Test
 
   #ifndef WOKWI_SIMULATION
-  /*
-  tft.init();
-  tft.setRotation(3);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextFont(2);
-  tft.setTextSize(2);
-  */
+
   if (dac.begin(0x60)){                 // initialize the dac with address 0x60
     printLCD(0,0, F("dac OK"));
     Serial.print("dac OK");
@@ -68,12 +61,6 @@ void setup() {
   temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR; // Convertir a Celsius con factor para ADC@0dB (Vmax≈1.1V)
     
   printLCD_S(11, 1, String(temp) + String((char)0xDF) + "C");
-
-  // tft.setCursor(11 * cellW, 1 * cellH);  
-  // tft.print(temp);
-  // tft.print("°");
-  // tft.print("C");
-
 
   if (hlth == true && temp <= 99) {
     printLCD(0,2, F("Sensor Test OK"));
@@ -128,7 +115,6 @@ void setup() {
     Load_Calibration();
     delay(2000);
     clearLCD();
-    // tft.fillScreen(TFT_BLACK);
 
   #else
     // Simula que se cargan los valores de la EEPROM
