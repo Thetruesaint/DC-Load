@@ -281,8 +281,8 @@ void Check_Limits() {
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
   static uint32_t lastPressTime = 0;  // Para evitar bloqueo por delay()
-  constexpr int unitPosition = 8;     // Posición base del cursor, constexpr hace lo mismo que const pero optimizado.
-  static int last_CuPo = -1;          // Posición previa del cursor
+  constexpr int unitPosition = 8;     // Posicion base del cursor.
+  static int last_CuPo = -1;          // Posicion previa del cursor
 
   // Verifica boton del encoder y delega al core en modos ya desacoplados.
   if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
@@ -296,23 +296,30 @@ void Cursor_Position(void) {
 
   if (last_CuPo == CuPo) return;
 
+  // En CC/CP/CR el core ya normaliza cursor/factor, aqui solo se dibuja.
+  if (Mode == CC || Mode == CP || Mode == CR) {
+    last_CuPo = CuPo;
+    setCursorLCD(CuPo, 2);
+    return;
+  }
+
   // Saltar el punto decimal
   if (CuPo > last_CuPo && CuPo == unitPosition + 1) CuPo++;
   if (CuPo < last_CuPo && CuPo == unitPosition + 1) CuPo--;
 
-  // Volver a la posición inicial si excede el rango permitido
+  // Volver a la posicion inicial si excede el rango permitido
   if ((Mode == CC || Mode == BC || Mode == CA) && CuPo > 12) CuPo = unitPosition;
   if ((Mode == CC || Mode == BC || Mode == CA) && CuPo < 8) CuPo = unitPosition + 4;
   if ((Mode == CP || Mode == CR) && CuPo > 10) CuPo = unitPosition - 2;
   if ((Mode == CP || Mode == CR) && CuPo < 6) CuPo = unitPosition + 2;
 
-  // Asignar factor según la posición del cursor y el modo
+  // Asignar factor segun la posicion del cursor y el modo
   switch (CuPo) {
       case 6:   factor = 100000;  break;  // Centenas (Solo CP y CR)
-      case 7:   factor = 10000;  break;   // Decenas (Solo CP y CR)
-      case 10:  factor = 100;   break;    // Décimas
-      case 11:  factor = 10;    break;    // Centésimas (Solo CC, BC y CA)
-      case 12:  factor = 1;     break;    // Milésimas (Solo CC, BC y CA)
+      case 7:   factor = 10000;   break;  // Decenas (Solo CP y CR)
+      case 10:  factor = 100;     break;  // Decimas
+      case 11:  factor = 10;      break;  // Centesimas (Solo CC, BC y CA)
+      case 12:  factor = 1;       break;  // Milesimas (Solo CC, BC y CA)
       default:  factor = 1000;            // Unidades por defecto CuPo = 8
   }
   last_CuPo = CuPo;

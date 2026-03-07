@@ -8,13 +8,50 @@ unsigned long g_lastTickMs = 0;
 constexpr uint8_t MODE_CC = 0;
 constexpr uint8_t MODE_CP = 1;
 constexpr uint8_t MODE_CR = 2;
-constexpr int CC_CURSOR_MIN = 8;
-constexpr int CC_CURSOR_MAX = 12;
-constexpr int CPCR_CURSOR_MIN = 6;
-constexpr int CPCR_CURSOR_MAX = 10;
+constexpr int DECIMAL_CURSOR_COL = 9;
 
 bool modeUsesSetpointCursor(uint8_t mode) {
   return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR;
+}
+
+int cursorMinByMode(uint8_t mode) {
+  return (mode == MODE_CC) ? 8 : 6;
+}
+
+int cursorMaxByMode(uint8_t mode) {
+  return (mode == MODE_CC) ? 12 : 10;
+}
+
+float factorForCursor(int cursor) {
+  switch (cursor) {
+    case 6: return 100000.0f;
+    case 7: return 10000.0f;
+    case 10: return 100.0f;
+    case 11: return 10.0f;
+    case 12: return 1.0f;
+    default: return 1000.0f;
+  }
+}
+
+void wrapCursorByMode() {
+  const int minPos = cursorMinByMode(g_state.mode);
+  const int maxPos = cursorMaxByMode(g_state.mode);
+
+  if (g_state.cursorPosition > maxPos) g_state.cursorPosition = minPos;
+  if (g_state.cursorPosition < minPos) g_state.cursorPosition = maxPos;
+}
+
+void moveCursor(int direction) {
+  if (direction > 0) {
+    g_state.cursorPosition++;
+    if (g_state.cursorPosition == DECIMAL_CURSOR_COL) g_state.cursorPosition++;
+  } else if (direction < 0) {
+    g_state.cursorPosition--;
+    if (g_state.cursorPosition == DECIMAL_CURSOR_COL) g_state.cursorPosition--;
+  }
+
+  wrapCursorByMode();
+  g_state.encoderStep = factorForCursor(g_state.cursorPosition);
 }
 
 void applyEncoderStep(int direction) {
@@ -28,26 +65,14 @@ void applyEncoderStep(int direction) {
   if (g_state.encoderPositionRaw > g_state.encoderMaxRaw) g_state.encoderPositionRaw = g_state.encoderMaxRaw;
 }
 
-void clampCursorByMode() {
-  if (g_state.mode == MODE_CC) {
-    if (g_state.cursorPosition < CC_CURSOR_MIN) g_state.cursorPosition = CC_CURSOR_MIN;
-    if (g_state.cursorPosition > CC_CURSOR_MAX) g_state.cursorPosition = CC_CURSOR_MAX;
-    return;
+void normalizeManagedModeState() {
+  if (!modeUsesSetpointCursor(g_state.mode)) return;
+
+  wrapCursorByMode();
+  if (g_state.cursorPosition == DECIMAL_CURSOR_COL) {
+    g_state.cursorPosition = cursorMinByMode(g_state.mode);
   }
-
-  if (g_state.cursorPosition < CPCR_CURSOR_MIN) g_state.cursorPosition = CPCR_CURSOR_MIN;
-  if (g_state.cursorPosition > CPCR_CURSOR_MAX) g_state.cursorPosition = CPCR_CURSOR_MAX;
-}
-
-void advanceCursorByMode() {
-  if (g_state.mode == MODE_CC) {
-    g_state.cursorPosition++;
-    if (g_state.cursorPosition > CC_CURSOR_MAX) g_state.cursorPosition = CC_CURSOR_MIN;
-    return;
-  }
-
-  g_state.cursorPosition++;
-  if (g_state.cursorPosition > CPCR_CURSOR_MAX) g_state.cursorPosition = CPCR_CURSOR_MIN;
+  g_state.encoderStep = factorForCursor(g_state.cursorPosition);
 }
 }
 
@@ -57,6 +82,7 @@ void core_init() {
 
 void core_sync_from_legacy(const SystemState &state) {
   g_state = state;
+  normalizeManagedModeState();
 }
 
 void core_dispatch(const UserAction &action) {
@@ -70,7 +96,7 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::EncoderButtonPress:
       if (modeUsesSetpointCursor(g_state.mode)) {
-        advanceCursorByMode();
+        moveCursor(1);
       }
       break;
 
@@ -82,12 +108,10 @@ void core_dispatch(const UserAction &action) {
         } else if (action.key == 'D') {
           applyEncoderStep(-1);
         } else if (action.key == 'L') {
-          g_state.cursorPosition--;
+          moveCursor(-1);
         } else if (action.key == 'R') {
-          g_state.cursorPosition++;
+          moveCursor(1);
         }
-
-        clampCursorByMode();
       }
       break;
 

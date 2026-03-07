@@ -40,6 +40,7 @@ void legacy_apply_state(const SystemState &state) {
   const bool previous = initialized ? lastAppliedLoadEnabled : toggle;
 
   encoderPosition = state.encoderPositionRaw;
+  factor = state.encoderStep;
   CuPo = state.cursorPosition;
   toggle = state.loadEnabled;
 
