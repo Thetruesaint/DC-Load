@@ -284,10 +284,14 @@ void Cursor_Position(void) {
   constexpr int unitPosition = 8;     // Posición base del cursor, constexpr hace lo mismo que const pero optimizado.
   static int last_CuPo = -1;          // Posición previa del cursor
 
-  // Verifica si el botón fue presionado y hace debounce
-  if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) { 
+  // Verifica boton del encoder y delega al core en modos ya desacoplados.
+  if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
       lastPressTime = millis();
-      CuPo++;  // Corre el cursor un lugar a la derecha
+      if (Mode == CC || Mode == CP || Mode == CR) {
+        app_push_action(ActionType::EncoderButtonPress, 0, '\0');
+      } else {
+        CuPo++;  // Legacy para modos aun no desacoplados.
+      }
   }
 
   if (last_CuPo == CuPo) return;

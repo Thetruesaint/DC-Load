@@ -6,6 +6,7 @@
 enum class ActionType : uint8_t {
   None = 0,
   EncoderDelta,
+  EncoderButtonPress,
   KeyPressed,
   LoadToggle
 };

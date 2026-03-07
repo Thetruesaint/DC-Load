@@ -24,12 +24,8 @@ void applyEncoderStep(int direction) {
     g_state.encoderPositionRaw -= g_state.encoderStep;
   }
 
-  if (g_state.encoderPositionRaw < 0.0f) {
-    g_state.encoderPositionRaw = 0.0f;
-  }
-  if (g_state.encoderPositionRaw > g_state.encoderMaxRaw) {
-    g_state.encoderPositionRaw = g_state.encoderMaxRaw;
-  }
+  if (g_state.encoderPositionRaw < 0.0f) g_state.encoderPositionRaw = 0.0f;
+  if (g_state.encoderPositionRaw > g_state.encoderMaxRaw) g_state.encoderPositionRaw = g_state.encoderMaxRaw;
 }
 
 void clampCursorByMode() {
@@ -41,6 +37,17 @@ void clampCursorByMode() {
 
   if (g_state.cursorPosition < CPCR_CURSOR_MIN) g_state.cursorPosition = CPCR_CURSOR_MIN;
   if (g_state.cursorPosition > CPCR_CURSOR_MAX) g_state.cursorPosition = CPCR_CURSOR_MAX;
+}
+
+void advanceCursorByMode() {
+  if (g_state.mode == MODE_CC) {
+    g_state.cursorPosition++;
+    if (g_state.cursorPosition > CC_CURSOR_MAX) g_state.cursorPosition = CC_CURSOR_MIN;
+    return;
+  }
+
+  g_state.cursorPosition++;
+  if (g_state.cursorPosition > CPCR_CURSOR_MAX) g_state.cursorPosition = CPCR_CURSOR_MIN;
 }
 }
 
@@ -58,6 +65,12 @@ void core_dispatch(const UserAction &action) {
       g_state.lastEncoderDelta = action.value;
       if (modeUsesSetpointCursor(g_state.mode)) {
         applyEncoderStep((action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+      }
+      break;
+
+    case ActionType::EncoderButtonPress:
+      if (modeUsesSetpointCursor(g_state.mode)) {
+        advanceCursorByMode();
       }
       break;
 
