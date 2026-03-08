@@ -2,6 +2,9 @@
 
 #include "../variables.h"
 #include "../funciones.h"
+#include "../app/app_load_context.h"
+#include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_context.h"
 
 void legacy_temp_control() {
   static unsigned long fan_on_time = 0;
@@ -64,10 +67,10 @@ void legacy_check_limits() {
 
   if (strlen(message) > 0) {
     Load_OFF();
-    reading = 0;
-    encoderPosition = 0;
+    app_setpoint_set_reading(0.0f);
+    app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
-    setCurrent = 0;
+    app_load_set_set_current_mA(0.0f);
     for (int i = 0; i < 6; i++) {
       printLCD_S(0, 3, message);
       if (vlimit) {
