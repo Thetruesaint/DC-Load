@@ -14,37 +14,21 @@
 #include "legacy/legacy_mode_transient.h"
 #include "legacy/legacy_mode_limits.h"
 #include "legacy/legacy_timing_buzzer.h"
+#include "legacy/legacy_base_io.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
-  #ifndef WOKWI_SIMULATION
-  dac.setVoltage( 0, false);    // Corta inmediatamente.
-  toggle = false;               // Flag off
-  setCurrent = 0;               // Resetea por las dudas.
-  #else
-  toggle = false;               // Flag off
-  setCurrent = 0;               // Resetea por las dudas.
-  #endif
+  legacy_load_off();
 }
 
 //---------------------------- Encoder Status -------------------------------------
 void Encoder_Status(bool encOnOff, float limit) {
-  if (encOnOff) {
-    CuPo = 8;                              // Posición inicial del cursor
-    reading = 0;
-    encoderPosition = 0;                   // Reinicia tu variable lógica
-    maxReading = limit;
-    maxEncoder = maxReading * 1000;        // Escala idéntica a la original
-
-    encoder.clearCount();
-  } else {
-    encoder.clearCount();                 // Ver si hay otra forma de detener el encoder
-  }
+  legacy_encoder_status(encOnOff, limit);
 }
 
 //---------------------------- Encoder Decoder ------------------------------------
 void Read_Encoder() {
-  app_read_encoder();
+  legacy_read_encoder();
 }
 
 //---------------------------- Read Keypad Input ----------------------------------
@@ -135,121 +119,12 @@ void Check_Limits() {
 
 //------------------------------- Cursor Position -----------------------------------
 void Cursor_Position(void) {
-  static uint32_t lastPressTime = 0;  // Para evitar bloqueo por delay()
-  constexpr int unitPosition = 8;     // Posicion base del cursor.
-  static int last_CuPo = -1;          // Posicion previa del cursor
-
-  // Verifica boton del encoder y delega al core en modos ya desacoplados.
-  if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
-      lastPressTime = millis();
-      if (core_mode_is_managed(static_cast<uint8_t>(Mode))) {
-        app_push_action(ActionType::EncoderButtonPress, 0, '\0');
-      } else {
-        CuPo++;  // Legacy para modos aun no desacoplados.
-      }
-  }
-
-  if (last_CuPo == CuPo) return;
-
-  // En modos gestionados por core, cursor/factor se normalizan en core.
-  if (core_mode_is_managed(static_cast<uint8_t>(Mode))) {
-    last_CuPo = CuPo;
-    setCursorLCD(CuPo, 2);
-    return;
-  }
-
-  // Saltar el punto decimal
-  if (CuPo > last_CuPo && CuPo == unitPosition + 1) CuPo++;
-  if (CuPo < last_CuPo && CuPo == unitPosition + 1) CuPo--;
-
-  // Volver a la posicion inicial si excede el rango permitido
-  if ((Mode == CC || Mode == BC || Mode == CA) && CuPo > 12) CuPo = unitPosition;
-  if ((Mode == CC || Mode == BC || Mode == CA) && CuPo < 8) CuPo = unitPosition + 4;
-  if ((Mode == CP || Mode == CR) && CuPo > 10) CuPo = unitPosition - 2;
-  if ((Mode == CP || Mode == CR) && CuPo < 6) CuPo = unitPosition + 2;
-
-  // Asignar factor segun la posicion del cursor y el modo
-  switch (CuPo) {
-      case 6:   factor = 100000;  break;  // Centenas (Solo CP y CR)
-      case 7:   factor = 10000;   break;  // Decenas (Solo CP y CR)
-      case 10:  factor = 100;     break;  // Decimas
-      case 11:  factor = 10;      break;  // Centesimas (Solo CC, BC y CA)
-      case 12:  factor = 1;       break;  // Milesimas (Solo CC, BC y CA)
-      default:  factor = 1000;            // Unidades por defecto CuPo = 8
-  }
-  last_CuPo = CuPo;
-
-  setCursorLCD(CuPo, 2);
+  legacy_cursor_position();
 }
 
 //--------------------------- Read Voltage and Current ------------------------------
 void Read_Volts_Current(void) {
-
-  #ifndef WOKWI_SIMULATION
-
-  float raw_voltage;
-  float raw_current;
-
-  // static float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
-  // ads.setGain(GAIN_TWOTHIRDS);  // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
-  // ads.setGain(GAIN_ONE);        // 1x gain   +/- 4.096V  1 bit = 0.125mV
-  // ads.setGain(GAIN_FOUR);       // 4x gain   +/- 1.024V  1 bit = 0.03125mV
-  // ads.setGain(GAIN_EIGHT);      // 8x gain   +/- 0.512V  1 bit = 0.015625mV
-  // ads.setGain(GAIN_SIXTEEN);    // 16x gain  +/- 0.256V  1 bit = 0.0078125mV
-  
-  ads.setGain(GAIN_TWOTHIRDS);    // Setea ganancia a 2/3 para medir hasta +-6.144V ya que Opamp 741 esta a 5V
-  adcv = ads.readADC_SingleEnded(VLTG_SNSR);
-  raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT; // Factor de diseño para el ADC para 32V Max
-
-  voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;       // Calibracion fina de voltaje
-
-  ads.setGain(GAIN_ONE);          // Setea ganancia a 1x para medir hasta +-4.096V que sería IMAX 16A
-  adci = ads.readADC_SingleEnded(CRR_SNSR);
-  raw_current = ads.computeVolts(adci) * SNS_CURR_FACT; // Factor de diseño para Placa power V2 con Rshunt de 1ohm en cada Mosfet
-
-  current = raw_current  * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;      // Calibracion fina de corriente
-  
-  #else
-
-  // Simulación de Voltaje sensado
-
-  int potValue = analogRead(VSIM);  // Leer el potenciómetro en pin 33 para simular el voltaje de carga. Ajusta el pin según tu conexión.
-  static float simulatedVoltage = 0;  // Variable persistente para almacenar el voltage simulado
-  static unsigned long lastDecreaseTime = 0;  // Variable para medir el tiempo del último decremento
-  unsigned long currentMillis = millis();
-  
-  if (Mode != BC && Mode != CA){                               // Para todos los demas modos
-    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;  // Convertir el rango 0-1023 a 55V-0V
-    voltage = simulatedVoltage;                                // Asigna el valor de v simulado
-  }
-  else if (Mode == BC) { 
-    // En modo BC Si toggle es true, reduce el voltaje simulado en 0.01V. Luego ver si puede ser proporcional a la corriente
-    if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
-    lastDecreaseTime = currentMillis;               // Actualizar el último tiempo de decremento
-    simulatedVoltage -= 0.005;                      // Reducir el voltaje a medida que pasa el tiempo
-    simulatedVoltage = max(simulatedVoltage, 0.0f);  // Asegurar que no sea negativo
-    voltage = simulatedVoltage;                     // Asigna el valor de v simulado
-    }
-    else if (!toggle) {
-      simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;  // Convertir el rango 0-1023 a 55V-0V
-      voltage = simulatedVoltage; 
-    }
-  }
-  else if (Mode == CA){
-    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;              // Convertir el rango 0-1023 a 55V-0V
-    float error_voltage = simulatedVoltage * 1.05 - 0.1;                   // Asigna el valor de v simulado con error del 5% por arriba y offset
-    voltage = error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;  
-  }
-  
-  // Simulación de corriente sensada.
-
-  if (toggle) {
-    current = setCurrent / 1000;   // Lo pasa a Amperes.
-  } else {
-    current = 0;
-    }
-
-  #endif
+  legacy_read_volts_current();
 }
 
 //------------------------- DAC Control Voltage for Mosfet --------------------------
@@ -387,6 +262,7 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   return legacy_timer_get_time();
 }
+
 
 
 
