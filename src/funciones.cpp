@@ -1,6 +1,7 @@
 #include "variables.h"
 #include "funciones.h"
 #include "app/app_loop.h"
+#include "app/app_mode_keys.h"
 #include "core/core_modes.h"
 
 //----------------------------- Load ON Status ------------------------------------
@@ -984,27 +985,13 @@ void Reset_Input_Pointers (void){
 
 //------------------------------- Handle Mode Keys -----------------------------------
 bool Handle_MSC_Keys(char key) {
-  static bool shiftPressed = false;  // Bandera para detectar Shift
-
-  if (customKey == 'M') {   // Salir del modo si se presiona 'M'
-    noCursorLCD(); blinkOffLCD();
-    app_push_action(ActionType::ModeSelect, 0, '\0');
+  if (!app_handle_mode_hotkeys(key)) {
+    noCursorLCD();
+    blinkOffLCD();
     return false;
   }
 
-  else if (shiftPressed) {
-    shiftPressed = false;
-    app_push_action(ActionType::ModeSelect, 1, customKey); // Shift + tecla via core_dispatch
-    noCursorLCD(); blinkOffLCD();
-    return false;     // Mantiene el comportamiento actual: cualquier Shift+tecla sale del modo actual.
-  }
-
-  else if (customKey == 'S') { // Detectar Shift
-    shiftPressed = true;
-    return true; // Espera la próxima tecla
-  }
-
-  else if (customKey == 'C') {        // ojo que se puede llamar desde el mismo Config_Limits
+  if (key == 'C') {        // ojo que se puede llamar desde el mismo Config_Limits
     if (Mode != TC && Mode != TL) {
       Config_Limits();
     }
@@ -1071,5 +1058,6 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
 
 
