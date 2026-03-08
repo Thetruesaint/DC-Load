@@ -6,6 +6,7 @@
 #include "app_msc.h"
 #include "app_mode_context.h"
 #include "app_input_buffer.h"
+#include "app_runtime_context.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
 
@@ -25,26 +26,30 @@ void app_read_keypad(int col, int row) {
 
   if (key == 'U') {
     if (core_mode_is_managed(app_mode_id())) return;
-    encoderPosition = encoderPosition + factor;
-    encoderPosition = constrain(encoderPosition, 0, maxEncoder);
+    float encoderPosition = app_runtime_encoder_position();
+    encoderPosition = encoderPosition + app_runtime_encoder_step();
+    encoderPosition = constrain(encoderPosition, 0.0f, static_cast<float>(app_runtime_encoder_max()));
+    app_runtime_set_encoder_position(encoderPosition);
     return;
   }
 
   if (key == 'D') {
     if (core_mode_is_managed(app_mode_id())) return;
-    encoderPosition = encoderPosition - factor;
+    float encoderPosition = app_runtime_encoder_position();
+    encoderPosition = encoderPosition - app_runtime_encoder_step();
+    app_runtime_set_encoder_position(encoderPosition);
     return;
   }
 
   if (key == 'L') {
     if (core_mode_is_managed(app_mode_id())) return;
-    CuPo--;
+    app_runtime_set_cursor_position(app_runtime_cursor_position() - 1);
     return;
   }
 
   if (key == 'R') {
     if (core_mode_is_managed(app_mode_id())) return;
-    CuPo++;
+    app_runtime_set_cursor_position(app_runtime_cursor_position() + 1);
     return;
   }
 
@@ -62,7 +67,7 @@ void app_read_keypad(int col, int row) {
     x = app_input_parse_float();
     if (!app_mode_is_calibration()) {
       reading = x;
-      encoderPosition = reading * 1000;
+      app_runtime_set_encoder_position(reading * 1000.0f);
     } else {
       legacy_calibrate(x);
     }
