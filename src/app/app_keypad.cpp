@@ -1,6 +1,7 @@
 #include "app_keypad.h"
 
 #include "../funciones.h"
+#include "app_msc.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
 
@@ -12,7 +13,7 @@ void app_read_keypad(int col, int row) {
 
   app_push_action(ActionType::KeyPressed, 0, customKey);
 
-  if (!Handle_MSC_Keys(customKey)) {
+  if (!app_handle_msc_keys(customKey)) {
     return;
   }
 

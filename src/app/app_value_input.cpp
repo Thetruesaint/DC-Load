@@ -1,6 +1,7 @@
 #include "app_value_input.h"
 
 #include "../funciones.h"
+#include "app_msc.h"
 
 char app_wait_key_pressed() {
   char key;
@@ -24,7 +25,7 @@ bool app_value_input(int col, int row, int maxDigits, bool decimal) {
   while (true) {
     customKey = app_wait_key_pressed();
 
-    if (!Handle_MSC_Keys(customKey)) {
+    if (!app_handle_msc_keys(customKey)) {
       return false;
     }
 

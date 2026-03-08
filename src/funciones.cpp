@@ -1,7 +1,7 @@
 #include "variables.h"
 #include "funciones.h"
 #include "app/app_loop.h"
-#include "app/app_mode_keys.h"
+#include "app/app_msc.h"
 #include "app/app_keypad.h"
 #include "app/app_inputs.h"
 #include "app/app_value_input.h"
@@ -370,7 +370,7 @@ void Battery_Type_Selec() {
 while (true) {  // Bucle para evitar la salida accidental
     customKey = app_wait_key_pressed(); 
 
-    if (!Handle_MSC_Keys (customKey)) {return;};
+    if (!app_handle_msc_keys(customKey)) {return;};
 
     switch (customKey) {
         case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG; BatteryType = "Li-Po"; break;
@@ -847,25 +847,6 @@ void Reset_Input_Pointers (void){
   app_reset_input_pointers();
 }
 
-//------------------------------- Handle Mode Keys -----------------------------------
-bool Handle_MSC_Keys(char key) {
-  const bool configAllowed = (Mode != TC && Mode != TL);
-  switch (app_route_msc_key(key, configAllowed)) {
-    case MscKeyDecision::ExitMode:
-      noCursorLCD();
-      blinkOffLCD();
-      return false;
-
-    case MscKeyDecision::OpenConfig:
-      Config_Limits();
-      return true;
-
-    case MscKeyDecision::Continue:
-    default:
-      return true;
-  }
-}
-
 //------------------------------- Handle Buzzer --------------------------------------
 void beepBuzzer(void) {
   for (int i = 0; i < 2; i++) {   // Repetir dos veces
@@ -923,6 +904,9 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
+
+
 
 
 

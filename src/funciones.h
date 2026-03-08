@@ -48,7 +48,6 @@ void Check_Limits();
 void Temp_Control();
 void Reset_Input_Pointers();
 void Encoder_Status(bool encOnOff, float limit = 0);
-bool Handle_MSC_Keys(char key);
 void beepBuzzer(void);
 void Calibration_Mode(void);
 void Calibration_Setup(void);
@@ -57,4 +56,5 @@ void Test_Keypad();
 void Update_TFT(void);
 void printTFT_Number(int col, int row, float number, char unit = '\0', int decimals = 2);
 #endif
+
 
