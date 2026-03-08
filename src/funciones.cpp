@@ -13,6 +13,7 @@
 #include "legacy/legacy_mode_ca.h"
 #include "legacy/legacy_mode_transient.h"
 #include "legacy/legacy_mode_limits.h"
+#include "legacy/legacy_timing_buzzer.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -363,60 +364,28 @@ void Reset_Input_Pointers (void){
 
 //------------------------------- Handle Buzzer --------------------------------------
 void beepBuzzer(void) {
-  for (int i = 0; i < 2; i++) {   // Repetir dos veces
-      digitalWrite(BUZZER, HIGH); // Encender el buzzer  
-      delay(150);                 // Pausa entre los pitidos
-      digitalWrite(BUZZER, LOW);  // Encender el buzzer  
-      delay(150);                 // Pausa entre los pitidos
-  }
+  legacy_beep_buzzer();
 }
 
 //-------------------------- Funciones para el Timer (RTC) ---------------------------
 void timer_start() {
-  if (!mytimerStarted) {
-    startTime = rtc.now();        // Toma referencia de tiempo
-    mytimerStarted = true;          // flag de que inició el cronometro
-  }
+  legacy_timer_start();
 }
 
 void timer_stop() {
-  if (mytimerStarted) {
-    DateTime now = rtc.now();
-    TimeSpan elapsedTime = now - startTime;
-    elapsedSeconds += elapsedTime.totalseconds();
-    mytimerStarted = false;
-  }
+  legacy_timer_stop();
 }
 
 void timer_reset() {
-  elapsedSeconds = 0.0;
-  mytimerStarted = false;
+  legacy_timer_reset();
 }
 
 float timer_getTotalSeconds() {
-  if (mytimerStarted) {
-    DateTime now = rtc.now();
-    TimeSpan elapsedTime = now - startTime;
-    return elapsedSeconds + elapsedTime.totalseconds();
-  }
-  else { return elapsedSeconds; }
+  return legacy_timer_get_total_seconds();
 }
 
 String timer_getTime() {
-  int totalSeconds = static_cast<int>(timer_getTotalSeconds());
-
-  int minutes = (totalSeconds / 60);
-  int seconds = (totalSeconds % 60);
-
-  String formattedTime = "";
-
-  if (minutes < 10) { formattedTime += "0"; }
-  formattedTime += String(minutes) + ":";
-
-  if (seconds < 10) { formattedTime += "0"; }
-  formattedTime += String(seconds);
-
-  return formattedTime;
+  return legacy_timer_get_time();
 }
 
 
