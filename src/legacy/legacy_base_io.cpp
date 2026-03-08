@@ -3,6 +3,7 @@
 #include "../variables.h"
 #include "../funciones.h"
 #include "../app/app_inputs.h"
+#include "../app/app_io_context.h"
 #include "../app/app_loop.h"
 #include "../app/app_mode_context.h"
 #include "../app/app_runtime_context.h"
@@ -45,9 +46,10 @@ void legacy_cursor_position() {
   int cursor = app_runtime_cursor_position();
   const uint8_t mode = app_mode_id();
   const bool managedMode = core_mode_is_managed(mode);
+  const uint32_t nowMs = app_io_millis();
 
-  if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
-    lastPressTime = millis();
+  if (app_io_encoder_button_low() && (nowMs - lastPressTime > 200)) {
+    lastPressTime = nowMs;
     if (managedMode) {
       app_push_action(ActionType::EncoderButtonPress, 0, '\0');
     } else {
@@ -110,7 +112,7 @@ void legacy_read_volts_current() {
   int potValue = analogRead(VSIM);
   static float simulatedVoltage = 0;
   static unsigned long lastDecreaseTime = 0;
-  unsigned long currentMillis = millis();
+  unsigned long currentMillis = app_io_millis();
 
   if (Mode != BC && Mode != CA) {
     simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
