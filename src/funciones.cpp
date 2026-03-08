@@ -12,6 +12,7 @@
 #include "legacy/legacy_mode_bc.h"
 #include "legacy/legacy_mode_ca.h"
 #include "legacy/legacy_mode_transient.h"
+#include "legacy/legacy_mode_limits.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -332,61 +333,12 @@ void Transient_List_Timing(void) {
 //------------------------------ User set up for limits ------------------------------
 void Config_Limits(void)
 {
-  Load_OFF();            // Apaga la carga
-  Show_Limits();         // Muestra los actuales
-  delay(2000);
-  clearLCD();
-
-  printLCD(4, 0, F("Set Limits"));
-  printLCD(0, 1, F("Current(A):"));
-  z = 12; r = 1;
-  if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 9.999 o 10.00 salir del Modo
-  CurrentCutOff = constrain(x, 1, MAX_CURRENT);   // Límite entre 1.000A y 10.00A
-  printLCDNumber(z, r, CurrentCutOff,' ',3);printLCDRaw(F("A")); // A normal porque es valor fijo.
-  
-  printLCD(0, 2, F("Power(W):"));
-  r = 2; z = 12;
-  if (!Value_Input(z, r)) return;                 // 5 digitos, ej.: 1.234, 50.00 o 300.0 salir del Modo
-  PowerCutOff = constrain(x, 1, MAX_POWER);       // Límite entre 1.000W y 300.0W
-  printLCDNumber(z, r, PowerCutOff, 'W',1);
- 
-  printLCD(0, 3, F("Temp.("));
-  printLCD_S(6, 3, String((char)0xDF) + "C):");
-  z = 12; r = 3;
-  if (!Value_Input(z, r, 2)) return;              // Permitir 2 digitos, ej.: 10 a 99 o salir del Modo
-  tempCutOff = constrain(x, 30.0, MAX_TEMP);      // Límite entre 30°C y 99°C  
-  printLCD_S(z, r, String(tempCutOff));
-
-  Save_EEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
-  Save_EEPROM(ADD_POWER_CUT_OFF, PowerCutOff);
-  Save_EEPROM(ADD_TEMP_CUT_OFF, tempCutOff);
-
-  Show_Limits();
-  delay(2000);
-  modeInitialized = false;   // Pero lo inicializa. Ojo con los modos no preparados para esto como BC, TC y TL
+  legacy_config_limits();
 }
 
 //----------------- Show limits Stored Data for Current, Power and Temp --------------
 void Show_Limits(void) {
-  clearLCD();
-  
-  #ifndef WOKWI_SIMULATION
-  // Los lee de la EEPROM
-  CurrentCutOff = Load_EEPROM(ADD_CURRENT_CUT_OFF);
-  PowerCutOff = Load_EEPROM(ADD_POWER_CUT_OFF);
-  tempCutOff = Load_EEPROM(ADD_TEMP_CUT_OFF);
-  #else
-  #endif
-  // Los muestra
-  printLCD(1, 0, F("Limits")); // Muestra el titulo
-  printLCD(0, 1, F("Current:"));
-  // 3 decimales, ej.: 1.234, 9.999 o 10.00
-  printLCDNumber(9, 1, CurrentCutOff,' ',3);printLCDRaw(F("A")); // A normal porque es valor fijo.
-  printLCD(0, 2, F("Power:"));
-  printLCDNumber(9, 2, PowerCutOff, 'W', 2);    // 2 decimales, ej.: 1.234, 50.00 o 300.0
-  printLCD(0, 3, F("Temp.:"));
-  printLCDNumber(9, 3, tempCutOff, ' ', 0);     // 0 decimales, ej.: 10 a 99
-  printLCDRaw(char(0xDF)); printLCDRaw("C");
+  legacy_show_limits();
 }
 
 //--------------------------------- Calibration Mode ---------------------------------
@@ -466,6 +418,7 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
 
 
 
