@@ -5,6 +5,11 @@
 #include "../funciones.h"
 #include "../app/app_msc.h"
 #include "../app/app_value_input.h"
+#include "../app/app_io_context.h"
+#include "../app/app_load_context.h"
+#include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_context.h"
+#include "../app/app_value_result_context.h"
 
 void legacy_battery_mode() {
   if (!modeConfigured) {
@@ -52,13 +57,13 @@ void legacy_battery_type_selec() {
   printLCD(2, 3, F("5)Cutoff Voltage"));
 
   while (true) {
-    customKey = app_wait_key_pressed();
+    const char key = app_wait_key_pressed();
 
-    if (!app_handle_msc_keys(customKey)) {
+    if (!app_handle_msc_keys(key)) {
       return;
     }
 
-    switch (customKey) {
+    switch (key) {
       case '1':
         BatteryCutoffVolts = LIPO_STOR_CELL_VLTG;
         BatteryType = "Li-Po";
@@ -90,6 +95,7 @@ void legacy_battery_type_selec() {
     printLCD(2, 1, F("Voltage Cutoff?"));
     printLCD(5, 2, F("(0.1-25)V"));
 
+    float inputValue = 0.0f;
     do {
       z = 7;
       r = 3;
@@ -99,9 +105,10 @@ void legacy_battery_type_selec() {
       if (!Value_Input(z, r)) {
         return;
       }
-    } while (x > 25 || x < 0.1);
+      inputValue = app_value_result_get();
+    } while (inputValue > 25 || inputValue < 0.1f);
 
-    BatteryCutoffVolts = x;
+    BatteryCutoffVolts = inputValue;
   }
 
   if (BatteryType != "Custom") {
@@ -109,6 +116,7 @@ void legacy_battery_type_selec() {
     printLCD_S(3, 0, BatteryType + " Batt");
     printLCD(6, 1, F("(1-6)S?"));
 
+    float inputValue = 0.0f;
     do {
       z = 9;
       r = 2;
@@ -117,9 +125,10 @@ void legacy_battery_type_selec() {
       if (!Value_Input(z, r, 1, false)) {
         return;
       }
-    } while (x < 1 || x > 6);
+      inputValue = app_value_result_get();
+    } while (inputValue < 1 || inputValue > 6);
 
-    BatteryCutoffVolts *= x;
+    BatteryCutoffVolts *= inputValue;
   }
 
   modeConfigured = true;
@@ -128,13 +137,13 @@ void legacy_battery_type_selec() {
 
 bool legacy_battery_capacity() {
   float LoadCurrent = 0;
-  unsigned long currentMillis = millis();
+  const unsigned long currentMillis = app_io_millis();
   static unsigned long lastUpdate = 0;
 
-  if (toggle && voltage >= BatteryCutoffVolts && !mytimerStarted) {
+  if (app_load_is_enabled() && voltage >= BatteryCutoffVolts && !mytimerStarted) {
     timer_start();
   }
-  if (!toggle && voltage >= BatteryCutoffVolts && mytimerStarted) {
+  if (!app_load_is_enabled() && voltage >= BatteryCutoffVolts && mytimerStarted) {
     timer_stop();
   }
 
@@ -148,27 +157,30 @@ bool legacy_battery_capacity() {
     BatteryLife += (LoadCurrent * 1000) / 7200;
   }
 
-  reading = encoderPosition / 1000;
-  reading = min(maxReading, max(0.0f, reading));
-  encoderPosition = reading * 1000.0;
+  float readingValue = app_runtime_encoder_position() / 1000.0f;
+  readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
+  app_setpoint_set_reading(readingValue);
+  app_runtime_set_encoder_position(readingValue * 1000.0f);
 
-  if (!toggle) {
+  if (!app_load_is_enabled()) {
     return false;
   }
 
-  setCurrent = reading * 1000;
+  app_load_set_set_current_mA(readingValue * 1000.0f);
 
   if (voltage <= BatteryCutoffVolts) {
-    setCurrent = max(setCurrent - CRR_STEP_RDCTN, MIN_DISC_CURR);
-    reading = setCurrent / 1000;
-    encoderPosition = reading * 1000;
+    const float nextCurrent = max(app_load_set_current_mA() - CRR_STEP_RDCTN, MIN_DISC_CURR);
+    app_load_set_set_current_mA(nextCurrent);
+    readingValue = app_load_set_current_mA() / 1000.0f;
+    app_setpoint_set_reading(readingValue);
+    app_runtime_set_encoder_position(readingValue * 1000.0f);
   }
 
   if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) {
     BatteryCurrent = current;
-    reading = 0;
-    encoderPosition = 0;
-    setCurrent = 0;
+    app_setpoint_set_reading(0.0f);
+    app_runtime_set_encoder_position(0.0f);
+    app_load_set_set_current_mA(0.0f);
     encoder.clearCount();
     Load_OFF();
     timer_stop();
