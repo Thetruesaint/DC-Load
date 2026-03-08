@@ -5,43 +5,44 @@
 #include "../legacy/legacy_hooks.h"
 #include "app_msc.h"
 #include "app_mode_context.h"
+#include "app_input_buffer.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
 
 void app_read_keypad(int col, int row) {
   int maxDigits = app_mode_is_calibration() ? 6 : 5;
-  customKey = customKeypad.getKey();
+  char key = app_input_read_key();
 
-  if (customKey == NO_KEY) return;
+  if (key == NO_KEY) return;
 
-  app_push_action(ActionType::KeyPressed, 0, customKey);
+  app_push_action(ActionType::KeyPressed, 0, key);
 
-  if (!app_handle_msc_keys(customKey)) {
+  if (!app_handle_msc_keys(key)) {
     return;
   }
 
   if (app_mode_is_transient()) return;
 
-  if (customKey == 'U') {
+  if (key == 'U') {
     if (core_mode_is_managed(app_mode_id())) return;
     encoderPosition = encoderPosition + factor;
     encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     return;
   }
 
-  if (customKey == 'D') {
+  if (key == 'D') {
     if (core_mode_is_managed(app_mode_id())) return;
     encoderPosition = encoderPosition - factor;
     return;
   }
 
-  if (customKey == 'L') {
+  if (key == 'L') {
     if (core_mode_is_managed(app_mode_id())) return;
     CuPo--;
     return;
   }
 
-  if (customKey == 'R') {
+  if (key == 'R') {
     if (core_mode_is_managed(app_mode_id())) return;
     CuPo++;
     return;
@@ -49,21 +50,16 @@ void app_read_keypad(int col, int row) {
 
   if (app_mode_is_battery()) return;
 
-  if (customKey >= '0' && customKey <= '9' && c_index < maxDigits) {
-    printLCD_S(col + c_index, row, String(customKey));
-    numbers[c_index++] = customKey;
-    numbers[c_index] = '\0';
+  if (app_input_append_digit(key, maxDigits)) {
+    printLCD_S(col + app_input_length() - 1, row, String(key));
   }
 
-  if (customKey == '.' && decimalPoint != '*' && c_index < maxDigits) {
-    printLCD(col + c_index, 3, F("."));
-    numbers[c_index++] = '.';
-    numbers[c_index] = '\0';
-    decimalPoint = '*';
+  if (key == '.' && app_input_append_decimal(maxDigits)) {
+    printLCD(col + app_input_length() - 1, 3, F("."));
   }
 
-  if (customKey == 'E' && c_index != 0) {
-    x = atof(numbers);
+  if (key == 'E' && app_input_length() != 0) {
+    x = app_input_parse_float();
     if (!app_mode_is_calibration()) {
       reading = x;
       encoderPosition = reading * 1000;
@@ -74,11 +70,7 @@ void app_read_keypad(int col, int row) {
     legacy_reset_input_pointers();
   }
 
-  if (customKey == '<' && c_index > 0) {
-    c_index--;
-    if (numbers[c_index] == '.') decimalPoint = ' ';
-    numbers[c_index] = '\0';
-    Print_Spaces(col + c_index, row);
+  if (key == '<' && app_input_backspace()) {
+    Print_Spaces(col + app_input_length(), row);
   }
 }
-

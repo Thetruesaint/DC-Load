@@ -3,19 +3,14 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "app_msc.h"
+#include "app_input_buffer.h"
 
 char app_wait_key_pressed() {
-  char key;
-  do {
-    key = customKeypad.getKey();
-  } while (key == NO_KEY);
-  return key;
+  return app_input_wait_key();
 }
 
 void app_reset_input_pointers() {
-  c_index = 0;
-  numbers[c_index] = '\0';
-  decimalPoint = ' ';
+  app_input_reset();
 }
 
 bool app_value_input(int col, int row, int maxDigits, bool decimal) {
@@ -24,38 +19,29 @@ bool app_value_input(int col, int row, int maxDigits, bool decimal) {
   blinkOnLCD();
 
   while (true) {
-    customKey = app_wait_key_pressed();
+    char key = app_wait_key_pressed();
 
-    if (!app_handle_msc_keys(customKey)) {
+    if (!app_handle_msc_keys(key)) {
       return false;
     }
 
-    if (customKey >= '0' && customKey <= '9') {
-      if (c_index < maxDigits) {
-        numbers[c_index++] = customKey;
-        numbers[c_index] = '\0';
-      }
-    } else if (customKey == '.' && decimalPoint != '*' && decimal) {
-      if (c_index < maxDigits) {
-        numbers[c_index++] = '.';
-        numbers[c_index] = '\0';
-        decimalPoint = '*';
-      }
-    } else if (customKey == '<' && c_index > 0) {
-      c_index--;
-      if (numbers[c_index] == '.') decimalPoint = ' ';
-      numbers[c_index] = '\0';
-    } else if (customKey == 'E') {
-      if (c_index > 0) {
-        x = atof(numbers);
-        app_reset_input_pointers();
-        noCursorLCD();
-        blinkOffLCD();
-        return true;
-      }
+    bool handled = app_input_append_digit(key, maxDigits);
+    if (!handled && key == '.' && decimal) {
+      handled = app_input_append_decimal(maxDigits);
+    }
+    if (!handled && key == '<') {
+      handled = app_input_backspace();
+    }
+
+    if (!handled && key == 'E' && app_input_length() > 0) {
+      x = app_input_parse_float();
+      app_reset_input_pointers();
+      noCursorLCD();
+      blinkOffLCD();
+      return true;
     }
 
     printLCD_S(col, row, String("     ").substring(0, maxDigits));
-    printLCD_S(col, row, String(numbers));
+    printLCD_S(col, row, String(app_input_text()));
   }
 }
