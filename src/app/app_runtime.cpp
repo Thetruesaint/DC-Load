@@ -1,17 +1,22 @@
 #include "app_runtime.h"
 
-#include "../funciones.h"
+#include "../legacy/legacy_base_io.h"
+#include "../legacy/legacy_dac_control.h"
 #include "../legacy/legacy_hooks.h"
+#include "../legacy/legacy_safety_control.h"
+#include "../ui_lcd.h"
+#include "app_inputs.h"
+#include "app_keypad.h"
 #include "app_loop.h"
 
 void app_run_cycle() {
-  Temp_Control();
-  Read_Encoder();
-  Read_Keypad();
-  Read_Load_Button();
-  Read_Volts_Current();
-  Check_Limits();
-  DAC_Control();
+  legacy_temp_control();
+  legacy_read_encoder();
+  app_read_keypad(1, 3);
+  app_read_load_button();
+  legacy_read_volts_current();
+  legacy_check_limits();
+  legacy_dac_control();
 
   legacy_run_mode_logic();
 
