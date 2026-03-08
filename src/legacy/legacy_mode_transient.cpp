@@ -3,6 +3,8 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../app/app_load_context.h"
+#include "../app/app_value_result_context.h"
 
 void legacy_transient_cont_mode() {
   if (!modeConfigured) {
@@ -38,7 +40,7 @@ void legacy_transient_cont_mode() {
     }
 
     printLCD(13, 3, F("mSecs"));
-    setCurrent = 0;
+    app_load_set_set_current_mA(0.0f);
     modeInitialized = true;
     Encoder_Status(false);
   }
@@ -59,21 +61,21 @@ void legacy_transient_cont_setup() {
   if (!Value_Input(z, r)) {
     return;
   }
-  LowCurrent = min(x, CurrentCutOff);
+  LowCurrent = min(app_value_result_get(), CurrentCutOff);
   printLCDNumber(z, r, LowCurrent, 'A', 3);
 
   r = 2;
   if (!Value_Input(z, r)) {
     return;
   }
-  HighCurrent = min(x, CurrentCutOff);
+  HighCurrent = min(app_value_result_get(), CurrentCutOff);
   printLCDNumber(z, r, HighCurrent, 'A', 3);
 
   r = 3;
   if (!Value_Input(z, r, 5, false)) {
     return;
   }
-  transientPeriod = x;
+  transientPeriod = static_cast<unsigned long>(app_value_result_get());
 
   clearLCD();
   modeConfigured = true;
@@ -84,7 +86,7 @@ void legacy_transcient_cont_timing() {
   static unsigned long last_time = 0;
   static bool transient_cont_toggle = false;
 
-  if (!toggle) {
+  if (!app_load_is_enabled()) {
     last_time = 0;
     transient_cont_toggle = false;
     return;
@@ -96,9 +98,9 @@ void legacy_transcient_cont_timing() {
     last_time = current_time;
 
     if (!transient_cont_toggle) {
-      setCurrent = LowCurrent * 1000;
+      app_load_set_set_current_mA(LowCurrent * 1000.0f);
     } else {
-      setCurrent = HighCurrent * 1000;
+      app_load_set_set_current_mA(HighCurrent * 1000.0f);
     }
 
     transient_cont_toggle = !transient_cont_toggle;
@@ -141,6 +143,7 @@ void legacy_transient_list_setup() {
   printLCD(3, 0, F("TRANSIENT LIST"));
   printLCD(4, 1, F("Steps(2-10)?"));
 
+  float stepsInput = 0.0f;
   do {
     z = 9;
     r = 2;
@@ -149,9 +152,10 @@ void legacy_transient_list_setup() {
     if (!Value_Input(z, r, 2, false)) {
       return;
     }
-  } while (x < 2 || x > 10);
+    stepsInput = app_value_result_get();
+  } while (stepsInput < 2.0f || stepsInput > 10.0f);
 
-  total_steps = x - 1;
+  total_steps = static_cast<int>(stepsInput) - 1;
 
   clearLCD();
   for (int i = 0; i <= total_steps; i++) {
@@ -165,20 +169,20 @@ void legacy_transient_list_setup() {
     if (!Value_Input(z, r)) {
       return;
     }
-    x = min(x, CurrentCutOff);
-    printLCDNumber(z, r, x, 'A', 3);
-    transientList[i][0] = x * 1000;
+    const float currentInput = min(app_value_result_get(), CurrentCutOff);
+    printLCDNumber(z, r, currentInput, 'A', 3);
+    transientList[i][0] = static_cast<unsigned long>(currentInput * 1000.0f);
 
     z = 13;
     r = 3;
     if (!Value_Input(z, r, 5, false)) {
       return;
     }
-    transientList[i][1] = x;
+    transientList[i][1] = static_cast<unsigned long>(app_value_result_get());
     clearLCD();
   }
 
-  setCurrent = 0;
+  app_load_set_set_current_mA(0.0f);
   current_step = 0;
   transientPeriod = transientList[current_step][1];
   modeConfigured = true;
@@ -188,7 +192,7 @@ void legacy_transient_list_setup() {
 void legacy_transient_list_timing() {
   static unsigned long last_time = 0;
 
-  if (!toggle) {
+  if (!app_load_is_enabled()) {
     current_step = 0;
     last_time = 0;
     transientPeriod = transientList[current_step][1];
@@ -198,7 +202,7 @@ void legacy_transient_list_timing() {
   current_time = micros();
 
   if (last_time == 0) {
-    setCurrent = transientList[current_step][0];
+    app_load_set_set_current_mA(static_cast<float>(transientList[current_step][0]));
     transientPeriod = transientList[current_step][1];
     last_time = current_time;
   }
@@ -208,7 +212,7 @@ void legacy_transient_list_timing() {
     if (current_step > total_steps) {
       current_step = 0;
     }
-    setCurrent = transientList[current_step][0];
+    app_load_set_set_current_mA(static_cast<float>(transientList[current_step][0]));
     transientPeriod = transientList[current_step][1];
     last_time = current_time;
   }
