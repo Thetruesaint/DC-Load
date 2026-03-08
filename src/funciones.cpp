@@ -4,6 +4,7 @@
 #include "app/app_mode_keys.h"
 #include "app/app_keypad.h"
 #include "app/app_inputs.h"
+#include "app/app_value_input.h"
 #include "core/core_modes.h"
 
 //----------------------------- Load ON Status ------------------------------------
@@ -48,50 +49,8 @@ void Read_Load_Button(void) {
   app_read_load_button();
 }
 //----------------------- Key input used for UserSetUp ------------------------------- 
-bool Value_Input(int col, int row, int maxDigits, bool decimal) {  
-  
-  //static bool shiftPressed = false;
-
-  Reset_Input_Pointers();         // Resetea los valores de entrada
-  setCursorLCD(col, row);        // Ubica el cursor en la posición especificada
-   blinkOnLCD();   // Muestra el cursor para la entrada
-
-  while (true) { 
-      customKey = Wait_Key_Pressed(); // Leer entrada de teclado
-
-      if (!Handle_MSC_Keys (customKey)) {return false;};
-
-      if (customKey >= '0' && customKey <= '9') { 
-        if (c_index < maxDigits) { 
-          numbers[c_index++] = customKey;
-          numbers[c_index] = '\0'; 
-        }
-      } 
-      else if (customKey == '.' && decimalPoint != '*' && decimal) {  // solo si esta habilitado
-        if (c_index < maxDigits) {
-          numbers[c_index++] = '.';
-          numbers[c_index] = '\0';
-          decimalPoint = '*'; 
-        }
-      } 
-      else if (customKey == '<' && c_index > 0) { // Borrar último carácter ingresado
-          c_index--;  
-          if (numbers[c_index] == '.') decimalPoint = ' '; 
-          numbers[c_index] = '\0';
-      } 
-      else if (customKey == 'E') {  // Confirmar entrada
-          if (c_index > 0) {  
-              x = atof(numbers); 
-              Reset_Input_Pointers();  
-              noCursorLCD(); blinkOffLCD();
-              return true;  
-          }
-      }
-
-      // Borra para evitar residuos en pantalla
-      printLCD_S(col, row, String("     ").substring(0, maxDigits));
-      printLCD_S(col, row, String(numbers)); 
-  }
+bool Value_Input(int col, int row, int maxDigits, bool decimal) {
+  return app_value_input(col, row, maxDigits, decimal);
 }
 
 //---------------------------- Temperature Control ----------------------------------
@@ -894,9 +853,7 @@ char Wait_Key_Pressed() {
 
 //------------------------------- Reset Input Pointers --------------------------------
 void Reset_Input_Pointers (void){
-  c_index = 0;
-  numbers[c_index] = '\0';
-  decimalPoint = ' ';
+  app_reset_input_pointers();
 }
 
 //------------------------------- Handle Mode Keys -----------------------------------
@@ -975,6 +932,7 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
 
 
 
