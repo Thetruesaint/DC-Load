@@ -15,6 +15,7 @@
 #include "legacy/legacy_mode_limits.h"
 #include "legacy/legacy_timing_buzzer.h"
 #include "legacy/legacy_base_io.h"
+#include "legacy/legacy_safety_control.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -47,74 +48,12 @@ bool Value_Input(int col, int row, int maxDigits, bool decimal) {
 
 //---------------------------- Temperature Control ----------------------------------
 void Temp_Control(void) {
-
-  static unsigned long fan_on_time = 0;  // Tiempo de encendido del ventilador
-  static unsigned long last_tmpchk = 0;  // Última vez que se chequeó la temperatura
-  static bool fans_on = false;           // Estado del ventilador
-
-  unsigned long currentMillis = millis(); 
-  if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) return; // Solo cada TMP_CHK_TIME milisegundos
-  
-  last_tmpchk = currentMillis;                              // Actualizar el momento de chequeo de temperatura
-
-  temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR;    // Convertir a Celsius
-
-  if (temp >= 40) {
-    if (!fans_on) { // Solo encender si está apagado
-      digitalWrite(FAN_CTRL, HIGH);
-      fans_on = true;
-    }
-    fan_on_time = currentMillis; // Actualizar el tiempo de encendido
-  } else if (fans_on && (currentMillis - fan_on_time) >= FAN_ON_DRTN) { // lo mantiene encendido por un tiempo, sino flickea el cooler
-    digitalWrite(FAN_CTRL, LOW);
-    fans_on = false;
-  }
-  // Actualiza la Temperatura solo cuando la chequea
-  setCursorLCD( 16, 0);
-  if (temp < 10){printLCDRaw(" ");}
-  printLCDRaw(temp);
-  printLCDRaw(char(0xDF)); printLCDRaw("C");
+  legacy_temp_control();
 }
 
 //--------------------------- Check and Enforce Limits ------------------------------
 void Check_Limits() {
-  char message[20] = "";
-  float power = voltage * current;                       // Estima la potencia disipada en los MOSFET pero sin contar las Rshunt de cada Mosfet
-  float maxpwrdis = constrain(249 - 1.4 * temp, 0, 214); // Limite por MOSFET IRFP250N, resumida de 214 - 1.4 * (temp - 25)
-  float actpwrdis = max(0.0f, power / 4);                // Por los 4 MOSFET IRFP250N
-  bool vlimit = false;
-  bool ilimit = false;
-  bool plimit = false;
-  bool climit = false;
-
-  if (voltage > MAX_VOLTAGE) {strcpy(message, "Max Voltage!      "); vlimit = true;}
-  else if (current > CurrentCutOff * 1.01) {strcpy(message, "Current Cut Off!  "); ilimit = true;} // 1% adicional (Toleración de Calibración máxima)
-  else if (power > PowerCutOff) {strcpy(message, "Power Cut Off!    "); plimit = true;}
-  else if (temp > tempCutOff) {strcpy(message, "Over Temperature! "); climit = true;}
-  else if (actpwrdis >= maxpwrdis) strcpy(message, "Max PWR Disipation");
-
-  if (strlen(message) > 0){
-    Load_OFF();                         // Si hubo mensaje, apagar la carga ASAP.
-    reading = 0; encoderPosition = 0;   // Reset de inputs
-    encoder.clearCount();
-    setCurrent = 0;                     // Todo a 0 para asegurar el apagado
-    for (int i = 0; i < 6; i++) {       // Parpaderá el mensaje tres veces
-      printLCD_S(0, 3, message);
-      if (vlimit){Print_Spaces(12, 1);}
-      else if(ilimit){Print_Spaces(5, 1);}
-      else if(plimit){Print_Spaces(19, 1);}
-      else if(climit){Print_Spaces(19,0);}
-      delay(250);
-      Print_Spaces(0, 3, 18);
-      if (vlimit){setCursorLCD(12,1); printLCDRaw(F("v"));}
-      else if(ilimit){setCursorLCD(5,1); writeLCD(byte(0));}
-      else if(plimit){setCursorLCD(19,1); printLCDRaw(F("w"));}
-      else if(climit){setCursorLCD(19,0); printLCDRaw(F("C"));}
-      delay(250);
-    }
-    Reset_Input_Pointers();           
-    modeInitialized = false;      // Avisa a los modos que se deben inicializar dado que se execdio un limite
-  }
+  legacy_check_limits();
 }
 
 //------------------------------- Cursor Position -----------------------------------
@@ -262,6 +201,8 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   return legacy_timer_get_time();
 }
+
+
 
 
 

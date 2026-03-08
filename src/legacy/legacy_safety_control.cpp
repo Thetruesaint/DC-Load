@@ -1,0 +1,102 @@
+#include "legacy_safety_control.h"
+
+#include "../variables.h"
+#include "../funciones.h"
+
+void legacy_temp_control() {
+  static unsigned long fan_on_time = 0;
+  static unsigned long last_tmpchk = 0;
+  static bool fans_on = false;
+
+  unsigned long currentMillis = millis();
+  if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) {
+    return;
+  }
+
+  last_tmpchk = currentMillis;
+  temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR;
+
+  if (temp >= 40) {
+    if (!fans_on) {
+      digitalWrite(FAN_CTRL, HIGH);
+      fans_on = true;
+    }
+    fan_on_time = currentMillis;
+  } else if (fans_on && (currentMillis - fan_on_time) >= FAN_ON_DRTN) {
+    digitalWrite(FAN_CTRL, LOW);
+    fans_on = false;
+  }
+
+  setCursorLCD(16, 0);
+  if (temp < 10) {
+    printLCDRaw(" ");
+  }
+  printLCDRaw(temp);
+  printLCDRaw(char(0xDF));
+  printLCDRaw("C");
+}
+
+void legacy_check_limits() {
+  char message[20] = "";
+  float power = voltage * current;
+  float maxpwrdis = constrain(249 - 1.4 * temp, 0, 214);
+  float actpwrdis = max(0.0f, power / 4);
+  bool vlimit = false;
+  bool ilimit = false;
+  bool plimit = false;
+  bool climit = false;
+
+  if (voltage > MAX_VOLTAGE) {
+    strcpy(message, "Max Voltage!      ");
+    vlimit = true;
+  } else if (current > CurrentCutOff * 1.01) {
+    strcpy(message, "Current Cut Off!  ");
+    ilimit = true;
+  } else if (power > PowerCutOff) {
+    strcpy(message, "Power Cut Off!    ");
+    plimit = true;
+  } else if (temp > tempCutOff) {
+    strcpy(message, "Over Temperature! ");
+    climit = true;
+  } else if (actpwrdis >= maxpwrdis) {
+    strcpy(message, "Max PWR Disipation");
+  }
+
+  if (strlen(message) > 0) {
+    Load_OFF();
+    reading = 0;
+    encoderPosition = 0;
+    encoder.clearCount();
+    setCurrent = 0;
+    for (int i = 0; i < 6; i++) {
+      printLCD_S(0, 3, message);
+      if (vlimit) {
+        Print_Spaces(12, 1);
+      } else if (ilimit) {
+        Print_Spaces(5, 1);
+      } else if (plimit) {
+        Print_Spaces(19, 1);
+      } else if (climit) {
+        Print_Spaces(19, 0);
+      }
+      delay(250);
+      Print_Spaces(0, 3, 18);
+      if (vlimit) {
+        setCursorLCD(12, 1);
+        printLCDRaw(F("v"));
+      } else if (ilimit) {
+        setCursorLCD(5, 1);
+        writeLCD(byte(0));
+      } else if (plimit) {
+        setCursorLCD(19, 1);
+        printLCDRaw(F("w"));
+      } else if (climit) {
+        setCursorLCD(19, 0);
+        printLCDRaw(F("C"));
+      }
+      delay(250);
+    }
+    Reset_Input_Pointers();
+    modeInitialized = false;
+  }
+}
