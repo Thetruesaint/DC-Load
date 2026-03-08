@@ -4,6 +4,8 @@
 #include "../funciones.h"
 #include "../app/app_inputs.h"
 #include "../app/app_loop.h"
+#include "../app/app_mode_context.h"
+#include "../app/app_runtime_context.h"
 #include "../core/core_modes.h"
 
 void legacy_load_off() {
@@ -19,11 +21,11 @@ void legacy_load_off() {
 
 void legacy_encoder_status(bool encOnOff, float limit) {
   if (encOnOff) {
-    CuPo = 8;
+    app_runtime_set_cursor_position(8);
     reading = 0;
-    encoderPosition = 0;
+    app_runtime_set_encoder_position(0);
     maxReading = limit;
-    maxEncoder = maxReading * 1000;
+    app_runtime_set_encoder_max(static_cast<unsigned long>(maxReading * 1000));
 
     encoder.clearCount();
   } else {
@@ -38,44 +40,51 @@ void legacy_read_encoder() {
 void legacy_cursor_position() {
   static uint32_t lastPressTime = 0;
   constexpr int unitPosition = 8;
-  static int last_CuPo = -1;
+  static int lastCursor = -1;
+
+  int cursor = app_runtime_cursor_position();
+  const uint8_t mode = app_mode_id();
+  const bool managedMode = core_mode_is_managed(mode);
 
   if (digitalRead(ENC_BTN) == LOW && millis() - lastPressTime > 200) {
     lastPressTime = millis();
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) {
+    if (managedMode) {
       app_push_action(ActionType::EncoderButtonPress, 0, '\0');
     } else {
-      CuPo++;
+      cursor++;
+      app_runtime_set_cursor_position(cursor);
     }
   }
 
-  if (last_CuPo == CuPo) return;
+  if (lastCursor == cursor) return;
 
-  if (core_mode_is_managed(static_cast<uint8_t>(Mode))) {
-    last_CuPo = CuPo;
-    setCursorLCD(CuPo, 2);
+  if (managedMode) {
+    lastCursor = cursor;
+    setCursorLCD(cursor, 2);
     return;
   }
 
-  if (CuPo > last_CuPo && CuPo == unitPosition + 1) CuPo++;
-  if (CuPo < last_CuPo && CuPo == unitPosition + 1) CuPo--;
+  if (cursor > lastCursor && cursor == unitPosition + 1) cursor++;
+  if (cursor < lastCursor && cursor == unitPosition + 1) cursor--;
 
-  if ((Mode == CC || Mode == BC || Mode == CA) && CuPo > 12) CuPo = unitPosition;
-  if ((Mode == CC || Mode == BC || Mode == CA) && CuPo < 8) CuPo = unitPosition + 4;
-  if ((Mode == CP || Mode == CR) && CuPo > 10) CuPo = unitPosition - 2;
-  if ((Mode == CP || Mode == CR) && CuPo < 6) CuPo = unitPosition + 2;
+  if ((mode == CC || mode == BC || mode == CA) && cursor > 12) cursor = unitPosition;
+  if ((mode == CC || mode == BC || mode == CA) && cursor < 8) cursor = unitPosition + 4;
+  if ((mode == CP || mode == CR) && cursor > 10) cursor = unitPosition - 2;
+  if ((mode == CP || mode == CR) && cursor < 6) cursor = unitPosition + 2;
 
-  switch (CuPo) {
-    case 6: factor = 100000; break;
-    case 7: factor = 10000; break;
-    case 10: factor = 100; break;
-    case 11: factor = 10; break;
-    case 12: factor = 1; break;
-    default: factor = 1000;
+  switch (cursor) {
+    case 6: app_runtime_set_encoder_step(100000); break;
+    case 7: app_runtime_set_encoder_step(10000); break;
+    case 10: app_runtime_set_encoder_step(100); break;
+    case 11: app_runtime_set_encoder_step(10); break;
+    case 12: app_runtime_set_encoder_step(1); break;
+    default: app_runtime_set_encoder_step(1000);
   }
-  last_CuPo = CuPo;
 
-  setCursorLCD(CuPo, 2);
+  app_runtime_set_cursor_position(cursor);
+  lastCursor = cursor;
+
+  setCursorLCD(cursor, 2);
 }
 
 void legacy_read_volts_current() {

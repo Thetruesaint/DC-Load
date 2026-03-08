@@ -14,8 +14,16 @@ float app_runtime_encoder_step() {
   return factor;
 }
 
+void app_runtime_set_encoder_step(float value) {
+  factor = value;
+}
+
 unsigned long app_runtime_encoder_max() {
   return maxEncoder;
+}
+
+void app_runtime_set_encoder_max(unsigned long value) {
+  maxEncoder = value;
 }
 
 int app_runtime_cursor_position() {
