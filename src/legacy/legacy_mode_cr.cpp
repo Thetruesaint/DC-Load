@@ -3,6 +3,8 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_context.h"
 
 void legacy_const_resistance_mode() {
   if (!modeInitialized) {
@@ -12,13 +14,14 @@ void legacy_const_resistance_mode() {
     printLCD_S(11, 2, String((char)0xF4));
     printLCD(0, 3, F(">"));
     Encoder_Status(true, MAX_RESISTOR);
-    encoderPosition = MAX_RESISTOR * 1000;
+    app_runtime_set_encoder_position(MAX_RESISTOR * 1000.0f);
     modeInitialized = true;
   }
 
-  reading = encoderPosition / 1000.0;
-  reading = min(maxReading, max(0.1f, reading));
-  encoderPosition = reading * 1000;
+  float readingValue = app_runtime_encoder_position() / 1000.0f;
+  readingValue = min(app_setpoint_max_reading(), max(0.1f, readingValue));
+  app_setpoint_set_reading(readingValue);
+  app_runtime_set_encoder_position(readingValue * 1000.0f);
   Cursor_Position();
 
   // Setpoint de CR lo calcula core y se aplica via legacy_apply_state.
