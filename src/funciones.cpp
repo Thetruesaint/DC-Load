@@ -2,6 +2,7 @@
 #include "funciones.h"
 #include "app/app_loop.h"
 #include "app/app_mode_keys.h"
+#include "app/app_keypad.h"
 #include "core/core_modes.h"
 
 //----------------------------- Load ON Status ------------------------------------
@@ -46,69 +47,7 @@ void Read_Encoder() {
 
 //---------------------------- Read Keypad Input ----------------------------------
 void Read_Keypad(int col, int row) {
-  int maxDigits = (Mode == CA) ? 6 : 5;
-  customKey = customKeypad.getKey();              // Escanea el teclado
-  
-  if (customKey == NO_KEY) return;                // Si no hay tecla presionada, sale de la función
-
-  app_push_action(ActionType::KeyPressed, 0, customKey);
-  
-  if (!Handle_MSC_Keys (customKey)) {return;};
-  
-  // Solo en los modos CC, CP y CR.
-
-  if (Mode == TC || Mode == TL) return;
-
-  if (customKey == 'U') { // Aumentar setpoint
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
-    encoderPosition = encoderPosition + factor;
-    encoderPosition = constrain(encoderPosition, 0, maxEncoder);
-    return;
-  }
-
-  if (customKey == 'D') { // Disminuir setpoint
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
-    encoderPosition = encoderPosition - factor;
-    return;
-  }
-  
-  if (customKey == 'L') { if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return; CuPo--; return; } // Cursor a la izquierda
-  if (customKey == 'R') { if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return; CuPo++; return; } // Cursor a la derecha
-
-  if (Mode == BC) return;
-
-  // Números
-  if (customKey >= '0' && customKey <= '9' && c_index < maxDigits) {  // Si la tecla presionada es un número, se permiten hasta 5 caracteres
-    printLCD_S(col + c_index, row, String(customKey));        // Muestra el número en el LCD
-    numbers[c_index++] = customKey;                           // Almacena el número en la variable numbers
-    numbers[c_index] = '\0';                                  // Agrega el caracter nulo al final de la cadena
-  }
-  // Pto. decimal
-  if (customKey == '.' && decimalPoint != '*'&& c_index < maxDigits) {   // Si punto decimal y no se ha ingresado uno antes y si no se llego al limite de carga
-    printLCD(col + c_index, 3, F("."));              // Muestra el punto decimal en el LCD
-    numbers[c_index++] = '.';                        // Almacena el punto decimal en la variable numbers
-    numbers[c_index] = '\0';                         // Agrega el caracter nulo al final de la cadena
-    decimalPoint = '*';                            // Marca que se ingresó un punto decimal
-  }
-  // Enter 
-  if (customKey == 'E' && c_index != 0) { // Confirmar entrada solo si hay un valor cargado.
-    x = atof(numbers);                  // Convierte cadena de caracteres en número y lo asigna a reading 
-    if (Mode != CA){
-    reading = x;                        // Convierte cadena de caracteres en número y lo asigna a reading 
-    encoderPosition = reading * 1000;   // Asigna el valor a la variable encoderPosition
-    }
-    else {Calibrate(x);} //usa el valor de x para calibrar
-    Print_Spaces(col, row, maxDigits);
-    Reset_Input_Pointers();             // Resetea el punto decimal y el indice
-  }
-
-  // **Manejo de borrado**
-  if (customKey == '<' && c_index > 0) {  
-    c_index--;  
-    if (numbers[c_index] == '.') decimalPoint = ' '; // Si borramos un punto, permitimos otro  
-    numbers[c_index] = '\0';  
-    Print_Spaces(col + c_index, row);
-  }
+  app_read_keypad(col, row);
 }
 
 
