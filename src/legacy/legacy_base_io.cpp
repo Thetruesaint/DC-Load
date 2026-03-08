@@ -4,6 +4,7 @@
 #include "../funciones.h"
 #include "../app/app_inputs.h"
 #include "../app/app_io_context.h"
+#include "../app/app_load_context.h"
 #include "../app/app_loop.h"
 #include "../app/app_mode_context.h"
 #include "../app/app_runtime_context.h"
@@ -12,11 +13,11 @@
 void legacy_load_off() {
 #ifndef WOKWI_SIMULATION
   dac.setVoltage(0, false);
-  toggle = false;
-  setCurrent = 0;
+  app_load_set_enabled(false);
+  app_load_set_set_current_mA(0);
 #else
-  toggle = false;
-  setCurrent = 0;
+  app_load_set_enabled(false);
+  app_load_set_set_current_mA(0);
 #endif
 }
 
@@ -113,28 +114,29 @@ void legacy_read_volts_current() {
   static float simulatedVoltage = 0;
   static unsigned long lastDecreaseTime = 0;
   unsigned long currentMillis = app_io_millis();
+  const bool loadEnabled = app_load_is_enabled();
 
-  if (Mode != BC && Mode != CA) {
+  if (!app_mode_is_battery() && !app_mode_is_calibration()) {
     simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
     voltage = simulatedVoltage;
-  } else if (Mode == BC) {
-    if (toggle && (currentMillis - lastDecreaseTime >= 2000)) {
+  } else if (app_mode_is_battery()) {
+    if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
       lastDecreaseTime = currentMillis;
       simulatedVoltage -= 0.005;
       simulatedVoltage = max(simulatedVoltage, 0.0f);
       voltage = simulatedVoltage;
-    } else if (!toggle) {
+    } else if (!loadEnabled) {
       simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
       voltage = simulatedVoltage;
     }
-  } else if (Mode == CA) {
+  } else if (app_mode_is_calibration()) {
     simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
     float error_voltage = simulatedVoltage * 1.05 - 0.1;
     voltage = error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;
   }
 
-  if (toggle) {
-    current = setCurrent / 1000;
+  if (loadEnabled) {
+    current = app_load_set_current_mA() / 1000;
   } else {
     current = 0;
   }
