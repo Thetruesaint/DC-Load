@@ -9,6 +9,7 @@
 #include "legacy/legacy_mode_cc.h"
 #include "legacy/legacy_mode_cp.h"
 #include "legacy/legacy_mode_cr.h"
+#include "legacy/legacy_mode_bc.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -283,142 +284,17 @@ void Const_Resistance_Mode(void) {
 
 //-------------------- Select Battery Capacity Testing LCD set up -------------------
 void Battery_Mode(void) {
-  
-  if (!modeConfigured) {Battery_Type_Selec(); return;}  // Probar bien si aca no tiene problemas, en algunas pruebas queda fliqueando con carga en ON
-
-  if (!modeInitialized){
-    clearLCD();
-    printLCD(0, 0, F("BC LOAD"));
-    setCursorLCD(13,1);printLCDRaw(F(">"));
-    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2);  // Muestro el Cutoff Voltage
-    printLCD(1, 2, F("Adj->"));
-    printLCD(13, 2, F("A"));
-    timer_reset();                  // Resetea el timer
-    BatteryLife = 0;                            // Inicializa  la medición
-    BatteryLifePrevious = 0;                    // Resetea la vida de la batería
-    printLCDNumber(6, 3, BatteryLife, ' ', 0);  // Mostrar sin decimales
-    printLCDRaw(F("mAh"));
-    printLCD_S(14, 3, BatteryType);             // Muestro el tipo de Bateria.
-    Encoder_Status(true, CurrentCutOff);        // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-    modeInitialized = true;                     // Modo inicializado
-  }
-  
-  if (BatteryLife > BatteryLifePrevious) {      // Solo si cambia el valor
-    printLCDNumber(6, 3, BatteryLife, ' ', 0);
-    printLCDRaw(F("mAh"));
-    Print_Spaces(16, 2, 4);                    // Borra "Done ", porque si cambia es porque hubo acción manual.
-    BatteryLifePrevious = BatteryLife;
-  }
-  if (Battery_Capacity()){printLCD(16,2, F("Done"));}
-  Cursor_Position(); 
+  legacy_battery_mode();
 }
 
 //-------------------- Battery Type Selection and Cutoff Setup ----------------------
 void Battery_Type_Selec() {
-
-//  bool shiftPressed = false;
-
-  clearLCD();                            // Borra la pantalla del LCD
-  printLCD(2, 0, F("Set Task & Batt"));   // Muestra el título
-  printLCD(0, 1, F("Stor. 1)LiPo 2)LiIOn"));
-  printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
-  printLCD(2, 3, F("5)Cutoff Voltage"));
-
-while (true) {  // Bucle para evitar la salida accidental
-    customKey = app_wait_key_pressed(); 
-
-    if (!app_handle_msc_keys(customKey)) {return;};
-
-    switch (customKey) {
-        case '1': BatteryCutoffVolts = LIPO_STOR_CELL_VLTG; BatteryType = "Li-Po"; break;
-        case '2': BatteryCutoffVolts = LION_STOR_CELL_VLTG; BatteryType = "Li-Ion"; break;
-        case '3': BatteryCutoffVolts = LIPO_DISC_CELL_VLTG; BatteryType = "Li-Po"; break;
-        case '4': BatteryCutoffVolts = LION_DISC_CELL_VLTG; BatteryType = "Li-Ion"; break;
-        case '5': BatteryType = "Custom"; break;
-        default: continue;  // Evita salir si la tecla es inválida
-    }
-    break;  // Sale del bucle si se ingresó una tecla válida
-}
-
-  // Pedir ingresar un voltaje de corte
-  if (BatteryType == "Custom") {
-    clearLCD();
-    printLCD_S(3, 0, BatteryType + " Batt");
-    printLCD(2, 1, F("Voltage Cutoff?"));
-    printLCD(5, 2, F("(0.1-25)V"));
-    do {
-      z = 7; r = 3;
-      printLCD(z - 1, r, F(">"));
-      Print_Spaces(z , r, 5); // Borra el espacio si hubo un valor fuera de rango
-     
-      if (!Value_Input(z, r)) return;  // Sale si hubo selección de nuevo modo o reset de modo
-    } while (x > 25 || x < 0.1);          // Mintras este fuera de rango, repite
-      BatteryCutoffVolts = x;
-  } 
-
-  // Pedir ingresar la cantidad de celdas
-  if (BatteryType != "Custom") {
-    clearLCD();
-    printLCD_S(3, 0, BatteryType + " Batt");
-    printLCD(6, 1, F("(1-6)S?"));
-
-    do {
-        z = 9; r = 2;
-        printLCD(z - 1, r, F(">"));
-        Print_Spaces(z , r, 5);                   // Borra el espacio si hubo un valor fuera de rango
-        if (!Value_Input(z, r, 1, false)) return; //1 digito, sin decimal.
-    } while (x < 1 || x > 6);                     // Asegura que solo se ingrese un número entre 1 y 6
-    BatteryCutoffVolts *= x;                      // Multiplica por la cantidad de celdas
-  }
-  modeConfigured = true;          // Indica que se seteo el modo.
-  modeInitialized = false;        // Pinta la plantilla BC en el LCD
+  legacy_battery_type_selec();
 }
 
 //---------------------- Battery Capacity Discharge Routine -------------------------
 bool Battery_Capacity() {
-  
-  float LoadCurrent = 0;
-  unsigned long currentMillis = millis();
-  static unsigned long lastUpdate = 0;    // Guarda el tiempo de la última actualización del display
-
-  if (toggle && voltage >= BatteryCutoffVolts && !mytimerStarted) { timer_start(); } // Inicia el timer si la carga está activa
-  if (!toggle && voltage >= BatteryCutoffVolts && mytimerStarted) { timer_stop(); }  // Detiene el timer si la carga está inactiva
- 
-  if (currentMillis - lastUpdate >= 500) { // Actualizar cada 1 segundo para evitar flickering
-    lastUpdate = currentMillis;
-
-    printLCD_S(0, 3, timer_getTime()); // Mostrar tiempo en LCD
-
-    Seconds = timer_getTotalSeconds();
-    LoadCurrent = (!mytimerStarted) ? 0 : current;
-    BatteryLife += (LoadCurrent * 1000) / 7200; // LoadCurrent A, por horas, por 1000 = mAh
-  }
-
-  reading = encoderPosition / 1000;            // Toma el valor del encoder
-  reading = min(maxReading, max(0.0f, reading));  // Limita reading dinámicamente a CurrentCutOff
-  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
-
-  if (!toggle) return false;  //Si OFF, sale, el resto solo si ON Devuelve falso porque no se termino los criterios de descarga
-
-  setCurrent = reading * 1000; // Toma el valor del encoder, por si quise hacer un ajuste, y lo setea en la carga en mA
-
-  // Reducción progresiva de corriente cuando el voltaje alcanza al de corte
-
-  if (voltage <= BatteryCutoffVolts) {  // Fase 2: Estabilización
-    setCurrent = max(setCurrent - CRR_STEP_RDCTN, MIN_DISC_CURR);
-    reading = setCurrent / 1000;
-    encoderPosition = reading * 1000;
-  }
-
-  // Si el voltaje ya cayo por debajo de VoltageDropMargin, corta la carga (esto es porque la lipo se recopera sin carga)
-  if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) { 
-    BatteryCurrent = current;   // Toma nota de la corriente mínima con la que quedo
-    reading = 0; encoderPosition = 0; setCurrent = 0; encoder.clearCount();   // Reinicia todo.
-    Load_OFF();
-    timer_stop(); 
-    beepBuzzer(); return true; // Devuelve true porque completo la descarga
-  }
-  return false; // Por si pasa otra cosa, devuelve falso
+  return legacy_battery_capacity();
 }
 
 //---------------------------- Transcient Continuos Mode ----------------------------
@@ -861,6 +737,8 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
+
 
 
 
