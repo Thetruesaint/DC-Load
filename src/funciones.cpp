@@ -3,6 +3,7 @@
 #include "app/app_loop.h"
 #include "app/app_mode_keys.h"
 #include "app/app_keypad.h"
+#include "app/app_inputs.h"
 #include "core/core_modes.h"
 
 //----------------------------- Load ON Status ------------------------------------
@@ -34,15 +35,7 @@ void Encoder_Status(bool encOnOff, float limit) {
 
 //---------------------------- Encoder Decoder ------------------------------------
 void Read_Encoder() {
-  static int32_t lastCount = 0;
-  int32_t newCount = encoder.getCount();
-  int32_t diff = newCount - lastCount;
-
-  // Produce evento; el ajuste de setpoint lo decide core_dispatch.
-  if (abs(diff) >= 4) {
-    lastCount = newCount;
-    app_push_action(ActionType::EncoderDelta, diff, '\0');
-  }
+  app_read_encoder();
 }
 
 //---------------------------- Read Keypad Input ----------------------------------
@@ -50,25 +43,9 @@ void Read_Keypad(int col, int row) {
   app_read_keypad(col, row);
 }
 
-
 //----------------------- Toggle Current Load ON or OFF ----------------------------
 void Read_Load_Button(void) {
-  static bool lastButtonLow = false;
-  const bool buttonLow = (digitalRead(LOADONOFF) == LOW);
-
-  // Detecta flanco de bajada para evitar multiples toggles por tecla sostenida.
-  if (buttonLow && !lastButtonLow) {
-    delay(40); // Anti-rebote
-    if (digitalRead(LOADONOFF) == LOW) {
-      app_push_action(ActionType::LoadToggle, 0, '\0');
-      lastButtonLow = true;
-      return;
-    }
-  }
-
-  if (!buttonLow) {
-    lastButtonLow = false;
-  }
+  app_read_load_button();
 }
 //----------------------- Key input used for UserSetUp ------------------------------- 
 bool Value_Input(int col, int row, int maxDigits, bool decimal) {  
@@ -998,6 +975,8 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
+
 
 
 
