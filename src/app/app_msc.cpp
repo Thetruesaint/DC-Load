@@ -1,6 +1,8 @@
 #include "app_msc.h"
 
-#include "../funciones.h"
+#include "../variables.h"
+#include "../ui_lcd.h"
+#include "../legacy/legacy_hooks.h"
 #include "app_mode_keys.h"
 
 bool app_handle_msc_keys(char key) {
@@ -13,7 +15,7 @@ bool app_handle_msc_keys(char key) {
       return false;
 
     case MscKeyDecision::OpenConfig:
-      Config_Limits();
+      legacy_open_config_limits();
       return true;
 
     case MscKeyDecision::Continue:

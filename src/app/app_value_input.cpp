@@ -1,6 +1,7 @@
 #include "app_value_input.h"
 
-#include "../funciones.h"
+#include "../variables.h"
+#include "../ui_lcd.h"
 #include "app_msc.h"
 
 char app_wait_key_pressed() {

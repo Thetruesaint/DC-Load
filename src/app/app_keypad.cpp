@@ -1,6 +1,8 @@
 #include "app_keypad.h"
 
-#include "../funciones.h"
+#include "../variables.h"
+#include "../ui_lcd.h"
+#include "../legacy/legacy_hooks.h"
 #include "app_msc.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
@@ -65,10 +67,10 @@ void app_read_keypad(int col, int row) {
       reading = x;
       encoderPosition = reading * 1000;
     } else {
-      Calibrate(x);
+      legacy_calibrate(x);
     }
     Print_Spaces(col, row, maxDigits);
-    Reset_Input_Pointers();
+    legacy_reset_input_pointers();
   }
 
   if (customKey == '<' && c_index > 0) {
