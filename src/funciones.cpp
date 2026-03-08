@@ -6,6 +6,9 @@
 #include "app/app_inputs.h"
 #include "app/app_value_input.h"
 #include "core/core_modes.h"
+#include "legacy/legacy_mode_cc.h"
+#include "legacy/legacy_mode_cp.h"
+#include "legacy/legacy_mode_cr.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -265,63 +268,17 @@ void DAC_Control(void) {
 
 //----------------------- Select Constant Current LCD set up ------------------------
 void Const_Current_Mode(void) {
-
-  if (!modeInitialized) {
-    clearLCD();
-    printLCD(0, 0, F("CC LOAD"));          // Muestra el titulo del modo
-    printLCD(1, 2, F("Set->"));            // Muestra el mensaje
-    printLCD(13, 2, F("A"));               // Muestra el mensaje
-    printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    Encoder_Status(true, CurrentCutOff);   // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-    modeInitialized = true;                // Modo inicializado
-  }
-  reading = encoderPosition / 1000;            // Toma el valor del encoder
-  reading = min(maxReading, max(0.0f, reading));  // Limita reading dinámicamente a CurrentCutOff
-  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
-  Cursor_Position();
-
-  // Setpoint de CC lo calcula core y se aplica via legacy_apply_state.
+  legacy_const_current_mode();
 }
 
 //------------------------ Select Constant Power LCD set up -------------------------
 void Const_Power_Mode(void) {
-
-  if (!modeInitialized) {
-    clearLCD();
-    printLCD(0, 0, F("CP LOAD"));          // Muestra el titulo del modo
-    printLCD(0, 2, F("Set->"));            // Muestra el mensaje
-    printLCD(11, 2, F("W"));               // Muestra el mensaje
-    printLCD(0, 3, F(">"));                // Indica la posibilidad de ingresar valores.
-    Encoder_Status(true, PowerCutOff);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-    modeInitialized = true;                // Modo inicializado
-  }
-  reading = encoderPosition / 1000;            // Toma el valor del encoder
-  reading = min(maxReading, max(0.0f, reading));  // Limita reading dinámicamente a CurrentCutOff
-  encoderPosition = reading * 1000.0;          // Actualiza encoderPosition para mantener consistencia
-  Cursor_Position(); 
-
-  // Setpoint de CP lo calcula core y se aplica via legacy_apply_state.
+  legacy_const_power_mode();
 }
 
 //---------------------- Select Constant Resistance LCD set up ----------------------
 void Const_Resistance_Mode(void) {
-
- if (!modeInitialized) {
-    clearLCD();
-    printLCD(0, 0, F("CR LOAD"));           // Muestra el titulo del modo
-    printLCD(0, 2, F("Set->"));             // Muestra el mensaje
-    printLCD_S(11, 2, String((char)0xF4));  // Muestra el Símbolo de Ohms
-    printLCD(0, 3, F(">"));                 // Indica la posibilidad de ingresar valores.
-    Encoder_Status(true, MAX_RESISTOR);     // Encoder, CuPo =8, inic. y calcula maxReading y maxEncoder
-    encoderPosition = MAX_RESISTOR * 1000;  // Lo inicializa en 999.9 Ω, valor mas seguro
-    modeInitialized = true;                 // Modo inicializado
-  }
-  reading = encoderPosition / 1000.0;           // Convierte a ohms (Ω) el valor del encoder
-  reading = min(maxReading, max(0.1f, reading)); // Evita resistencia 0, mínimo 0.1Ω, maximo, maxReading
-  encoderPosition = reading * 1000;             // pasa el valor a encoder si lo limitó
-  Cursor_Position();
-  
-  // Setpoint de CR lo calcula core y se aplica via legacy_apply_state.
+  legacy_const_resistance_mode();
 }
 
 //-------------------- Select Battery Capacity Testing LCD set up -------------------
@@ -904,6 +861,9 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
+
+
 
 
 
