@@ -4,6 +4,7 @@
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_value_input.h"
+#include "../app/app_value_result_context.h"
 
 void legacy_config_limits() {
   Load_OFF();
@@ -18,7 +19,7 @@ void legacy_config_limits() {
   if (!Value_Input(z, r)) {
     return;
   }
-  CurrentCutOff = constrain(x, 1, MAX_CURRENT);
+  CurrentCutOff = constrain(app_value_result_get(), 1, MAX_CURRENT);
   printLCDNumber(z, r, CurrentCutOff, ' ', 3);
   printLCDRaw(F("A"));
 
@@ -28,7 +29,7 @@ void legacy_config_limits() {
   if (!Value_Input(z, r)) {
     return;
   }
-  PowerCutOff = constrain(x, 1, MAX_POWER);
+  PowerCutOff = constrain(app_value_result_get(), 1, MAX_POWER);
   printLCDNumber(z, r, PowerCutOff, 'W', 1);
 
   printLCD(0, 3, F("Temp.("));
@@ -38,7 +39,7 @@ void legacy_config_limits() {
   if (!Value_Input(z, r, 2)) {
     return;
   }
-  tempCutOff = constrain(x, 30.0, MAX_TEMP);
+  tempCutOff = constrain(app_value_result_get(), 30.0f, MAX_TEMP);
   printLCD_S(z, r, String(tempCutOff));
 
   Save_EEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
