@@ -2,7 +2,8 @@
 
 #include "app_loop.h"
 
-bool app_handle_mode_hotkeys(char key) {
+namespace {
+bool handle_mode_hotkeys(char key) {
   static bool shiftPressed = false;
 
   if (key == 'M') {
@@ -22,4 +23,17 @@ bool app_handle_mode_hotkeys(char key) {
   }
 
   return true;
+}
+}
+
+MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
+  if (!handle_mode_hotkeys(key)) {
+    return MscKeyDecision::ExitMode;
+  }
+
+  if (configAllowed && key == 'C') {
+    return MscKeyDecision::OpenConfig;
+  }
+
+  return MscKeyDecision::Continue;
 }

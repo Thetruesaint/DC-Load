@@ -985,20 +985,21 @@ void Reset_Input_Pointers (void){
 
 //------------------------------- Handle Mode Keys -----------------------------------
 bool Handle_MSC_Keys(char key) {
-  if (!app_handle_mode_hotkeys(key)) {
-    noCursorLCD();
-    blinkOffLCD();
-    return false;
-  }
+  const bool configAllowed = (Mode != TC && Mode != TL);
+  switch (app_route_msc_key(key, configAllowed)) {
+    case MscKeyDecision::ExitMode:
+      noCursorLCD();
+      blinkOffLCD();
+      return false;
 
-  if (key == 'C') {        // ojo que se puede llamar desde el mismo Config_Limits
-    if (Mode != TC && Mode != TL) {
+    case MscKeyDecision::OpenConfig:
       Config_Limits();
-    }
-    return true;
-  }
+      return true;
 
-  return true;
+    case MscKeyDecision::Continue:
+    default:
+      return true;
+  }
 }
 
 //------------------------------- Handle Buzzer --------------------------------------
@@ -1058,6 +1059,7 @@ String timer_getTime() {
 
   return formattedTime;
 }
+
 
 
 
