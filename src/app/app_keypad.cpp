@@ -1,12 +1,14 @@
 #include "app_keypad.h"
 
-#include "../variables.h"
+#include <Keypad.h>
+
 #include "../ui_lcd.h"
 #include "../legacy/legacy_hooks.h"
 #include "app_msc.h"
 #include "app_mode_context.h"
 #include "app_input_buffer.h"
 #include "app_runtime_context.h"
+#include "app_setpoint_context.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
 
@@ -64,15 +66,15 @@ void app_read_keypad(int col, int row) {
   }
 
   if (key == 'E' && app_input_length() != 0) {
-    x = app_input_parse_float();
+    const float parsedValue = app_input_parse_float();
     if (!app_mode_is_calibration()) {
-      reading = x;
-      app_runtime_set_encoder_position(reading * 1000.0f);
+      app_setpoint_set_reading(parsedValue);
+      app_runtime_set_encoder_position(parsedValue * 1000.0f);
     } else {
-      legacy_calibrate(x);
+      legacy_calibrate(parsedValue);
     }
     Print_Spaces(col, row, maxDigits);
-    legacy_reset_input_pointers();
+    app_input_reset();
   }
 
   if (key == '<' && app_input_backspace()) {
