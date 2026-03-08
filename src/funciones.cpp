@@ -16,6 +16,7 @@
 #include "legacy/legacy_timing_buzzer.h"
 #include "legacy/legacy_base_io.h"
 #include "legacy/legacy_safety_control.h"
+#include "legacy/legacy_dac_control.h"
 
 //----------------------------- Load ON Status ------------------------------------
 void Load_OFF(void) {
@@ -68,21 +69,7 @@ void Read_Volts_Current(void) {
 
 //------------------------- DAC Control Voltage for Mosfet --------------------------
 void DAC_Control(void) {
-  #ifndef WOKWI_SIMULATION
-
-  if (toggle) {
-    //setDAC = setCurrent * OUT_CURR_FACT * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs;
-    setDAC = (unsigned long)(constrain(setCurrent * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs, 0.0f, 12000.0f) * OUT_CURR_FACT);  // Calcula valor de salida para el DacI con los factores y offset
-    dac.setVoltage(setDAC, false);        // Setea corriente máxima de salida por el factor y POR EL MOMENTO, no lo graba en la Eprom del DacI.
-  } else {
-    dac.setVoltage(0, false); // set DAC output voltage to 0 if Load Off selected
-    setCurrent = 0;           // ##IMPORTANTE#  Que el modo se encargue de resetearlo si lo necesita.
-  }
-
-  #else
-  if (!toggle) {setCurrent = 0;}
-  #endif
-
+  legacy_dac_control();
 }
 
 //----------------------- Select Constant Current LCD set up ------------------------
@@ -201,6 +188,7 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   return legacy_timer_get_time();
 }
+
 
 
 
