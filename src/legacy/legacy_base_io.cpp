@@ -8,6 +8,7 @@
 #include "../app/app_loop.h"
 #include "../app/app_mode_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_context.h"
 #include "../core/core_modes.h"
 
 void legacy_load_off() {
@@ -24,10 +25,10 @@ void legacy_load_off() {
 void legacy_encoder_status(bool encOnOff, float limit) {
   if (encOnOff) {
     app_runtime_set_cursor_position(8);
-    reading = 0;
+    app_setpoint_set_reading(0);
     app_runtime_set_encoder_position(0);
-    maxReading = limit;
-    app_runtime_set_encoder_max(static_cast<unsigned long>(maxReading * 1000));
+    app_setpoint_set_max_reading(limit);
+    app_runtime_set_encoder_max(static_cast<unsigned long>(app_setpoint_max_reading() * 1000));
 
     encoder.clearCount();
   } else {
