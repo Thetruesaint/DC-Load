@@ -4,11 +4,12 @@
 #include "../ui_lcd.h"
 #include "../legacy/legacy_hooks.h"
 #include "app_msc.h"
+#include "app_mode_context.h"
 #include "../core/core_modes.h"
 #include "app_loop.h"
 
 void app_read_keypad(int col, int row) {
-  int maxDigits = (Mode == CA) ? 6 : 5;
+  int maxDigits = app_mode_is_calibration() ? 6 : 5;
   customKey = customKeypad.getKey();
 
   if (customKey == NO_KEY) return;
@@ -19,34 +20,34 @@ void app_read_keypad(int col, int row) {
     return;
   }
 
-  if (Mode == TC || Mode == TL) return;
+  if (app_mode_is_transient()) return;
 
   if (customKey == 'U') {
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
+    if (core_mode_is_managed(app_mode_id())) return;
     encoderPosition = encoderPosition + factor;
     encoderPosition = constrain(encoderPosition, 0, maxEncoder);
     return;
   }
 
   if (customKey == 'D') {
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
+    if (core_mode_is_managed(app_mode_id())) return;
     encoderPosition = encoderPosition - factor;
     return;
   }
 
   if (customKey == 'L') {
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
+    if (core_mode_is_managed(app_mode_id())) return;
     CuPo--;
     return;
   }
 
   if (customKey == 'R') {
-    if (core_mode_is_managed(static_cast<uint8_t>(Mode))) return;
+    if (core_mode_is_managed(app_mode_id())) return;
     CuPo++;
     return;
   }
 
-  if (Mode == BC) return;
+  if (app_mode_is_battery()) return;
 
   if (customKey >= '0' && customKey <= '9' && c_index < maxDigits) {
     printLCD_S(col + c_index, row, String(customKey));
@@ -63,7 +64,7 @@ void app_read_keypad(int col, int row) {
 
   if (customKey == 'E' && c_index != 0) {
     x = atof(numbers);
-    if (Mode != CA) {
+    if (!app_mode_is_calibration()) {
       reading = x;
       encoderPosition = reading * 1000;
     } else {
@@ -80,3 +81,4 @@ void app_read_keypad(int col, int row) {
     Print_Spaces(col + c_index, row);
   }
 }
+
