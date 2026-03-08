@@ -1,9 +1,9 @@
 #include "app_value_input.h"
 
-#include "../variables.h"
 #include "../ui_lcd.h"
 #include "app_msc.h"
 #include "app_input_buffer.h"
+#include "app_value_result_context.h"
 
 char app_wait_key_pressed() {
   return app_input_wait_key();
@@ -34,7 +34,7 @@ bool app_value_input(int col, int row, int maxDigits, bool decimal) {
     }
 
     if (!handled && key == 'E' && app_input_length() > 0) {
-      x = app_input_parse_float();
+      app_value_result_set(app_input_parse_float());
       app_reset_input_pointers();
       noCursorLCD();
       blinkOffLCD();
