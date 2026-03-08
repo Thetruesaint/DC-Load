@@ -2,14 +2,12 @@
 
 #include "../funciones.h"
 
-namespace {
 char app_wait_key_pressed() {
   char key;
   do {
     key = customKeypad.getKey();
   } while (key == NO_KEY);
   return key;
-}
 }
 
 void app_reset_input_pointers() {

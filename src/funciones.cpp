@@ -368,7 +368,7 @@ void Battery_Type_Selec() {
   printLCD(2, 3, F("5)Cutoff Voltage"));
 
 while (true) {  // Bucle para evitar la salida accidental
-    customKey = Wait_Key_Pressed(); 
+    customKey = app_wait_key_pressed(); 
 
     if (!Handle_MSC_Keys (customKey)) {return;};
 
@@ -842,15 +842,6 @@ void Calibrate(float realValue){
   }
 }
 
-//------------------------------- Wait Key Pressed ------------------------------------
-char Wait_Key_Pressed() {
-  char key;
-  do {
-      key = customKeypad.getKey();
-  } while (key == NO_KEY);  
-  return key;
-}
-
 //------------------------------- Reset Input Pointers --------------------------------
 void Reset_Input_Pointers (void){
   app_reset_input_pointers();
@@ -932,9 +923,6 @@ String timer_getTime() {
 
   return formattedTime;
 }
-
-
-
 
 
 

@@ -45,7 +45,6 @@ void Transient_List_Setup();
 void Transcient_Cont_Timing();
 void Transient_List_Timing(void);
 void Check_Limits();
-char Wait_Key_Pressed();
 void Temp_Control();
 void Reset_Input_Pointers();
 void Encoder_Status(bool encOnOff, float limit = 0);
@@ -58,3 +57,4 @@ void Test_Keypad();
 void Update_TFT(void);
 void printTFT_Number(int col, int row, float number, char unit = '\0', int decimals = 2);
 #endif
+
