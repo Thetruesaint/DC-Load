@@ -189,13 +189,15 @@ void Update_LCD(void) {
   // Evitar valores negativos por errores de medicion
   float measuredVoltage = state.measuredVoltage_V;
   float measuredCurrent = state.measuredCurrent_A;
-  if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
-  if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
+  if (measuredVoltage < 0.0f && state.mode != CA) measuredVoltage = 0.0f;
+  if (measuredCurrent < 0.0f && state.mode != CA) measuredCurrent = 0.0f;
   const float power = state.measuredPower_W;
 
   printLCD(8, 0, state.loadEnabled ? F("ON ") : F("OFF"));
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
+  Print_Spaces(0, 1, 7);
+  Print_Spaces(7, 1, 7);
   printLCDNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
   printLCDNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
   const uint8_t mode = state.mode;
