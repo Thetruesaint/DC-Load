@@ -11,6 +11,7 @@
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_setpoint_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../core/core_config_flow.h"
 
 SystemState legacy_capture_state() {
   SystemState state = core_state_make_default();
@@ -65,9 +66,9 @@ void legacy_apply_state(const SystemState &state) {
     legacy_calibrate(state.calibrationRealValue);
   }
 
-  if (state.pendingConfigSection == ConfigSection::Limits || state.openLimitsConfigEvent) {
+  if (core_config_wants_limits(state)) {
     legacy_config_limits();
-  } else if (state.pendingConfigSection == ConfigSection::Calibration) {
+  } else if (core_config_wants_calibration(state)) {
     legacy_calibration_setup();
   }
 

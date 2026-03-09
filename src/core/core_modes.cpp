@@ -1,5 +1,7 @@
 #include "core_modes.h"
 
+#include "core_config_flow.h"
+
 namespace {
 constexpr uint8_t MODE_CC = 0;
 constexpr uint8_t MODE_CP = 1;
@@ -167,17 +169,5 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
 
 void core_mode_update_ui_screen(SystemState *state) {
   if (state == nullptr) return;
-
-  if (state->pendingConfigSection == ConfigSection::Limits || state->openLimitsConfigEvent) {
-    state->uiScreen = UiScreen::MenuLimits;
-    return;
-  }
-
-  if (state->pendingConfigSection == ConfigSection::Calibration || state->calibrationValueConfirmEvent) {
-    state->uiScreen = UiScreen::MenuCalibration;
-    return;
-  }
-
-  state->uiScreen = UiScreen::Home;
+  state->uiScreen = core_config_target_screen(*state);
 }
-
