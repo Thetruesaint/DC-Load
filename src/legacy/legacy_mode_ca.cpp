@@ -61,11 +61,11 @@ void legacy_calibration_setup() {
 
   float selection = 0.0f;
   do {
-    z = 1;
-    r = 3;
-    printLCD(z - 1, r, F(">"));
-    Print_Spaces(z, r, 1);
-    if (!Value_Input(z, r, 1, false)) {
+    const int col = 1;
+    const int row = 3;
+    printLCD(col - 1, row, F(">"));
+    Print_Spaces(col, row, 1);
+    if (!Value_Input(col, row, 1, false)) {
       return;
     }
     selection = app_value_result_get();

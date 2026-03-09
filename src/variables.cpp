@@ -78,8 +78,6 @@ byte c_index = 0;   // posicion para el caranter de la variable numbers
 float x = 0;        // Valor que entrega la función Value_Input()
 
 //---------------- Variables LCD y TFT ------------------------------------
-int z = 1;        // Posición en renglón (En CC,CP y CR dejo lugar para poner caracter ">"), aun no lo puse
-int r = 0;        // Renglon
 
 byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar valores que pueden cambiar. Los de Set son con mayusculas comunes
     0b00000,  //      

@@ -15,33 +15,31 @@ void legacy_config_limits() {
 
   printLCD(4, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
-  z = 12;
-  r = 1;
-  if (!Value_Input(z, r)) {
+  const int col = 12;
+  int row = 1;
+  if (!Value_Input(col, row)) {
     return;
   }
   CurrentCutOff = constrain(app_value_result_get(), 1, MAX_CURRENT);
-  printLCDNumber(z, r, CurrentCutOff, ' ', 3);
+  printLCDNumber(col, row, CurrentCutOff, ' ', 3);
   printLCDRaw(F("A"));
 
   printLCD(0, 2, F("Power(W):"));
-  r = 2;
-  z = 12;
-  if (!Value_Input(z, r)) {
+  row = 2;
+  if (!Value_Input(col, row)) {
     return;
   }
   PowerCutOff = constrain(app_value_result_get(), 1, MAX_POWER);
-  printLCDNumber(z, r, PowerCutOff, 'W', 1);
+  printLCDNumber(col, row, PowerCutOff, 'W', 1);
 
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
-  z = 12;
-  r = 3;
-  if (!Value_Input(z, r, 2)) {
+  row = 3;
+  if (!Value_Input(col, row, 2)) {
     return;
   }
   tempCutOff = constrain(app_value_result_get(), 30.0f, MAX_TEMP);
-  printLCD_S(z, r, String(tempCutOff));
+  printLCD_S(col, row, String(tempCutOff));
 
   Save_EEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
   Save_EEPROM(ADD_POWER_CUT_OFF, PowerCutOff);

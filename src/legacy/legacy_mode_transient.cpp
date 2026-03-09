@@ -57,23 +57,23 @@ void legacy_transient_cont_setup() {
   printLCD(5, 2, F("I2(A)"));
   printLCD(4, 3, F("dt(mS)"));
 
-  z = 11;
-  r = 1;
-  if (!Value_Input(z, r)) {
+  const int col = 11;
+  int row = 1;
+  if (!Value_Input(col, row)) {
     return;
   }
   LowCurrent = min(app_value_result_get(), CurrentCutOff);
-  printLCDNumber(z, r, LowCurrent, 'A', 3);
+  printLCDNumber(col, row, LowCurrent, 'A', 3);
 
-  r = 2;
-  if (!Value_Input(z, r)) {
+  row = 2;
+  if (!Value_Input(col, row)) {
     return;
   }
   HighCurrent = min(app_value_result_get(), CurrentCutOff);
-  printLCDNumber(z, r, HighCurrent, 'A', 3);
+  printLCDNumber(col, row, HighCurrent, 'A', 3);
 
-  r = 3;
-  if (!Value_Input(z, r, 5, false)) {
+  row = 3;
+  if (!Value_Input(col, row, 5, false)) {
     return;
   }
   transientPeriod = static_cast<unsigned long>(app_value_result_get());
@@ -146,11 +146,11 @@ void legacy_transient_list_setup() {
 
   float stepsInput = 0.0f;
   do {
-    z = 9;
-    r = 2;
-    printLCD(z - 1, r, F(">"));
-    Print_Spaces(z, r, 2);
-    if (!Value_Input(z, r, 2, false)) {
+    const int col = 9;
+    const int row = 2;
+    printLCD(col - 1, row, F(">"));
+    Print_Spaces(col, row, 2);
+    if (!Value_Input(col, row, 2, false)) {
       return;
     }
     stepsInput = app_value_result_get();
@@ -165,18 +165,17 @@ void legacy_transient_list_setup() {
     printLCD(0, 2, F("Current (A):"));
     printLCD(0, 3, F("Time (mSec):"));
 
-    z = 13;
-    r = 2;
-    if (!Value_Input(z, r)) {
+    const int col = 13;
+    int row = 2;
+    if (!Value_Input(col, row)) {
       return;
     }
     const float currentInput = min(app_value_result_get(), CurrentCutOff);
-    printLCDNumber(z, r, currentInput, 'A', 3);
+    printLCDNumber(col, row, currentInput, 'A', 3);
     transientList[i][0] = static_cast<unsigned long>(currentInput * 1000.0f);
 
-    z = 13;
-    r = 3;
-    if (!Value_Input(z, r, 5, false)) {
+    row = 3;
+    if (!Value_Input(col, row, 5, false)) {
       return;
     }
     transientList[i][1] = static_cast<unsigned long>(app_value_result_get());

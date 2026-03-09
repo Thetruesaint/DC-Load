@@ -98,12 +98,12 @@ void legacy_battery_type_selec() {
 
     float inputValue = 0.0f;
     do {
-      z = 7;
-      r = 3;
-      printLCD(z - 1, r, F(">"));
-      Print_Spaces(z, r, 5);
+      const int col = 7;
+      const int row = 3;
+      printLCD(col - 1, row, F(">"));
+      Print_Spaces(col, row, 5);
 
-      if (!Value_Input(z, r)) {
+      if (!Value_Input(col, row)) {
         return;
       }
       inputValue = app_value_result_get();
@@ -119,11 +119,11 @@ void legacy_battery_type_selec() {
 
     float inputValue = 0.0f;
     do {
-      z = 9;
-      r = 2;
-      printLCD(z - 1, r, F(">"));
-      Print_Spaces(z, r, 5);
-      if (!Value_Input(z, r, 1, false)) {
+      const int col = 9;
+      const int row = 2;
+      printLCD(col - 1, row, F(">"));
+      Print_Spaces(col, row, 5);
+      if (!Value_Input(col, row, 1, false)) {
         return;
       }
       inputValue = app_value_result_get();

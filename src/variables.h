@@ -116,8 +116,6 @@ extern float x;                     // Auxiliar para carga de valores.
 //---------------- Variables LCD y TFT ------------------------------------
 const unsigned long LCD_RFSH_TIME = 100; // Tiempo de refresco del LCD en ms
 
-extern int z;       // Posición en renglón
-extern int r;       // Renglon
 extern byte amp_char[8];    // Caracter especial para LCD
 
 // extern uint16_t cellW; // Ancho de celda TFT
