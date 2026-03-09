@@ -7,9 +7,6 @@
 #include "app_msc.h"
 #include "app_mode_context.h"
 #include "app_input_buffer.h"
-#include "app_runtime_context.h"
-#include "app_setpoint_context.h"
-#include "../core/core_modes.h"
 #include "app_loop.h"
 
 void app_read_keypad(int col, int row) {
@@ -26,35 +23,6 @@ void app_read_keypad(int col, int row) {
 
   if (app_mode_is_transient()) return;
 
-  if (key == 'U') {
-    if (core_mode_is_managed(app_mode_id())) return;
-    float encoderPosition = app_runtime_encoder_position();
-    encoderPosition = encoderPosition + app_runtime_encoder_step();
-    encoderPosition = constrain(encoderPosition, 0.0f, static_cast<float>(app_runtime_encoder_max()));
-    app_runtime_set_encoder_position(encoderPosition);
-    return;
-  }
-
-  if (key == 'D') {
-    if (core_mode_is_managed(app_mode_id())) return;
-    float encoderPosition = app_runtime_encoder_position();
-    encoderPosition = encoderPosition - app_runtime_encoder_step();
-    app_runtime_set_encoder_position(encoderPosition);
-    return;
-  }
-
-  if (key == 'L') {
-    if (core_mode_is_managed(app_mode_id())) return;
-    app_runtime_set_cursor_position(app_runtime_cursor_position() - 1);
-    return;
-  }
-
-  if (key == 'R') {
-    if (core_mode_is_managed(app_mode_id())) return;
-    app_runtime_set_cursor_position(app_runtime_cursor_position() + 1);
-    return;
-  }
-
   if (app_mode_is_battery()) return;
 
   if (app_input_append_digit(key, maxDigits)) {
@@ -67,11 +35,10 @@ void app_read_keypad(int col, int row) {
 
   if (key == 'E' && app_input_length() != 0) {
     const float parsedValue = app_input_parse_float();
+    const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
     if (!app_mode_is_calibration()) {
-      const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
       app_push_action(make_value_confirm_action(parsedMilli));
     } else {
-      const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
       app_push_action(make_calibration_value_confirm_action(parsedMilli));
     }
     Print_Spaces(col, row, maxDigits);
