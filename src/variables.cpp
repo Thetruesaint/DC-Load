@@ -69,26 +69,9 @@ byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar 
 // uint16_t cellH = 32;
 
 //---------------- Variables para Modo BC --------------------------------
-float Seconds = 0;              // Variable para los segundio usada en Battery Capacity Mode (BC)
-bool mytimerStarted = false;      // Variable para saber si el timer esta corriendo
-DateTime startTime;             // Variable para el tiempo de inicio
-float elapsedSeconds = 0.0;     // Variable para los segundos transcurridos
-float BatteryLife = 0;          // Variable para la vida de la batería
-float BatteryLifePrevious = 0;  // Variable para la vida de la batería anterior
-float BatteryCutoffVolts;       // Variable usada para indicar a que Voltage se puede descargar la batería
-float BatteryCurrent;           // Variable usada para setear la corriente de descargga de la bateria
 
-String BatteryType = "    ";    // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------
 
 //----------------- Variables para Modos TC y TL Transient -------------------
-float LowCurrent = 0;                 // Configuración de corriente baja para el modo transitorio
-float HighCurrent = 0;                // Configuración de corriente alta para el modo transitorio
-unsigned long transientPeriod;        // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
-unsigned long current_time;           // Para almacenar el tiempo actual en microsegundos
-unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
-int total_steps;               // Utilizado en el modo de Transient List Mode
-int current_step;              // Utilizado en el modo de Transient List Mode
-
 

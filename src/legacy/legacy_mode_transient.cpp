@@ -7,6 +7,15 @@
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_value_result_context.h"
+#include "../app/app_transient_context.h"
+
+#define LowCurrent (app_transient_low_current_ref())
+#define HighCurrent (app_transient_high_current_ref())
+#define transientPeriod (app_transient_period_ref())
+#define current_time (app_transient_current_time_ref())
+#define transientList (app_transient_list_ref())
+#define total_steps (app_transient_total_steps_ref())
+#define current_step (app_transient_current_step_ref())
 
 void legacy_transient_cont_mode() {
   if (!app_mode_state_configured()) {
@@ -218,5 +227,4 @@ void legacy_transient_list_timing() {
     last_time = current_time;
   }
 }
-
 

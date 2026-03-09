@@ -13,6 +13,15 @@
 #include "../app/app_measurements_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_result_context.h"
+#include "../app/app_battery_context.h"
+#include "../app/app_timer_context.h"
+
+#define BatteryLife (app_battery_life_ref())
+#define BatteryLifePrevious (app_battery_life_previous_ref())
+#define BatteryCutoffVolts (app_battery_cutoff_volts_ref())
+#define BatteryCurrent (app_battery_current_ref())
+#define BatteryType (app_battery_type_ref())
+#define mytimerStarted (app_timer_running_ref())
 
 void legacy_battery_mode() {
   if (!app_mode_state_configured()) {
@@ -155,7 +164,6 @@ bool legacy_battery_capacity() {
 
     printLCD_S(0, 3, timer_getTime());
 
-    Seconds = timer_getTotalSeconds();
     LoadCurrent = (!mytimerStarted) ? 0 : app_measurements_current_a();
     BatteryLife += (LoadCurrent * 1000) / 7200;
   }
@@ -193,3 +201,4 @@ bool legacy_battery_capacity() {
 
   return false;
 }
+

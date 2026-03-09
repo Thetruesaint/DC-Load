@@ -107,15 +107,6 @@ const float VLTG_DROP_MARGIN = 0.02;      // ⚡ Margen por debajo de BatteryCut
 const float MIN_DISC_CURR = 100;     // 🔋 Corriente mínima antes de desconectar la carga (en mA)
 
 
-extern float Seconds;               // Segundos usada en Battery Capacity Mode (BC)
-extern bool mytimerStarted;           // Flag de estado de timer
-extern DateTime startTime;          // Tiempo de inicio
-extern float elapsedSeconds;        // Segundos transcurridos
-extern float BatteryLife;           // Vida de la batería en mAh
-extern float BatteryLifePrevious;   // Vida de la batería anterior
-extern float BatteryCutoffVolts;    // Voltage de corte de descarga de batería
-extern float BatteryCurrent;        // Corriente máxima de descargga de bateria
-extern String BatteryType;          // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------
 const unsigned long FAN_ON_DRTN = 60000;                    // Tiempo en miliseg. para mantener los fans encendidos (60 segundos)
@@ -133,13 +124,6 @@ const float CAL_MAX_POINT_ERROR_RATIO = 0.20f;              // Error relativo ma
 
 
 //----------------- Variables para Modos TC y TL Transient -------------------
-extern float LowCurrent;                    // Configuración de corriente baja para el modo transitorio
-extern float HighCurrent;                   // Configuración de corriente alta para el modo transitorio
-extern unsigned long transientPeriod;       // Para almacenar el período de tiempo del pulso en el modo de pulso transitorio
-extern unsigned long current_time;          // Para almacenar el tiempo actual en microsegundos
-extern unsigned long transientList[10][2];  // Array para almacenar los datos de la lista transitoria
-extern int total_steps;                     // Utilizado en el modo de Transient List Mode
-extern int current_step;             // Utilizado en el modo de Transient List Mode
 
 //--- Posiciones reservadas en la EEMPROM cada 4 bytes para valores float ----
 const int ADD_CURRENT_CUT_OFF = 0;      // 4 bytes (0-3)
@@ -153,5 +137,4 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
-
 

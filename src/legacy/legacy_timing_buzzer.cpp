@@ -1,6 +1,11 @@
 #include "legacy_timing_buzzer.h"
 
 #include "../variables.h"
+#include "../app/app_timer_context.h"
+
+#define mytimerStarted (app_timer_running_ref())
+#define startTime (app_timer_start_time_ref())
+#define elapsedSeconds (app_timer_elapsed_seconds_ref())
 
 void legacy_beep_buzzer() {
   for (int i = 0; i < 2; i++) {
@@ -61,3 +66,4 @@ String legacy_timer_get_time() {
 
   return formattedTime;
 }
+
