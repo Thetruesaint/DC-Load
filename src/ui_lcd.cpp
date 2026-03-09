@@ -2,13 +2,8 @@
 #include "hw/hw_objects.h"
 #include "config/system_constants.h"
 #include "ui/ui_symbols.h"
+#include "ui/ui_state_cache.h"
 #include "app/app_input_buffer.h"
-#include "app/app_load_context.h"
-#include "app/app_measurements_context.h"
-#include "app/app_mode_context.h"
-#include "app/app_mode_state_context.h"
-#include "app/app_runtime_context.h"
-#include "app/app_setpoint_context.h"
 #include "app/app_ui_context.h"
 
 #include <cstring>
@@ -139,7 +134,7 @@ void printLCDRaw(float value, int decimals) {
 #endif
 }
 
-void render_keypad_input(uint8_t mode) {
+void render_keypad_input(uint8_t mode, bool calibrationMode) {
   static uint8_t lastMode = 0xFF;
   static char lastInput[10] = {'\0'};
   static bool rowWasVisible = false;
@@ -147,7 +142,7 @@ void render_keypad_input(uint8_t mode) {
   const int inputCol = 1;
   const int inputRow = 3;
   const bool visible = (mode != TC && mode != TL && mode != BC);
-  const byte maxDigits = app_mode_is_calibration() ? 6 : 5;
+  const byte maxDigits = calibrationMode ? 6 : 5;
   const char* currentInput = app_input_text();
 
   if (!visible) {
@@ -184,23 +179,26 @@ void Update_LCD(void) {
     blinkOffLCD();
   }
 
-  if (!app_mode_state_initialized()) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
+  const SystemState &state = ui_state_cache_get();
+  if (!state.modeInitialized) return;
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
-  lastUpdateTime = millis();  // Actualizar el tiempo de referencia
+  lastUpdateTime = millis();
 
   // Evitar valores negativos por errores de medicion
-  if (app_measurements_voltage_v() < 0.011f && !app_mode_is_calibration()) app_measurements_set_voltage_v(0.0f);
-  if (app_measurements_current_a() < 0.006f && !app_mode_is_calibration()) app_measurements_set_current_a(0.0f);
-  float power = app_measurements_power_w();
+  float measuredVoltage = state.measuredVoltage_V;
+  float measuredCurrent = state.measuredCurrent_A;
+  if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
+  if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
+  const float power = state.measuredPower_W;
 
-  printLCD(8, 0, app_load_is_enabled() ? F("ON ") : F("OFF"));
+  printLCD(8, 0, state.loadEnabled ? F("ON ") : F("OFF"));
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
-  printLCDNumber(0, 1, app_measurements_current_a(), 'A', (app_measurements_current_a() <= 9.999f) ? 3 : 2);
-  printLCDNumber(7, 1, app_measurements_voltage_v(), 'v', (app_measurements_voltage_v() <= 9.999f) ? 3 : (app_measurements_voltage_v() <= 99.99f) ? 2 : 1);
-  const uint8_t mode = app_mode_id();
+  printLCDNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
+  printLCDNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
+  const uint8_t mode = state.mode;
   if (mode != BC && mode != CA) {
     setCursorLCD(14, 1);
     if (power < 10) {
@@ -217,7 +215,7 @@ void Update_LCD(void) {
 
   if (mode != TC && mode != TL) {
     setCursorLCD(6, 2);
-    const float readingValue = app_setpoint_reading();
+    const float readingValue = state.readingValue;
     if (mode == CC || mode == BC || mode == CA) {
       if (readingValue < 100) Print_Spaces(6, 2);
       if (readingValue < 10) Print_Spaces(7, 2);
@@ -227,16 +225,16 @@ void Update_LCD(void) {
       if (readingValue < 10) printLCDRaw("0");
       printLCDRaw(readingValue, 1);
     }
-    setCursorLCD(app_runtime_cursor_position(), 2);
+    setCursorLCD(state.cursorPosition, 2);
 
     blink_cntr = (blink_cntr + 1) % 5;
-    setCursorLCD(app_runtime_cursor_position(), 2);
+    setCursorLCD(state.cursorPosition, 2);
     if (blink_cntr == 4) {
-      Print_Spaces(app_runtime_cursor_position(), 2);
+      Print_Spaces(state.cursorPosition, 2);
     }
   }
 
-  render_keypad_input(mode);
+  render_keypad_input(mode, state.mode == CA);
 }
 
 //--------------------------- Funciones para el LCD -----------------------------------
