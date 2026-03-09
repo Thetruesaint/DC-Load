@@ -1,8 +1,9 @@
 #include "legacy_timing_buzzer.h"
 
-#include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
 #include "../app/app_timer_context.h"
+#include "../hal/hal_alerts.h"
+#include "../hal/hal_inputs.h"
+#include "../hw/hw_objects.h"
 
 #define mytimerStarted (app_timer_running_ref())
 #define startTime (app_timer_start_time_ref())
@@ -10,10 +11,10 @@
 
 void legacy_beep_buzzer() {
   for (int i = 0; i < 2; i++) {
-    digitalWrite(BUZZER, HIGH);
-    delay(150);
-    digitalWrite(BUZZER, LOW);
-    delay(150);
+    hal_buzzer_set(true);
+    hal_delay_ms(150);
+    hal_buzzer_set(false);
+    hal_delay_ms(150);
   }
 }
 
@@ -67,4 +68,3 @@ String legacy_timer_get_time() {
 
   return formattedTime;
 }
-

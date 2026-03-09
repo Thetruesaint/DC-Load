@@ -212,3 +212,7 @@ void ui_blink_limit_alarm(const char *message, bool vlimit, bool ilimit, bool pl
     delay(250);
   }
 }
+
+void ui_set_setpoint_cursor(int cursorColumn) {
+  setCursorLCD(cursorColumn, 2);
+}

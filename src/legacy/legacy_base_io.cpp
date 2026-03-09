@@ -13,6 +13,7 @@
 #include "../app/app_setpoint_context.h"
 #include "../app/app_measurements_context.h"
 #include "../core/core_modes.h"
+#include "../ui/ui_mode_templates.h"
 #define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
 #define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
 #define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
@@ -74,7 +75,7 @@ void legacy_cursor_position() {
 
   if (managedMode) {
     lastCursor = cursor;
-    setCursorLCD(cursor, 2);
+    ui_set_setpoint_cursor(cursor);
     return;
   }
 
@@ -98,7 +99,7 @@ void legacy_cursor_position() {
   app_runtime_set_cursor_position(cursor);
   lastCursor = cursor;
 
-  setCursorLCD(cursor, 2);
+  ui_set_setpoint_cursor(cursor);
 }
 
 void legacy_read_volts_current() {
