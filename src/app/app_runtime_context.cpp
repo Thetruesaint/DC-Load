@@ -1,6 +1,11 @@
 #include "app_runtime_context.h"
 
-#include "../variables.h"
+namespace {
+float encoderPosition = 0.0f;
+float factor = 0.0f;
+unsigned long maxEncoder = 999000;
+int cursorPosition = 8;
+}
 
 float app_runtime_encoder_position() {
   return encoderPosition;
@@ -27,9 +32,9 @@ void app_runtime_set_encoder_max(unsigned long value) {
 }
 
 int app_runtime_cursor_position() {
-  return CuPo;
+  return cursorPosition;
 }
 
 void app_runtime_set_cursor_position(int position) {
-  CuPo = position;
+  cursorPosition = position;
 }

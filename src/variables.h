@@ -44,9 +44,6 @@ const uint8_t VLTG_SNSR = 3;   // Input A3 from ADC (real hardware ADS1115)
 //--------------- Variables Encoder --------------------------------------
 
 extern unsigned long lastButtonPress;     // Use this to store if the encoder button was pressed or not
-extern volatile float encoderPosition;    // Antes era volatile float
-extern volatile float factor;             // Factor de escala del Encoder
-extern volatile unsigned long maxEncoder; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -71,7 +68,6 @@ extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente
 
 extern int16_t adcv, adci;                 // Objetos para los SDC valor en binario del ADC
 extern unsigned long setDAC;               // Voltage de control para el DAC que controlara al MOSFET
-extern int CuPo;                           // Posicion inicial del cursor
 extern bool toggle;                        // Conmuta la carga On/Off
 extern float reading;                      // Para tomar valores de encoder
 extern float maxReading;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
@@ -168,4 +164,5 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
+
 

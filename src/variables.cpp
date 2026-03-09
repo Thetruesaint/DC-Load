@@ -15,9 +15,6 @@ ESP32Encoder encoder; // Objeto Encoder para el ESP32Encoder
 //--------------- Variables Encoder --------------------------------------
 
 unsigned long lastButtonPress = 0;          // Use this to store if the encoder button was pressed or not
-volatile float encoderPosition = 0;         // Antes era volatile float
-volatile float factor = 0;                  // Factor de escala del Encoder
-volatile unsigned long maxEncoder = 999000; // sets maximum Rotary Encoder value allowed CAN BE CHANGED AS REQUIRED (was 50000)
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -33,7 +30,6 @@ float Sns_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente se
 float Out_Curr_Calib_Fact = 1.0;        // Factor de calibración para el DAC de I
 float Out_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente máxima de salida
 
-int CuPo = 8;                           // Posicion del cursor, es 8 incialmente.
 bool toggle = false;                    // Conmuta la carga On/Off
 float reading = 0;                      // Variable para Encoder dividido por 1000
 float maxReading = 0;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
@@ -105,4 +101,5 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
+
 
