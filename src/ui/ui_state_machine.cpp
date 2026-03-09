@@ -17,7 +17,13 @@ struct LimitsRenderCache {
   bool valid;
 };
 
+struct CalibrationRenderCache {
+  uint8_t option;
+  bool valid;
+};
+
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false};
+CalibrationRenderCache g_calibrationCache = {1, false};
 bool g_limitsIntroActive = false;
 unsigned long g_limitsIntroUntilMs = 0;
 
@@ -57,6 +63,25 @@ void draw_limits_if_needed(const UiViewState &viewState) {
   g_limitsCache.valid = true;
 }
 
+void draw_calibration_menu(const UiViewState &viewState) {
+  clearLCD();
+  printLCD(4, 0, F("CALIBRATION"));
+  printLCD(0, 1, F("1)V 2)I 3)Load"));
+  printLCD(0, 2, F("4)Save   E=OK"));
+  printLCD(0, 3, F("< Back Sel:"));
+  printLCDRaw(static_cast<int>(viewState.calibrationMenuOption));
+}
+
+void draw_calibration_if_needed(const UiViewState &viewState) {
+  if (g_calibrationCache.valid && g_calibrationCache.option == viewState.calibrationMenuOption) {
+    return;
+  }
+
+  draw_calibration_menu(viewState);
+  g_calibrationCache.option = viewState.calibrationMenuOption;
+  g_calibrationCache.valid = true;
+}
+
 void screen_enter_home(const UiViewState &viewState) { (void)viewState; }
 void screen_update_home(const UiViewState &viewState) { (void)viewState; }
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
@@ -93,10 +118,12 @@ void screen_update_menu_limits(const UiViewState &viewState) {
 void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_calibration(const UiViewState &viewState) {
-  (void)viewState;
-  ui_draw_calibration_setup_menu();
+  g_calibrationCache.valid = false;
+  draw_calibration_if_needed(viewState);
 }
-void screen_update_menu_calibration(const UiViewState &viewState) { (void)viewState; }
+void screen_update_menu_calibration(const UiViewState &viewState) {
+  draw_calibration_if_needed(viewState);
+}
 void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewState; }
 
 void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
@@ -134,6 +161,7 @@ void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
   g_lastMenuRootSection = 0;
   g_limitsCache.valid = false;
+  g_calibrationCache.valid = false;
   g_limitsIntroActive = false;
   g_limitsIntroUntilMs = 0;
 }

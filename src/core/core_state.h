@@ -39,6 +39,9 @@ struct SystemState {
   float limitsDraftPowerW;
   float limitsDraftTempC;
 
+  // Draft selection for non-blocking calibration setup menu.
+  uint8_t calibrationMenuOption;
+
   int cursorPosition;
   int functionIndex;
   uint8_t limitsMenuField;
@@ -51,6 +54,8 @@ struct SystemState {
   bool openCalibrationConfigEvent;
   bool limitsMenuActive;
   bool limitsSaveEvent;
+  bool calibrationMenuActive;
+  bool calibrationMenuApplyEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
@@ -68,6 +73,7 @@ inline SystemState core_state_make_default() {
   state.uiScreen = UiScreen::Home;
   state.pendingConfigSection = ConfigSection::None;
   state.limitsMenuField = 0;
+  state.calibrationMenuOption = 1;
   return state;
 }
 
@@ -78,6 +84,7 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->openLimitsConfigEvent = false;
   state->openCalibrationConfigEvent = false;
   state->limitsSaveEvent = false;
+  state->calibrationMenuApplyEvent = false;
   state->calibrationRealValue = 0.0f;
 }
 

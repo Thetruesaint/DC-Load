@@ -74,6 +74,31 @@ void limits_menu_finish(SystemState *state, bool save) {
   state->pendingConfigSection = ConfigSection::None;
   state->modeInitialized = false;
 }
+
+void calibration_menu_step_option(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0) return;
+
+  int option = static_cast<int>(state->calibrationMenuOption) + direction;
+  if (option < 1) option = 4;
+  if (option > 4) option = 1;
+  state->calibrationMenuOption = static_cast<uint8_t>(option);
+}
+
+void calibration_menu_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->calibrationMenuActive = true;
+  if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 4) {
+    state->calibrationMenuOption = 1;
+  }
+}
+
+void calibration_menu_finish(SystemState *state, bool apply) {
+  if (state == nullptr) return;
+  state->calibrationMenuApplyEvent = apply;
+  state->calibrationMenuActive = false;
+  state->pendingConfigSection = ConfigSection::None;
+  state->modeInitialized = false;
+}
 }
 
 void core_init() {
@@ -91,6 +116,8 @@ void core_sync_from_legacy(const SystemState &state) {
   const float limitsDraftCurrentA = g_state.limitsDraftCurrentA;
   const float limitsDraftPowerW = g_state.limitsDraftPowerW;
   const float limitsDraftTempC = g_state.limitsDraftTempC;
+  const bool calibrationMenuActive = g_state.calibrationMenuActive;
+  const uint8_t calibrationMenuOption = g_state.calibrationMenuOption;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -103,6 +130,8 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.limitsDraftCurrentA = limitsDraftCurrentA;
   g_state.limitsDraftPowerW = limitsDraftPowerW;
   g_state.limitsDraftTempC = limitsDraftTempC;
+  g_state.calibrationMenuActive = calibrationMenuActive;
+  g_state.calibrationMenuOption = calibrationMenuOption;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -133,6 +162,11 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuCalibration) {
+        calibration_menu_step_option(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+        break;
+      }
+
       core_mode_apply_encoder_delta(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
       break;
 
@@ -142,7 +176,7 @@ void core_dispatch(const UserAction &action) {
           g_state.openLimitsConfigEvent = true;
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
-          g_state.openCalibrationConfigEvent = true;
+          calibration_menu_begin(&g_state);
           g_state.pendingConfigSection = ConfigSection::None;
         }
         break;
@@ -150,6 +184,11 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::MenuLimits) {
         limits_menu_finish(&g_state, true);
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuCalibration) {
+        calibration_menu_finish(&g_state, true);
         break;
       }
 
@@ -168,7 +207,7 @@ void core_dispatch(const UserAction &action) {
           if (g_state.pendingConfigSection == ConfigSection::Limits) {
             g_state.openLimitsConfigEvent = true;
           } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
-            g_state.openCalibrationConfigEvent = true;
+            calibration_menu_begin(&g_state);
           }
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (action.key == '<' || action.key == 'M') {
@@ -196,6 +235,21 @@ void core_dispatch(const UserAction &action) {
           limits_menu_finish(&g_state, true);
         } else if (action.key == '<' || action.key == 'M') {
           limits_menu_finish(&g_state, false);
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuCalibration) {
+        if (action.key >= '1' && action.key <= '4') {
+          g_state.calibrationMenuOption = static_cast<uint8_t>(action.key - '0');
+        } else if (action.key == 'U' || action.key == 'L') {
+          calibration_menu_step_option(&g_state, -1);
+        } else if (action.key == 'D' || action.key == 'R') {
+          calibration_menu_step_option(&g_state, 1);
+        } else if (action.key == 'E') {
+          calibration_menu_finish(&g_state, true);
+        } else if (action.key == '<' || action.key == 'M') {
+          calibration_menu_finish(&g_state, false);
         }
         break;
       }
@@ -230,6 +284,7 @@ void core_dispatch(const UserAction &action) {
       g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
       g_state.limitsMenuActive = false;
+      g_state.calibrationMenuActive = false;
       break;
 
     case ActionType::ValueConfirm:
@@ -249,6 +304,7 @@ void core_dispatch(const UserAction &action) {
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.limitsMenuActive = false;
+      g_state.calibrationMenuActive = false;
       break;
 
     case ActionType::None:
@@ -270,5 +326,3 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
-
-

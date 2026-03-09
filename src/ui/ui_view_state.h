@@ -23,11 +23,14 @@ struct UiViewState {
   float limitsDraftTempC;
   uint8_t limitsMenuField;
 
+  uint8_t calibrationMenuOption;
+
   uint8_t pendingConfigSection;
 };
 
 inline UiViewState ui_view_state_make_default() {
   UiViewState state = {0};
+  state.calibrationMenuOption = 1;
   return state;
 }
 

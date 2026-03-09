@@ -21,6 +21,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
   view.limitsMenuField = state.limitsMenuField;
+  view.calibrationMenuOption = state.calibrationMenuOption;
   view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
 }

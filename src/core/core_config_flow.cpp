@@ -13,6 +13,10 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuLimits;
   }
 
+  if (state.calibrationMenuActive) {
+    return UiScreen::MenuCalibration;
+  }
+
   if (state.pendingConfigSection == ConfigSection::Limits ||
       state.pendingConfigSection == ConfigSection::Calibration) {
     return UiScreen::MenuRoot;
@@ -20,4 +24,3 @@ UiScreen core_config_target_screen(const SystemState &state) {
 
   return UiScreen::Home;
 }
-

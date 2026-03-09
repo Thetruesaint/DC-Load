@@ -11,7 +11,10 @@
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_setpoint_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../app/app_value_result_context.h"
+#include "../app/app_calibration_context.h"
 #include "../core/core_config_flow.h"
+#include "../ui/ui_mode_templates.h"
 #include "../funciones.h"
 
 SystemState legacy_capture_state() {
@@ -73,6 +76,30 @@ void legacy_apply_state(const SystemState &state) {
     Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
 
     app_mode_state_set_initialized(false);
+  }
+
+  if (state.calibrationMenuApplyEvent) {
+    const uint8_t option = state.calibrationMenuOption;
+
+    if (option == 1 || option == 2) {
+      app_mode_state_set_mode(CA);
+      app_mode_state_set_configured(true);
+      app_mode_state_set_initialized(false);
+      app_calibration_set_first_point_taken(false);
+      app_value_result_set(static_cast<float>(option));
+    } else if (option == 3) {
+      Load_Calibration();
+      ui_draw_calibration_loaded_message();
+      delay(1500);
+      app_mode_state_set_configured(false);
+      app_mode_state_set_initialized(false);
+    } else if (option == 4) {
+      Save_Calibration();
+      ui_draw_calibration_saved_message();
+      delay(1500);
+      app_mode_state_set_configured(false);
+      app_mode_state_set_initialized(false);
+    }
   }
 
   if (state.calibrationValueConfirmEvent && state.mode == CA) {
