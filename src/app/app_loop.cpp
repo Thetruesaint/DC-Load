@@ -31,6 +31,18 @@ bool dequeueAction(UserAction *action) {
   g_queueHead = (g_queueHead + 1U) % ACTION_QUEUE_CAPACITY;
   return true;
 }
+
+bool drain_action_queue() {
+  UserAction action = make_none_action();
+  bool dispatched = false;
+
+  while (dequeueAction(&action)) {
+    core_dispatch(action);
+    dispatched = true;
+  }
+
+  return dispatched;
+}
 }
 
 void app_init() {
@@ -47,12 +59,17 @@ void app_tick() {
   core_sync_from_legacy(legacy_capture_state());
   core_begin_cycle();
 
-  UserAction action = make_none_action();
-  while (dequeueAction(&action)) {
-    core_dispatch(action);
-  }
+  (void)drain_action_queue();
 
   core_tick_10ms();
   legacy_apply_state(core_get_state());
+
+  // Process actions queued from blocking legacy flows in the same cycle
+  // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
+  if (drain_action_queue()) {
+    core_tick_10ms();
+    legacy_apply_state(core_get_state());
+  }
+
   ui_render(core_get_state());
 }
