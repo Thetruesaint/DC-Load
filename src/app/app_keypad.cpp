@@ -11,6 +11,13 @@ void app_read_keypad(int col, int row) {
   (void)col;
   (void)row;
 
+  static uint8_t lastMode = app_mode_id();
+  const uint8_t currentMode = app_mode_id();
+  if (currentMode != lastMode) {
+    app_input_reset();
+    lastMode = currentMode;
+  }
+
   int maxDigits = app_mode_is_calibration() ? 6 : 5;
   char key = app_input_read_key();
 

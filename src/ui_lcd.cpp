@@ -10,6 +10,8 @@
 #include "app/app_runtime_context.h"
 #include "app/app_setpoint_context.h"
 
+#include <cstring>
+
 #ifndef WOKWI_SIMULATION
 namespace {
 constexpr uint16_t TFT_CELL_W = 12;  // Grid column width for 20x4 layout
@@ -137,15 +139,38 @@ void printLCDRaw(float value, int decimals) {
 }
 
 void render_keypad_input(uint8_t mode) {
-  if (mode == TC || mode == TL || mode == BC) return;
+  static uint8_t lastMode = 0xFF;
+  static char lastInput[10] = {'\0'};
+  static bool rowWasVisible = false;
 
   const int inputCol = 1;
   const int inputRow = 3;
+  const bool visible = (mode != TC && mode != TL && mode != BC);
   const byte maxDigits = app_mode_is_calibration() ? 6 : 5;
+  const char* currentInput = app_input_text();
+
+  if (!visible) {
+    if (rowWasVisible) {
+      Print_Spaces(inputCol, inputRow, 6);
+      rowWasVisible = false;
+      lastInput[0] = '\0';
+    }
+    lastMode = mode;
+    return;
+  }
+
+  if (rowWasVisible && lastMode == mode && strcmp(lastInput, currentInput) == 0) {
+    return;
+  }
 
   Print_Spaces(inputCol, inputRow, maxDigits);
   setCursorLCD(inputCol, inputRow);
-  printLCDRaw(app_input_text());
+  printLCDRaw(currentInput);
+
+  strncpy(lastInput, currentInput, sizeof(lastInput) - 1);
+  lastInput[sizeof(lastInput) - 1] = '\0';
+  rowWasVisible = true;
+  lastMode = mode;
 }
 
 //------------ Calculate and Display Actual Voltage, Current, and Power ------------
