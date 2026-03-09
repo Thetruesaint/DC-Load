@@ -1,5 +1,6 @@
 #include "app_runtime.h"
 
+#include "../core/core_engine.h"
 #include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_dac_control.h"
 #include "../legacy/legacy_mode_dispatch.h"
@@ -18,7 +19,12 @@ void app_run_cycle() {
   legacy_check_limits();
   legacy_dac_control();
 
-  legacy_run_mode_logic();
+  // While in non-home UI screens, skip legacy mode rendering logic.
+  // This prevents background templates from overwriting menu/config screens.
+  if (core_get_state().uiScreen == UiScreen::Home) {
+    legacy_run_mode_logic();
+  }
+
   app_tick();
   ui_render_cycle();
 }

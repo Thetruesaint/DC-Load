@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "../core/core_engine.h"
 #include "app_input_buffer.h"
 #include "app_loop.h"
 #include "app_mode_context.h"
@@ -24,6 +25,13 @@ void app_read_keypad(int col, int row) {
   if (app_input_is_no_key(key)) return;
 
   app_push_action(make_key_pressed_action(key));
+
+  // While UI is in a config/menu screen, route keys only as actions.
+  // This avoids legacy hotkey/input parsing interfering with menu navigation.
+  const bool inMenu = core_get_state().uiScreen != UiScreen::Home;
+  if (inMenu) {
+    return;
+  }
 
   if (!app_handle_msc_keys(key)) {
     return;

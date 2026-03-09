@@ -139,7 +139,7 @@ void core_dispatch(const UserAction &action) {
     case ActionType::EncoderButtonPress:
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         if (g_state.pendingConfigSection == ConfigSection::Limits) {
-          limits_menu_begin(&g_state);
+          g_state.openLimitsConfigEvent = true;
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
           g_state.openCalibrationConfigEvent = true;
@@ -166,7 +166,7 @@ void core_dispatch(const UserAction &action) {
           g_state.pendingConfigSection = ConfigSection::Calibration;
         } else if (action.key == 'E') {
           if (g_state.pendingConfigSection == ConfigSection::Limits) {
-            limits_menu_begin(&g_state);
+            g_state.openLimitsConfigEvent = true;
           } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
             g_state.openCalibrationConfigEvent = true;
           }
@@ -242,6 +242,9 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::OpenConfigSection:
+      if (g_state.uiScreen != UiScreen::Home) {
+        break;
+      }
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
@@ -267,3 +270,5 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+

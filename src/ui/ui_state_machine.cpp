@@ -1,5 +1,7 @@
 #include "ui_state_machine.h"
 
+#include <Arduino.h>
+
 #include "../ui_lcd.h"
 #include "ui_mode_templates.h"
 
@@ -16,6 +18,8 @@ struct LimitsRenderCache {
 };
 
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false};
+bool g_limitsIntroActive = false;
+unsigned long g_limitsIntroUntilMs = 0;
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSection == viewState.pendingConfigSection) return;
@@ -68,9 +72,22 @@ void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_limits(const UiViewState &viewState) {
   g_limitsCache.valid = false;
-  draw_limits_if_needed(viewState);
+  g_limitsIntroActive = true;
+  g_limitsIntroUntilMs = millis() + 1200UL;
+  ui_draw_limits_summary(
+      viewState.limitsDraftCurrentA,
+      viewState.limitsDraftPowerW,
+      viewState.limitsDraftTempC);
 }
 void screen_update_menu_limits(const UiViewState &viewState) {
+  if (g_limitsIntroActive) {
+    if (millis() < g_limitsIntroUntilMs) {
+      return;
+    }
+    g_limitsIntroActive = false;
+    g_limitsCache.valid = false;
+  }
+
   draw_limits_if_needed(viewState);
 }
 void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; }
@@ -117,6 +134,8 @@ void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
   g_lastMenuRootSection = 0;
   g_limitsCache.valid = false;
+  g_limitsIntroActive = false;
+  g_limitsIntroUntilMs = 0;
 }
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
