@@ -170,3 +170,45 @@ void ui_draw_transient_list_step_template(int stepIndex) {
   printLCD(0, 2, F("Current (A):"));
   printLCD(0, 3, F("Time (mSec):"));
 }
+
+void ui_draw_header_temperature(int tempC) {
+  setCursorLCD(16, 0);
+  if (tempC < 10) {
+    printLCDRaw(" ");
+  }
+  printLCDRaw(tempC);
+  printLCDRaw(char(0xDF));
+  printLCDRaw("C");
+}
+
+void ui_blink_limit_alarm(const char *message, bool vlimit, bool ilimit, bool plimit, bool climit) {
+  for (int i = 0; i < 6; i++) {
+    printLCD_S(0, 3, message);
+    if (vlimit) {
+      Print_Spaces(12, 1);
+    } else if (ilimit) {
+      Print_Spaces(5, 1);
+    } else if (plimit) {
+      Print_Spaces(19, 1);
+    } else if (climit) {
+      Print_Spaces(19, 0);
+    }
+    delay(250);
+
+    Print_Spaces(0, 3, 18);
+    if (vlimit) {
+      setCursorLCD(12, 1);
+      printLCDRaw(F("v"));
+    } else if (ilimit) {
+      setCursorLCD(5, 1);
+      writeLCD(byte(0));
+    } else if (plimit) {
+      setCursorLCD(19, 1);
+      printLCDRaw(F("w"));
+    } else if (climit) {
+      setCursorLCD(19, 0);
+      printLCDRaw(F("C"));
+    }
+    delay(250);
+  }
+}

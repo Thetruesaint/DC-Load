@@ -3,6 +3,7 @@
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
 #include "../funciones.h"
+#include "../ui/ui_mode_templates.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
@@ -34,13 +35,7 @@ void legacy_temp_control() {
     fans_on = false;
   }
 
-  setCursorLCD(16, 0);
-  if (app_measurements_temp_c() < 10) {
-    printLCDRaw(" ");
-  }
-  printLCDRaw(app_measurements_temp_c());
-  printLCDRaw(char(0xDF));
-  printLCDRaw("C");
+  ui_draw_header_temperature(app_measurements_temp_c());
 }
 
 void legacy_check_limits() {
@@ -75,34 +70,9 @@ void legacy_check_limits() {
     app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
     app_load_set_set_current_mA(0.0f);
-    for (int i = 0; i < 6; i++) {
-      printLCD_S(0, 3, message);
-      if (vlimit) {
-        Print_Spaces(12, 1);
-      } else if (ilimit) {
-        Print_Spaces(5, 1);
-      } else if (plimit) {
-        Print_Spaces(19, 1);
-      } else if (climit) {
-        Print_Spaces(19, 0);
-      }
-      delay(250);
-      Print_Spaces(0, 3, 18);
-      if (vlimit) {
-        setCursorLCD(12, 1);
-        printLCDRaw(F("v"));
-      } else if (ilimit) {
-        setCursorLCD(5, 1);
-        writeLCD(byte(0));
-      } else if (plimit) {
-        setCursorLCD(19, 1);
-        printLCDRaw(F("w"));
-      } else if (climit) {
-        setCursorLCD(19, 0);
-        printLCDRaw(F("C"));
-      }
-      delay(250);
-    }
+
+    ui_blink_limit_alarm(message, vlimit, ilimit, plimit, climit);
+
     Reset_Input_Pointers();
     app_mode_state_set_initialized(false);
   }
