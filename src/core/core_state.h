@@ -42,6 +42,7 @@ struct SystemState {
   bool loadToggleEvent;
   bool calibrationValueConfirmEvent;
   bool openLimitsConfigEvent;
+  bool openCalibrationConfigEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
@@ -66,8 +67,8 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->loadToggleEvent = false;
   state->calibrationValueConfirmEvent = false;
   state->openLimitsConfigEvent = false;
+  state->openCalibrationConfigEvent = false;
   state->calibrationRealValue = 0.0f;
-  state->pendingConfigSection = ConfigSection::None;
 }
 
 #endif

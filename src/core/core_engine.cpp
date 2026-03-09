@@ -58,6 +58,25 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
+
+      if (g_state.uiScreen == UiScreen::MenuRoot) {
+        if (action.key == '1') {
+          g_state.pendingConfigSection = ConfigSection::Limits;
+        } else if (action.key == '2') {
+          g_state.pendingConfigSection = ConfigSection::Calibration;
+        } else if (action.key == 'E') {
+          if (g_state.pendingConfigSection == ConfigSection::Limits) {
+            g_state.openLimitsConfigEvent = true;
+          } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
+            g_state.openCalibrationConfigEvent = true;
+          }
+          g_state.pendingConfigSection = ConfigSection::None;
+        } else if (action.key == '<' || action.key == 'M') {
+          g_state.pendingConfigSection = ConfigSection::None;
+        }
+        break;
+      }
+
       if (!core_mode_is_managed(g_state.mode)) {
         break;
       }
@@ -85,6 +104,7 @@ void core_dispatch(const UserAction &action) {
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       g_state.pendingConfigSection = ConfigSection::None;
       g_state.openLimitsConfigEvent = false;
+      g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
       break;
 
@@ -99,9 +119,8 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::OpenConfigSection:
       g_state.pendingConfigSection = decode_config_section(action.value);
-      if (g_state.pendingConfigSection == ConfigSection::Limits) {
-        g_state.openLimitsConfigEvent = true;
-      }
+      g_state.openLimitsConfigEvent = false;
+      g_state.openCalibrationConfigEvent = false;
       break;
 
     case ActionType::None:
