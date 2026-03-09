@@ -12,6 +12,13 @@
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
+#define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
+#define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
+#define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
+#define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
+#define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
+#define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
+
 
 void legacy_calibration_mode() {
   if (!app_mode_state_configured()) {
@@ -163,3 +170,4 @@ void legacy_calibrate(float realValue) {
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
+

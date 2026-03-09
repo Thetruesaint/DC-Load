@@ -19,14 +19,8 @@ unsigned long lastButtonPress = 0;          // Use this to store if the encoder 
 //--------------- Variables de operacion --------------------------------- 
 
 
-float Sns_Volt_Calib_Fact = 1.0;        // Factor de calibración para el ADC de V
-float Sns_Volt_Calib_Offs = 0.0;        // Offset de calibracion de voltage sensado
 
-float Sns_Curr_Calib_Fact = 1.0;        // Factor de calibración para el ADC de I
-float Sns_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente sensada
 
-float Out_Curr_Calib_Fact = 1.0;        // Factor de calibración para el DAC de I
-float Out_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente máxima de salida
 
 float CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
 float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM

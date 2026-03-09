@@ -5,12 +5,20 @@
 #include "../app/app_inputs.h"
 #include "../app/app_io_context.h"
 #include "../app/app_load_context.h"
+#include "../app/app_calibration_context.h"
 #include "../app/app_loop.h"
 #include "../app/app_mode_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_measurements_context.h"
 #include "../core/core_modes.h"
+#define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
+#define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
+#define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
+#define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
+#define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
+#define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
+
 
 void legacy_load_off() {
 #ifndef WOKWI_SIMULATION

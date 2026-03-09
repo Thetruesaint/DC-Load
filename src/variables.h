@@ -54,16 +54,10 @@ const float MAX_POWER = 300.0;             // Máximo 300W
 const float MAX_TEMP = 99;                 // Máximo 99°C
 
 const float SNS_VOLT_FACT = 10.20408;      // Factor de diseño para el ADC para 32V Max 
-extern float Sns_Volt_Calib_Fact;          // Factor de calibración para el ADC de V
-extern float Sns_Volt_Calib_Offs;          // Offset de calibracion de voltage sensado
 
 const float SNS_CURR_FACT = 4;             // Factor de diseño para Placa power V2 con Rshunt de 1ohm en cada Mosfet
-extern float Sns_Curr_Calib_Fact;          // Factor de calibración para el ADC de I
-extern float Sns_Curr_Calib_Offs;          // Offset de calibracion de corriente sensada
 
 const float OUT_CURR_FACT = 0.3375;        // Conviente 12000mA a 4050 para el DAC control
-extern float Out_Curr_Calib_Fact;          // Factor de calibración para el DAC de I
-extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente máxima de salida
 
 
 extern float CurrentCutOff;                // Corriente máxima de corte seteado o cargado de la EEPROM
