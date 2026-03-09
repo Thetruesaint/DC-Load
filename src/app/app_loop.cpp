@@ -64,6 +64,10 @@ void app_tick() {
   core_tick_10ms();
   legacy_apply_state(core_get_state());
 
+  // Re-sync after possible blocking legacy flows so core keeps
+  // side effects done in legacy context (e.g. modeInitialized reset).
+  core_sync_from_legacy(legacy_capture_state());
+
   // Process actions queued from blocking legacy flows in the same cycle
   // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
   // Start a fresh one-shot window before dispatching post-flow actions so
