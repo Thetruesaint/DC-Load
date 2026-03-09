@@ -1,4 +1,5 @@
 #include "legacy_bridge.h"
+#include "legacy_hooks.h"
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
@@ -33,6 +34,8 @@ SystemState legacy_capture_state() {
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
   state.loadToggleEvent = false;
+  state.calibrationValueConfirmEvent = false;
+  state.calibrationRealValue = 0.0f;
   state.actionCounter = 0;
 
   state.loadEnabled = app_load_is_enabled();
@@ -58,6 +61,10 @@ void legacy_apply_state(const SystemState &state) {
   app_mode_state_set_configured(state.modeConfigured);
   app_setpoint_set_reading(state.readingValue);
   app_load_set_enabled(state.loadEnabled);
+
+  if (state.calibrationValueConfirmEvent && state.mode == CA) {
+    legacy_calibrate(state.calibrationRealValue);
+  }
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {
     app_load_set_set_current_mA(state.setCurrent_mA);

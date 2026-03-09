@@ -25,6 +25,8 @@ struct SystemState {
   int32_t lastEncoderDelta;
   char lastKeyPressed;
   bool loadToggleEvent;
+  bool calibrationValueConfirmEvent;
+  float calibrationRealValue;
   uint32_t actionCounter;
 
   bool loadEnabled;

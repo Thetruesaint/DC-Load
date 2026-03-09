@@ -4,7 +4,6 @@
 #include <cmath>
 
 #include "../ui_lcd.h"
-#include "../legacy/legacy_hooks.h"
 #include "app_msc.h"
 #include "app_mode_context.h"
 #include "app_input_buffer.h"
@@ -72,7 +71,8 @@ void app_read_keypad(int col, int row) {
       const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
       app_push_action(make_value_confirm_action(parsedMilli));
     } else {
-      legacy_calibrate(parsedValue);
+      const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
+      app_push_action(make_calibration_value_confirm_action(parsedMilli));
     }
     Print_Spaces(col, row, maxDigits);
     app_input_reset();

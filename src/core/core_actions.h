@@ -10,7 +10,8 @@ enum class ActionType : uint8_t {
   KeyPressed,
   LoadToggle,
   ModeSelect,
-  ValueConfirm
+  ValueConfirm,
+  CalibrationValueConfirm
 };
 
 struct UserAction {
@@ -45,6 +46,10 @@ constexpr UserAction make_mode_select_action(bool shiftSelection, char key = '\0
 
 constexpr UserAction make_value_confirm_action(int32_t valueMilli) {
   return {ActionType::ValueConfirm, valueMilli, '\0'};
+}
+
+constexpr UserAction make_calibration_value_confirm_action(int32_t valueMilli) {
+  return {ActionType::CalibrationValueConfirm, valueMilli, '\0'};
 }
 
 #endif

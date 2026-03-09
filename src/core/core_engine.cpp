@@ -59,6 +59,11 @@ void core_dispatch(const UserAction &action) {
       g_state.encoderPositionRaw = static_cast<float>(action.value);
       break;
 
+    case ActionType::CalibrationValueConfirm:
+      g_state.calibrationRealValue = static_cast<float>(action.value) / 1000.0f;
+      g_state.calibrationValueConfirmEvent = true;
+      break;
+
     case ActionType::None:
     default:
       return;
