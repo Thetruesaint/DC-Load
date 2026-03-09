@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "core_state.h"
+
 enum class ActionType : uint8_t {
   None = 0,
   EncoderDelta,
@@ -11,7 +13,7 @@ enum class ActionType : uint8_t {
   LoadToggle,
   ModeSelect,
   ValueConfirm,
-  OpenLimitsConfig
+  OpenConfigSection
 };
 
 struct UserAction {
@@ -48,8 +50,16 @@ constexpr UserAction make_value_confirm_action(int32_t valueMilli) {
   return {ActionType::ValueConfirm, valueMilli, '\0'};
 }
 
+constexpr UserAction make_open_config_section_action(ConfigSection section) {
+  return {ActionType::OpenConfigSection, static_cast<int32_t>(section), '\0'};
+}
+
 constexpr UserAction make_open_limits_config_action() {
-  return {ActionType::OpenLimitsConfig, 0, '\0'};
+  return make_open_config_section_action(ConfigSection::Limits);
+}
+
+constexpr UserAction make_open_calibration_config_action() {
+  return make_open_config_section_action(ConfigSection::Calibration);
 }
 
 #endif

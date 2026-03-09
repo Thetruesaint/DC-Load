@@ -8,6 +8,14 @@
 namespace {
 SystemState g_state = core_state_make_default();
 unsigned long g_lastTickMs = 0;
+
+ConfigSection decode_config_section(int32_t raw) {
+  const ConfigSection section = static_cast<ConfigSection>(raw);
+  if (section == ConfigSection::Limits || section == ConfigSection::Calibration) {
+    return section;
+  }
+  return ConfigSection::None;
+}
 }
 
 void core_init() {
@@ -15,7 +23,19 @@ void core_init() {
 }
 
 void core_sync_from_legacy(const SystemState &state) {
+  const uint32_t actionCounter = g_state.actionCounter;
+  const UiScreen uiScreen = g_state.uiScreen;
+  const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
+  const int32_t lastEncoderDelta = g_state.lastEncoderDelta;
+  const char lastKeyPressed = g_state.lastKeyPressed;
+
   g_state = state;
+  g_state.actionCounter = actionCounter;
+  g_state.uiScreen = uiScreen;
+  g_state.pendingConfigSection = pendingConfigSection;
+  g_state.lastEncoderDelta = lastEncoderDelta;
+  g_state.lastKeyPressed = lastKeyPressed;
+
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
 }
@@ -68,13 +88,20 @@ void core_dispatch(const UserAction &action) {
       if (g_state.mode == CA) {
         g_state.calibrationRealValue = static_cast<float>(action.value) / 1000.0f;
         g_state.calibrationValueConfirmEvent = true;
+        g_state.uiScreen = UiScreen::MenuCalibration;
       } else {
         g_state.encoderPositionRaw = static_cast<float>(action.value);
       }
       break;
 
-    case ActionType::OpenLimitsConfig:
-      g_state.openLimitsConfigEvent = true;
+    case ActionType::OpenConfigSection:
+      g_state.pendingConfigSection = decode_config_section(action.value);
+      if (g_state.pendingConfigSection == ConfigSection::Limits) {
+        g_state.openLimitsConfigEvent = true;
+        g_state.uiScreen = UiScreen::MenuLimits;
+      } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
+        g_state.uiScreen = UiScreen::MenuCalibration;
+      }
       break;
 
     case ActionType::None:

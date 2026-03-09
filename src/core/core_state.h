@@ -3,6 +3,19 @@
 
 #include <stdint.h>
 
+enum class UiScreen : uint8_t {
+  Home = 0,
+  MenuRoot,
+  MenuLimits,
+  MenuCalibration
+};
+
+enum class ConfigSection : uint8_t {
+  None = 0,
+  Limits,
+  Calibration
+};
+
 struct SystemState {
   float setCurrent_mA;
   float setPower_W;
@@ -34,10 +47,15 @@ struct SystemState {
   uint8_t mode;
   bool modeInitialized;
   bool modeConfigured;
+
+  UiScreen uiScreen;
+  ConfigSection pendingConfigSection;
 };
 
 inline SystemState core_state_make_default() {
   SystemState state = {0};
+  state.uiScreen = UiScreen::Home;
+  state.pendingConfigSection = ConfigSection::None;
   return state;
 }
 
@@ -47,6 +65,7 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->calibrationValueConfirmEvent = false;
   state->openLimitsConfigEvent = false;
   state->calibrationRealValue = 0.0f;
+  state->pendingConfigSection = ConfigSection::None;
 }
 
 #endif
