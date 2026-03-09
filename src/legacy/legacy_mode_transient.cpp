@@ -4,6 +4,7 @@
 #include "../hw/hw_objects.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../ui/ui_mode_templates.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
@@ -25,33 +26,7 @@ void legacy_transient_cont_mode() {
   }
 
   if (!app_mode_state_initialized()) {
-    printLCD_S(3, 2, String(LowCurrent, 3));
-    writeLCD(byte(0));
-    printLCD_S(14, 2, String(HighCurrent, 3));
-    writeLCD(byte(0));
-    printLCD(0, 0, F("TC LOAD"));
-    printLCD(0, 2, F("I1>"));
-    printLCD(11, 2, F("I2>"));
-    printLCD(2, 3, F("Time: "));
-
-    if (transientPeriod < 10) {
-      Print_Spaces(7, 3, 4);
-      printLCDRaw(transientPeriod);
-    } else if (transientPeriod < 100) {
-      Print_Spaces(7, 3, 3);
-      printLCDRaw(transientPeriod);
-    } else if (transientPeriod < 1000) {
-      Print_Spaces(7, 3, 2);
-      printLCDRaw(transientPeriod);
-    } else if (transientPeriod < 10000) {
-      Print_Spaces(7, 3);
-      printLCDRaw(transientPeriod);
-    } else {
-      setCursorLCD(7, 3);
-      printLCDRaw(transientPeriod);
-    }
-
-    printLCD(13, 3, F("mSecs"));
+    ui_draw_transient_cont_mode_template(LowCurrent, HighCurrent, transientPeriod);
     app_load_set_set_current_mA(0.0f);
     app_mode_state_set_initialized(true);
     Encoder_Status(false);
@@ -61,12 +36,7 @@ void legacy_transient_cont_mode() {
 }
 
 void legacy_transient_cont_setup() {
-  clearLCD();
-
-  printLCD(3, 0, F("TRANSIENT CONT."));
-  printLCD(5, 1, F("I1(A)"));
-  printLCD(5, 2, F("I2(A)"));
-  printLCD(4, 3, F("dt(mS)"));
+  ui_draw_transient_cont_setup_template();
 
   const int col = 11;
   int row = 1;
@@ -128,12 +98,7 @@ void legacy_transient_list_mode() {
   }
 
   if (!app_mode_state_initialized()) {
-    printLCD(0, 0, F("TL LOAD"));
-    printLCD(6, 2, F("Step: "));
-    printLCD(13, 2, F("/"));
-    printLCD_S(14, 2, String(total_steps));
-    printLCD(4, 3, F("dt: "));
-    printLCD(13, 3, F("mS"));
+    ui_draw_transient_list_mode_template(total_steps);
     app_mode_state_set_initialized(true);
     Encoder_Status(false);
   }
@@ -151,9 +116,7 @@ void legacy_transient_list_mode() {
 }
 
 void legacy_transient_list_setup() {
-  clearLCD();
-  printLCD(3, 0, F("TRANSIENT LIST"));
-  printLCD(4, 1, F("Steps(2-10)?"));
+  ui_draw_transient_list_setup_template();
 
   float stepsInput = 0.0f;
   do {
@@ -171,10 +134,7 @@ void legacy_transient_list_setup() {
 
   clearLCD();
   for (int i = 0; i <= total_steps; i++) {
-    printLCD(3, 0, F("TRANSIENT LIST"));
-    printLCD_S(5, 1, "Set step " + String(i));
-    printLCD(0, 2, F("Current (A):"));
-    printLCD(0, 3, F("Time (mSec):"));
+    ui_draw_transient_list_step_template(i);
 
     const int col = 13;
     int row = 2;
@@ -228,4 +188,3 @@ void legacy_transient_list_timing() {
     last_time = current_time;
   }
 }
-

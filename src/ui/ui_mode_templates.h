@@ -18,5 +18,10 @@ void ui_draw_calibration_abort(bool pointsTooClose);
 void ui_draw_calibration_success();
 void ui_draw_calibration_loaded_message();
 void ui_draw_calibration_saved_message();
+void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, unsigned long periodMs);
+void ui_draw_transient_cont_setup_template();
+void ui_draw_transient_list_mode_template(int totalSteps);
+void ui_draw_transient_list_setup_template();
+void ui_draw_transient_list_step_template(int stepIndex);
 
 #endif

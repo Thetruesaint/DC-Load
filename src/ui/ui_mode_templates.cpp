@@ -122,3 +122,51 @@ void ui_draw_calibration_loaded_message() {
 void ui_draw_calibration_saved_message() {
   printLCD(12, 3, F("Saved!"));
 }
+
+void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, unsigned long periodMs) {
+  clearLCD();
+  printLCD(0, 0, F("TC LOAD"));
+  printLCD(0, 2, F("I1>"));
+  printLCD(11, 2, F("I2>"));
+  printLCD(2, 3, F("Time: "));
+  printLCD(13, 3, F("mSecs"));
+
+  printLCD_S(3, 2, String(lowCurrent, 3));
+  writeLCD(byte(0));
+  printLCD_S(14, 2, String(highCurrent, 3));
+  writeLCD(byte(0));
+
+  printLCD_S(7, 3, String(periodMs));
+}
+
+void ui_draw_transient_cont_setup_template() {
+  clearLCD();
+  printLCD(3, 0, F("TRANSIENT CONT."));
+  printLCD(5, 1, F("I1(A)"));
+  printLCD(5, 2, F("I2(A)"));
+  printLCD(4, 3, F("dt(mS)"));
+}
+
+void ui_draw_transient_list_mode_template(int totalSteps) {
+  clearLCD();
+  printLCD(0, 0, F("TL LOAD"));
+  printLCD(6, 2, F("Step: "));
+  printLCD(13, 2, F("/"));
+  printLCD_S(14, 2, String(totalSteps));
+  printLCD(4, 3, F("dt: "));
+  printLCD(13, 3, F("mS"));
+}
+
+void ui_draw_transient_list_setup_template() {
+  clearLCD();
+  printLCD(3, 0, F("TRANSIENT LIST"));
+  printLCD(4, 1, F("Steps(2-10)?"));
+}
+
+void ui_draw_transient_list_step_template(int stepIndex) {
+  clearLCD();
+  printLCD(3, 0, F("TRANSIENT LIST"));
+  printLCD_S(5, 1, "Set step " + String(stepIndex));
+  printLCD(0, 2, F("Current (A):"));
+  printLCD(0, 3, F("Time (mSec):"));
+}
