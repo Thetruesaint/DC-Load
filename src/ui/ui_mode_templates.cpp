@@ -25,3 +25,16 @@ void ui_draw_cr_template() {
   printLCD_S(11, 2, String((char)0xF4));
   printLCD(0, 3, F(">"));
 }
+
+void ui_draw_bc_template(float cutoffVolts, float batteryLife, const String &batteryType) {
+  clearLCD();
+  printLCD(0, 0, F("BC LOAD"));
+  setCursorLCD(13, 1);
+  printLCDRaw(F(">"));
+  printLCDNumber(14, 1, cutoffVolts, 'V', 2);
+  printLCD(1, 2, F("Adj->"));
+  printLCD(13, 2, F("A"));
+  printLCDNumber(6, 3, batteryLife, ' ', 0);
+  printLCDRaw(F("mAh"));
+  printLCD_S(14, 3, batteryType);
+}

@@ -16,6 +16,7 @@
 #include "../app/app_value_result_context.h"
 #include "../app/app_battery_context.h"
 #include "../app/app_timer_context.h"
+#include "../ui/ui_mode_templates.h"
 
 #define BatteryLife (app_battery_life_ref())
 #define BatteryLifePrevious (app_battery_life_previous_ref())
@@ -31,19 +32,10 @@ void legacy_battery_mode() {
   }
 
   if (!app_mode_state_initialized()) {
-    clearLCD();
-    printLCD(0, 0, F("BC LOAD"));
-    setCursorLCD(13, 1);
-    printLCDRaw(F(">"));
-    printLCDNumber(14, 1, BatteryCutoffVolts, 'V', 2);
-    printLCD(1, 2, F("Adj->"));
-    printLCD(13, 2, F("A"));
     timer_reset();
     BatteryLife = 0;
     BatteryLifePrevious = 0;
-    printLCDNumber(6, 3, BatteryLife, ' ', 0);
-    printLCDRaw(F("mAh"));
-    printLCD_S(14, 3, BatteryType);
+    ui_draw_bc_template(BatteryCutoffVolts, BatteryLife, BatteryType);
     Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -202,4 +194,3 @@ bool legacy_battery_capacity() {
 
   return false;
 }
-
