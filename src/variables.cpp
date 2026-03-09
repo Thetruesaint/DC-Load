@@ -34,11 +34,6 @@ float CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de
 float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
 float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
-ModeType Mode = CC;                     // Modo de operación, CC Default
-bool modeInitialized = false;           // Para reimprimir la plantilla del modo y/o inicializar valores
-bool modeConfigured = false;            // Para BC, TC o TL, indica que hay que seterarlos
-int functionIndex = 0;                  // Para seleccionar los Modos.
-bool hlth = true;                       // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
 

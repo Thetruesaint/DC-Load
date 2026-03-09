@@ -73,12 +73,7 @@ extern float PowerCutOff;                  // Potencia de corte seteado o cargad
 extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM
 extern float ResistorCutOff;                      // Resistencia en Ω
 enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
-extern ModeType Mode;                      // Modo de operación, CC Default
 extern const char* ModeNames[];            // Modos Permitidos
-extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
-extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
-extern int functionIndex;                  // Para seleccionar los Modos.
-extern bool hlth;                          // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
 

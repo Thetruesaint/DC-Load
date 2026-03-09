@@ -1,13 +1,18 @@
 #include "app_mode_state_context.h"
 
-#include "../variables.h"
+namespace {
+uint8_t modeId = 0;
+int functionIndex = 0;
+bool modeInitialized = false;
+bool modeConfigured = false;
+}
 
 uint8_t app_mode_state_mode() {
-  return static_cast<uint8_t>(Mode);
+  return modeId;
 }
 
 void app_mode_state_set_mode(uint8_t mode) {
-  Mode = static_cast<ModeType>(mode);
+  modeId = mode;
 }
 
 int app_mode_state_function_index() {
@@ -33,3 +38,4 @@ bool app_mode_state_configured() {
 void app_mode_state_set_configured(bool configured) {
   modeConfigured = configured;
 }
+

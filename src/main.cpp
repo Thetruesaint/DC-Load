@@ -5,6 +5,7 @@
 #include "app/app_runtime.h"
 #include "app/app_limits_context.h"
 #include "app/app_measurements_context.h"
+#include "app/app_health_context.h"
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
@@ -39,7 +40,7 @@ void setup() {
     Serial.print("dac OK");
     ads.setGain(GAIN_TWOTHIRDS);              // Setea la ganancia del ADC a 2/3x gain +/- 6.144V  1 bit = 0.1875mV
   } else{
-      printLCD(0,0, F("dac NDT")); hlth = false;
+      printLCD(0,0, F("dac NDT")); app_health_set_ok(false);
       Serial.print("dac NDT");
     }
 
@@ -47,7 +48,7 @@ void setup() {
       ads.setGain(GAIN_TWOTHIRDS);              // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
       printLCD(0,1, F("ads OK"));
   } else{
-      printLCD(0,1, F("ads NDT")); hlth = false;
+      printLCD(0,1, F("ads NDT")); app_health_set_ok(false);
       Serial.print("ads NDT");
     }
  
@@ -57,7 +58,7 @@ void setup() {
     printLCD(8, 0, F("RTC OK"));
     Serial.print("RTC  OK");
   } else{
-      printLCD(8, 0, F("RTC NDT")); hlth = false;
+      printLCD(8, 0, F("RTC NDT")); app_health_set_ok(false);
       Serial.print("RTC  NDT");
     }
 
@@ -65,7 +66,7 @@ void setup() {
     
   printLCD_S(11, 1, String(app_measurements_temp_c()) + String((char)0xDF) + "C");
 
-  if (hlth == true && app_measurements_temp_c() <= 99) {
+  if (app_health_is_ok() && app_measurements_temp_c() <= 99) {
     printLCD(0,2, F("Sensor Test OK"));
   } else {
     printLCD(0,2, F("Sensor Test FAIL"));
@@ -134,3 +135,4 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
+
