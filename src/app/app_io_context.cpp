@@ -1,21 +1,19 @@
 #include "app_io_context.h"
 
-#include "../hw/hw_objects.h"
-#include "../config/system_constants.h"
+#include "../hal/hal_inputs.h"
 
 int32_t app_io_encoder_count() {
-  return encoder.getCount();
+  return hal_encoder_count();
 }
 
 bool app_io_load_button_low() {
-  return (digitalRead(LOADONOFF) == LOW);
+  return hal_load_button_low();
 }
 
 bool app_io_encoder_button_low() {
-  return (digitalRead(ENC_BTN) == LOW);
+  return hal_encoder_button_low();
 }
 
 uint32_t app_io_millis() {
-  return millis();
+  return hal_millis();
 }
-

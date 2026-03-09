@@ -10,3 +10,15 @@ int32_t hal_encoder_count() {
 bool hal_load_button_low() {
   return (digitalRead(LOADONOFF) == LOW);
 }
+
+bool hal_encoder_button_low() {
+  return (digitalRead(ENC_BTN) == LOW);
+}
+
+uint32_t hal_millis() {
+  return millis();
+}
+
+void hal_delay_ms(uint32_t ms) {
+  delay(ms);
+}

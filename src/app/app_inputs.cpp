@@ -21,7 +21,7 @@ void app_read_load_button() {
   const bool buttonLow = hal_load_button_low();
 
   if (buttonLow && !lastButtonLow) {
-    delay(40);
+    hal_delay_ms(40);
     if (hal_load_button_low()) {
       app_push_action(make_load_toggle_action());
       lastButtonLow = true;
