@@ -2,8 +2,9 @@
 #include "hw/hw_objects.h"
 #include "config/system_constants.h"
 #include "ui/ui_symbols.h"
-#include "app/app_measurements_context.h"
+#include "app/app_input_buffer.h"
 #include "app/app_load_context.h"
+#include "app/app_measurements_context.h"
 #include "app/app_mode_context.h"
 #include "app/app_mode_state_context.h"
 #include "app/app_runtime_context.h"
@@ -135,6 +136,18 @@ void printLCDRaw(float value, int decimals) {
 #endif
 }
 
+void render_keypad_input(uint8_t mode) {
+  if (mode == TC || mode == TL || mode == BC) return;
+
+  const int inputCol = 1;
+  const int inputRow = 3;
+  const byte maxDigits = app_mode_is_calibration() ? 6 : 5;
+
+  Print_Spaces(inputCol, inputRow, maxDigits);
+  setCursorLCD(inputCol, inputRow);
+  printLCDRaw(app_input_text());
+}
+
 //------------ Calculate and Display Actual Voltage, Current, and Power ------------
 void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
@@ -191,6 +204,8 @@ void Update_LCD(void) {
       Print_Spaces(app_runtime_cursor_position(), 2);
     }
   }
+
+  render_keypad_input(mode);
 }
 
 //--------------------------- Funciones para el LCD -----------------------------------
@@ -221,5 +236,3 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
-
-

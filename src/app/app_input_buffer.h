@@ -5,6 +5,7 @@
 
 char app_input_read_key();
 char app_input_wait_key();
+bool app_input_is_no_key(char key);
 
 void app_input_reset();
 uint8_t app_input_length();

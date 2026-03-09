@@ -16,8 +16,12 @@ char app_input_wait_key() {
   char key;
   do {
     key = app_input_read_key();
-  } while (hal_keypad_is_no_key(key));
+  } while (app_input_is_no_key(key));
   return key;
+}
+
+bool app_input_is_no_key(char key) {
+  return hal_keypad_is_no_key(key);
 }
 
 void app_input_reset() {
