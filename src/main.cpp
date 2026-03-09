@@ -93,11 +93,11 @@ void setup() {
   printLCD_S(0, 1, date + " - " + time);
   // tft.setCursor(0 * cellW, 1 * cellH); tft.print(date + " - " + time);
   #ifndef WOKWI_SIMULATION
-  printLCD(0, 2, F("By Guy Nardin"));
+  printLCD(0, 2, F("By Guy & Codex"));
   #else
-  printLCD(0, 2, F("SIMULACION"));
+  printLCD(0, 2, F("v2.xx-rcx sim"));
   #endif
-  printLCD(0, 3, F("v2.10b")); // Prueba migración a TFT
+  printLCD(0, 3, F("v2.xx-rcx"));
 
   #ifndef WOKWI_SIMULATION
   delay (2000);
@@ -136,4 +136,5 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
+
 
