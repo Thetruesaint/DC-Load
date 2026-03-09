@@ -9,6 +9,7 @@
 #include "app/app_mode_state_context.h"
 #include "app/app_runtime_context.h"
 #include "app/app_setpoint_context.h"
+#include "app/app_ui_context.h"
 
 #include <cstring>
 
@@ -177,6 +178,11 @@ void render_keypad_input(uint8_t mode) {
 void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
   static int blink_cntr = 0;
+
+  if (app_ui_consume_clear_cursor_blink_request()) {
+    noCursorLCD();
+    blinkOffLCD();
+  }
 
   if (!app_mode_state_initialized()) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
 
