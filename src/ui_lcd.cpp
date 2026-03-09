@@ -3,6 +3,7 @@
 #include "config/system_constants.h"
 #include "ui/ui_symbols.h"
 #include "ui/ui_state_cache.h"
+#include "ui/ui_state_machine.h"
 #include "app/app_input_buffer.h"
 #include "app/app_ui_context.h"
 
@@ -180,6 +181,7 @@ void Update_LCD(void) {
   }
 
   const UiViewState &state = ui_state_cache_get();
+  if (ui_state_machine_current_screen() != UiScreen::Home) return;
   if (!state.modeInitialized) return;
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
@@ -265,3 +267,4 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
+
