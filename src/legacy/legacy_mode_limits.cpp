@@ -18,6 +18,7 @@ void legacy_config_limits() {
   const int col = 12;
   int row = 1;
   if (!Value_Input(col, row)) {
+    app_mode_state_set_initialized(false);
     return;
   }
   app_limits_set_current_cutoff(constrain(app_value_result_get(), 1, MAX_CURRENT));
@@ -25,6 +26,7 @@ void legacy_config_limits() {
 
   row = 2;
   if (!Value_Input(col, row)) {
+    app_mode_state_set_initialized(false);
     return;
   }
   app_limits_set_power_cutoff(constrain(app_value_result_get(), 1, MAX_POWER));
@@ -32,6 +34,7 @@ void legacy_config_limits() {
 
   row = 3;
   if (!Value_Input(col, row, 2)) {
+    app_mode_state_set_initialized(false);
     return;
   }
   app_limits_set_temp_cutoff(constrain(app_value_result_get(), 30.0f, MAX_TEMP));
@@ -58,4 +61,3 @@ void legacy_show_limits() {
       app_limits_power_cutoff(),
       app_limits_temp_cutoff());
 }
-
