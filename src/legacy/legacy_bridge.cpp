@@ -2,6 +2,7 @@
 
 #include "../variables.h"
 #include "../app/app_load_context.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 
@@ -23,7 +24,7 @@ SystemState legacy_capture_state() {
   state.encoderMaxRaw = static_cast<float>(app_runtime_encoder_max());
   state.currentCutOffA = CurrentCutOff;
   state.cursorPosition = app_runtime_cursor_position();
-  state.functionIndex = functionIndex;
+  state.functionIndex = app_mode_state_function_index();
 
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
@@ -31,9 +32,9 @@ SystemState legacy_capture_state() {
   state.actionCounter = 0;
 
   state.loadEnabled = app_load_is_enabled();
-  state.mode = static_cast<uint8_t>(Mode);
-  state.modeInitialized = modeInitialized;
-  state.modeConfigured = modeConfigured;
+  state.mode = app_mode_state_mode();
+  state.modeInitialized = app_mode_state_initialized();
+  state.modeConfigured = app_mode_state_configured();
 
   return state;
 }
@@ -47,10 +48,10 @@ void legacy_apply_state(const SystemState &state) {
   app_runtime_set_encoder_position(state.encoderPositionRaw);
   app_runtime_set_encoder_step(state.encoderStep);
   app_runtime_set_cursor_position(state.cursorPosition);
-  functionIndex = state.functionIndex;
-  Mode = static_cast<ModeType>(state.mode);
-  modeInitialized = state.modeInitialized;
-  modeConfigured = state.modeConfigured;
+  app_mode_state_set_function_index(state.functionIndex);
+  app_mode_state_set_mode(state.mode);
+  app_mode_state_set_initialized(state.modeInitialized);
+  app_mode_state_set_configured(state.modeConfigured);
   app_setpoint_set_reading(state.readingValue);
   app_load_set_enabled(state.loadEnabled);
 
