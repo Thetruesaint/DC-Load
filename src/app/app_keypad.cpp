@@ -36,11 +36,7 @@ void app_read_keypad(int col, int row) {
   if (key == 'E' && app_input_length() != 0) {
     const float parsedValue = app_input_parse_float();
     const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
-    if (!app_mode_is_calibration()) {
-      app_push_action(make_value_confirm_action(parsedMilli));
-    } else {
-      app_push_action(make_calibration_value_confirm_action(parsedMilli));
-    }
+    app_push_action(make_value_confirm_action(parsedMilli));
     Print_Spaces(col, row, maxDigits);
     app_input_reset();
   }

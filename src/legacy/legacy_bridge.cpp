@@ -12,7 +12,7 @@
 #include "../app/app_setpoint_context.h"
 
 SystemState legacy_capture_state() {
-  SystemState state = {0};
+  SystemState state = core_state_make_default();
 
   state.setCurrent_mA = app_load_set_current_mA();
   state.setPower_W = app_mode_setpoint_power_w();
@@ -33,17 +33,12 @@ SystemState legacy_capture_state() {
 
   state.lastEncoderDelta = 0;
   state.lastKeyPressed = '\0';
-  state.loadToggleEvent = false;
-  state.calibrationValueConfirmEvent = false;
-  state.openLimitsConfigEvent = false;
-  state.calibrationRealValue = 0.0f;
-  state.actionCounter = 0;
-
   state.loadEnabled = app_load_is_enabled();
   state.mode = app_mode_state_mode();
   state.modeInitialized = app_mode_state_initialized();
   state.modeConfigured = app_mode_state_configured();
 
+  core_state_clear_one_shot_events(&state);
   return state;
 }
 

@@ -45,6 +45,7 @@ void app_push_action(const UserAction &action) {
 
 void app_tick() {
   core_sync_from_legacy(legacy_capture_state());
+  core_begin_cycle();
 
   UserAction action = make_none_action();
   while (dequeueAction(&action)) {

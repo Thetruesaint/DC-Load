@@ -36,4 +36,17 @@ struct SystemState {
   bool modeConfigured;
 };
 
+inline SystemState core_state_make_default() {
+  SystemState state = {0};
+  return state;
+}
+
+inline void core_state_clear_one_shot_events(SystemState *state) {
+  if (state == nullptr) return;
+  state->loadToggleEvent = false;
+  state->calibrationValueConfirmEvent = false;
+  state->openLimitsConfigEvent = false;
+  state->calibrationRealValue = 0.0f;
+}
+
 #endif

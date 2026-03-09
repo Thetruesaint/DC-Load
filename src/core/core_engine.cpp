@@ -2,10 +2,11 @@
 
 #include <Arduino.h>
 
+#include "../config/system_constants.h"
 #include "core_modes.h"
 
 namespace {
-SystemState g_state = {0};
+SystemState g_state = core_state_make_default();
 unsigned long g_lastTickMs = 0;
 }
 
@@ -17,6 +18,10 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state = state;
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
+}
+
+void core_begin_cycle() {
+  core_state_clear_one_shot_events(&g_state);
 }
 
 void core_dispatch(const UserAction &action) {
@@ -60,12 +65,12 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::ValueConfirm:
-      g_state.encoderPositionRaw = static_cast<float>(action.value);
-      break;
-
-    case ActionType::CalibrationValueConfirm:
-      g_state.calibrationRealValue = static_cast<float>(action.value) / 1000.0f;
-      g_state.calibrationValueConfirmEvent = true;
+      if (g_state.mode == CA) {
+        g_state.calibrationRealValue = static_cast<float>(action.value) / 1000.0f;
+        g_state.calibrationValueConfirmEvent = true;
+      } else {
+        g_state.encoderPositionRaw = static_cast<float>(action.value);
+      }
       break;
 
     case ActionType::OpenLimitsConfig:
