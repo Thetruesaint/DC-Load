@@ -6,18 +6,19 @@
 #include "../app/app_msc.h"
 #include "../app/app_value_input.h"
 #include "../app/app_io_context.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_result_context.h"
 
 void legacy_battery_mode() {
-  if (!modeConfigured) {
+  if (!app_mode_state_configured()) {
     legacy_battery_type_selec();
     return;
   }
 
-  if (!modeInitialized) {
+  if (!app_mode_state_initialized()) {
     clearLCD();
     printLCD(0, 0, F("BC LOAD"));
     setCursorLCD(13, 1);
@@ -32,7 +33,7 @@ void legacy_battery_mode() {
     printLCDRaw(F("mAh"));
     printLCD_S(14, 3, BatteryType);
     Encoder_Status(true, CurrentCutOff);
-    modeInitialized = true;
+    app_mode_state_set_initialized(true);
   }
 
   if (BatteryLife > BatteryLifePrevious) {
@@ -131,8 +132,8 @@ void legacy_battery_type_selec() {
     BatteryCutoffVolts *= inputValue;
   }
 
-  modeConfigured = true;
-  modeInitialized = false;
+  app_mode_state_set_configured(true);
+  app_mode_state_set_initialized(false);
 }
 
 bool legacy_battery_capacity() {

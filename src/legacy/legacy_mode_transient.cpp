@@ -3,16 +3,17 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_value_result_context.h"
 
 void legacy_transient_cont_mode() {
-  if (!modeConfigured) {
+  if (!app_mode_state_configured()) {
     legacy_transient_cont_setup();
     return;
   }
 
-  if (!modeInitialized) {
+  if (!app_mode_state_initialized()) {
     printLCD_S(3, 2, String(LowCurrent, 3));
     writeLCD(byte(0));
     printLCD_S(14, 2, String(HighCurrent, 3));
@@ -41,7 +42,7 @@ void legacy_transient_cont_mode() {
 
     printLCD(13, 3, F("mSecs"));
     app_load_set_set_current_mA(0.0f);
-    modeInitialized = true;
+    app_mode_state_set_initialized(true);
     Encoder_Status(false);
   }
 
@@ -78,8 +79,8 @@ void legacy_transient_cont_setup() {
   transientPeriod = static_cast<unsigned long>(app_value_result_get());
 
   clearLCD();
-  modeConfigured = true;
-  modeInitialized = false;
+  app_mode_state_set_configured(true);
+  app_mode_state_set_initialized(false);
 }
 
 void legacy_transcient_cont_timing() {
@@ -110,23 +111,23 @@ void legacy_transcient_cont_timing() {
 void legacy_transient_list_mode() {
   static unsigned int last_transientPeriod = -1;
 
-  if (!modeConfigured) {
+  if (!app_mode_state_configured()) {
     legacy_transient_list_setup();
     return;
   }
 
-  if (!modeInitialized) {
+  if (!app_mode_state_initialized()) {
     printLCD(0, 0, F("TL LOAD"));
     printLCD(6, 2, F("Step: "));
     printLCD(13, 2, F("/"));
     printLCD_S(14, 2, String(total_steps));
     printLCD(4, 3, F("dt: "));
     printLCD(13, 3, F("mS"));
-    modeInitialized = true;
+    app_mode_state_set_initialized(true);
     Encoder_Status(false);
   }
 
-  if (modeConfigured) {
+  if (app_mode_state_configured()) {
     printLCD_S(12, 2, String(current_step));
     if (transientPeriod != last_transientPeriod) {
       Print_Spaces(8, 3, 5);
@@ -185,8 +186,8 @@ void legacy_transient_list_setup() {
   app_load_set_set_current_mA(0.0f);
   current_step = 0;
   transientPeriod = transientList[current_step][1];
-  modeConfigured = true;
-  modeInitialized = false;
+  app_mode_state_set_configured(true);
+  app_mode_state_set_initialized(false);
 }
 
 void legacy_transient_list_timing() {

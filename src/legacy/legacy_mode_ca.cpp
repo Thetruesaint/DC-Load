@@ -5,17 +5,18 @@
 #include "../funciones.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
 
 void legacy_calibration_mode() {
-  if (!modeConfigured) {
+  if (!app_mode_state_configured()) {
     legacy_calibration_setup();
     return;
   }
 
-  if (!modeInitialized) {
+  if (!app_mode_state_initialized()) {
     const float selection = app_value_result_get();
     if (selection == 1.0f) {
       calibrateVoltage = true;
@@ -37,7 +38,7 @@ void legacy_calibration_mode() {
     printLCD(0, 3, F(">"));
     printLCD(7, 3, F("<Set real"));
     Encoder_Status(true, CurrentCutOff);
-    modeInitialized = true;
+    app_mode_state_set_initialized(true);
   }
 
   float readingValue = app_runtime_encoder_position() / 1000.0f;
@@ -70,22 +71,22 @@ void legacy_calibration_setup() {
     selection = app_value_result_get();
   } while (selection < 1.0f || selection > 4.0f);
 
-  modeConfigured = true;
+  app_mode_state_set_configured(true);
   if (selection == 3.0f) {
     Load_Calibration();
     printLCD(12, 3, F("Loaded!"));
     delay(1500);
-    modeConfigured = false;
+    app_mode_state_set_configured(false);
   }
   if (selection == 4.0f) {
     Save_Calibration();
     printLCD(12, 3, F("Saved!"));
     delay(1500);
-    modeConfigured = false;
+    app_mode_state_set_configured(false);
   }
 
   firstPointTaken = false;
-  modeInitialized = false;
+  app_mode_state_set_initialized(false);
 }
 
 void legacy_calibrate(float realValue) {
@@ -101,7 +102,7 @@ void legacy_calibrate(float realValue) {
     realValue1 = realValue;
     setCurrent1 = app_load_set_current_mA() / 1000.0f;
     firstPointTaken = true;
-    modeInitialized = false;
+    app_mode_state_set_initialized(false);
     return;
   }
 
@@ -135,7 +136,7 @@ void legacy_calibrate(float realValue) {
     } else {
       printLCD(0, 2, F("Set/Read >20%"));
     }
-    modeInitialized = false;
+    app_mode_state_set_initialized(false);
     delay(2000);
     return;
   }
@@ -155,7 +156,7 @@ void legacy_calibrate(float realValue) {
 
   clearLCD();
   printLCD(4, 1, F("Calibrated!"));
-  modeConfigured = false;
+  app_mode_state_set_configured(false);
   firstPointTaken = false;
   delay(2000);
 }

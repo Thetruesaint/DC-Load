@@ -2,6 +2,7 @@
 
 #include "../funciones.h"
 #include "../variables.h"
+#include "../app/app_mode_state_context.h"
 
 void legacy_open_config_limits() {
   Config_Limits();
@@ -12,7 +13,7 @@ void legacy_reset_input_pointers() {
 }
 
 void legacy_run_mode_logic() {
-  switch (Mode) {
+  switch (app_mode_state_mode()) {
     case CC:  Const_Current_Mode(); break;
     case CP:  Const_Power_Mode(); break;
     case CR:  Const_Resistance_Mode(); break;

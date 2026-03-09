@@ -3,6 +3,7 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
 
@@ -48,7 +49,7 @@ void legacy_config_limits() {
 
   legacy_show_limits();
   delay(2000);
-  modeInitialized = false;
+  app_mode_state_set_initialized(false);
 }
 
 void legacy_show_limits() {

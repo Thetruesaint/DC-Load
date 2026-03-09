@@ -4,6 +4,7 @@
 #include "../funciones.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_setpoint_context.h"
 
 void legacy_temp_control() {
@@ -100,6 +101,6 @@ void legacy_check_limits() {
       delay(250);
     }
     Reset_Input_Pointers();
-    modeInitialized = false;
+    app_mode_state_set_initialized(false);
   }
 }

@@ -3,18 +3,19 @@
 #include "../variables.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 
 void legacy_const_current_mode() {
-  if (!modeInitialized) {
+  if (!app_mode_state_initialized()) {
     clearLCD();
     printLCD(0, 0, F("CC LOAD"));
     printLCD(1, 2, F("Set->"));
     printLCD(13, 2, F("A"));
     printLCD(0, 3, F(">"));
     Encoder_Status(true, CurrentCutOff);
-    modeInitialized = true;
+    app_mode_state_set_initialized(true);
   }
 
   float readingValue = app_runtime_encoder_position() / 1000.0f;
