@@ -1,4 +1,5 @@
 #include "app/app_calibration_context.h"
+#include "config/system_constants.h"
 #define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
 #define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
 #define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())

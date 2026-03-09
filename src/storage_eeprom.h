@@ -1,7 +1,6 @@
 #ifndef STORAGE_EEPROM_H
 #define STORAGE_EEPROM_H
 
-#include "variables.h"
 #include <EEPROM.h>
 
 float Load_EEPROM(int address);

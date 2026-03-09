@@ -1,4 +1,5 @@
 #include "ui_lcd.h"
+#include "variables.h"
 #include "app/app_measurements_context.h"
 #include "app/app_load_context.h"
 #include "app/app_mode_context.h"

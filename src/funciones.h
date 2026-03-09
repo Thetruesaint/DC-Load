@@ -1,7 +1,7 @@
 #ifndef FUNCIONES_H
 #define FUNCIONES_H
 
-#include "variables.h"
+#include <Arduino.h>
 #include "ui_lcd.h"
 #include "storage_eeprom.h"
 
