@@ -1,4 +1,3 @@
-#include "variables.h"
 #include "funciones.h"
 #include "app/app_loop.h"
 #include "app/app_keypad.h"
