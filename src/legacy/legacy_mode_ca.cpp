@@ -2,8 +2,8 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../ui_lcd.h"
 #include "../funciones.h"
+#include "../ui/ui_mode_templates.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
@@ -19,7 +19,6 @@
 #define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
-
 
 void legacy_calibration_mode() {
   if (!app_mode_state_configured()) {
@@ -41,13 +40,9 @@ void legacy_calibration_mode() {
       Out_Curr_Calib_Offs = 0.0;
     }
 
-    clearLCD();
-    printLCD(0, 0, app_calibration_is_voltage_mode() ? F("CA VOLT") : F("CA CURR"));
-    printLCD(14, 1, app_calibration_first_point_taken() ? F("Set P2") : F("Set P1"));
-    printLCD(1, 2, F("Adj->"));
-    printLCD(13, 2, F("A"));
-    printLCD(0, 3, F(">"));
-    printLCD(7, 3, F("<Set real"));
+    ui_draw_calibration_mode_template(
+        app_calibration_is_voltage_mode(),
+        app_calibration_first_point_taken());
     Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -65,10 +60,7 @@ void legacy_calibration_mode() {
 }
 
 void legacy_calibration_setup() {
-  clearLCD();
-  printLCD(4, 0, F("CALIBRATION"));
-  printLCD(0, 1, F("1-Voltage 2-Current"));
-  printLCD(0, 2, F("3-Load    4-Save"));
+  ui_draw_calibration_setup_menu();
 
   float selection = 0.0f;
   do {
@@ -85,13 +77,13 @@ void legacy_calibration_setup() {
   app_mode_state_set_configured(true);
   if (selection == 3.0f) {
     Load_Calibration();
-    printLCD(12, 3, F("Loaded!"));
+    ui_draw_calibration_loaded_message();
     delay(1500);
     app_mode_state_set_configured(false);
   }
   if (selection == 4.0f) {
     Save_Calibration();
-    printLCD(12, 3, F("Saved!"));
+    ui_draw_calibration_saved_message();
     delay(1500);
     app_mode_state_set_configured(false);
   }
@@ -140,13 +132,7 @@ void legacy_calibrate(float realValue) {
   }
 
   if (pointsTooClose || pointMismatch) {
-    clearLCD();
-    printLCD(0, 1, F("Calib Abort"));
-    if (pointsTooClose) {
-      printLCD(0, 2, F("P1/P2 too close"));
-    } else {
-      printLCD(0, 2, F("Set/Read >20%"));
-    }
+    ui_draw_calibration_abort(pointsTooClose);
     app_mode_state_set_initialized(false);
     delay(2000);
     return;
@@ -165,10 +151,8 @@ void legacy_calibrate(float realValue) {
     Out_Curr_Calib_Offs = max(-0.1f, min(0.1f, realValue1 - (setCurrent1 * Out_Curr_Calib_Fact))) * 1000;
   }
 
-  clearLCD();
-  printLCD(4, 1, F("Calibrated!"));
+  ui_draw_calibration_success();
   app_mode_state_set_configured(false);
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
-

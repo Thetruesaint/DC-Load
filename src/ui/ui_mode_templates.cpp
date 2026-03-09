@@ -82,3 +82,43 @@ void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCu
   printLCDRaw(char(0xDF));
   printLCDRaw("C");
 }
+
+void ui_draw_calibration_setup_menu() {
+  clearLCD();
+  printLCD(4, 0, F("CALIBRATION"));
+  printLCD(0, 1, F("1-Voltage 2-Current"));
+  printLCD(0, 2, F("3-Load    4-Save"));
+}
+
+void ui_draw_calibration_mode_template(bool voltageMode, bool firstPointTaken) {
+  clearLCD();
+  printLCD(0, 0, voltageMode ? F("CA VOLT") : F("CA CURR"));
+  printLCD(14, 1, firstPointTaken ? F("Set P2") : F("Set P1"));
+  printLCD(1, 2, F("Adj->"));
+  printLCD(13, 2, F("A"));
+  printLCD(0, 3, F(">"));
+  printLCD(7, 3, F("<Set real"));
+}
+
+void ui_draw_calibration_abort(bool pointsTooClose) {
+  clearLCD();
+  printLCD(0, 1, F("Calib Abort"));
+  if (pointsTooClose) {
+    printLCD(0, 2, F("P1/P2 too close"));
+  } else {
+    printLCD(0, 2, F("Set/Read >20%"));
+  }
+}
+
+void ui_draw_calibration_success() {
+  clearLCD();
+  printLCD(4, 1, F("Calibrated!"));
+}
+
+void ui_draw_calibration_loaded_message() {
+  printLCD(12, 3, F("Loaded!"));
+}
+
+void ui_draw_calibration_saved_message() {
+  printLCD(12, 3, F("Saved!"));
+}
