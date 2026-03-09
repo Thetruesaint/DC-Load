@@ -4,7 +4,7 @@
 #include "../legacy/legacy_dac_control.h"
 #include "../legacy/legacy_mode_dispatch.h"
 #include "../legacy/legacy_safety_control.h"
-#include "../ui_lcd.h"
+#include "../ui/ui_cycle_render.h"
 #include "app_inputs.h"
 #include "app_keypad.h"
 #include "app_loop.h"
@@ -20,10 +20,7 @@ void app_run_cycle() {
 
   legacy_run_mode_logic();
 
-  Update_LCD();
-#ifndef WOKWI_SIMULATION
-  // Update_TFT();
-#endif
+  ui_render_cycle();
 
   app_tick();
 }
