@@ -18,7 +18,7 @@ void app_read_keypad(int col, int row) {
 
   if (key == NO_KEY) return;
 
-  app_push_action(ActionType::KeyPressed, 0, key);
+  app_push_action(make_key_pressed_action(key));
 
   if (!app_handle_msc_keys(key)) {
     return;

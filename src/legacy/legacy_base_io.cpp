@@ -63,7 +63,7 @@ void legacy_cursor_position() {
   if (app_io_encoder_button_low() && (nowMs - lastPressTime > 200)) {
     lastPressTime = nowMs;
     if (managedMode) {
-      app_push_action(ActionType::EncoderButtonPress, 0, '\0');
+      app_push_action(make_encoder_button_press_action());
     } else {
       cursor++;
       app_runtime_set_cursor_position(cursor);

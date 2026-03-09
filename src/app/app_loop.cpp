@@ -39,15 +39,14 @@ void app_init() {
   g_queueTail = 0;
 }
 
-void app_push_action(ActionType type, int32_t value, char key) {
-  const UserAction action = {type, value, key};
+void app_push_action(const UserAction &action) {
   (void)enqueueAction(action);
 }
 
 void app_tick() {
   core_sync_from_legacy(legacy_capture_state());
 
-  UserAction action = {ActionType::None, 0, '\0'};
+  UserAction action = make_none_action();
   while (dequeueAction(&action)) {
     core_dispatch(action);
   }

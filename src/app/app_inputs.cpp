@@ -12,7 +12,7 @@ void app_read_encoder() {
 
   if (abs(diff) >= 4) {
     lastCount = newCount;
-    app_push_action(ActionType::EncoderDelta, diff, '\0');
+    app_push_action(make_encoder_delta_action(diff));
   }
 }
 
@@ -23,7 +23,7 @@ void app_read_load_button() {
   if (buttonLow && !lastButtonLow) {
     delay(40);
     if (app_io_load_button_low()) {
-      app_push_action(ActionType::LoadToggle, 0, '\0');
+      app_push_action(make_load_toggle_action());
       lastButtonLow = true;
       return;
     }

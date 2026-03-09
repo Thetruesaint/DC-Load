@@ -5,6 +5,6 @@
 
 void app_init();
 void app_tick();
-void app_push_action(ActionType type, int32_t value = 0, char key = '\0');
+void app_push_action(const UserAction &action);
 
 #endif

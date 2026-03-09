@@ -7,13 +7,13 @@ bool handle_mode_hotkeys(char key) {
   static bool shiftPressed = false;
 
   if (key == 'M') {
-    app_push_action(ActionType::ModeSelect, 0, '\0');
+    app_push_action(make_mode_select_action(false));
     return false;
   }
 
   if (shiftPressed) {
     shiftPressed = false;
-    app_push_action(ActionType::ModeSelect, 1, key);
+    app_push_action(make_mode_select_action(true, key));
     return false;
   }
 
