@@ -63,8 +63,10 @@ void legacy_apply_state(const SystemState &state) {
     legacy_calibrate(state.calibrationRealValue);
   }
 
-  if (state.openLimitsConfigEvent) {
+  if (state.pendingConfigSection == ConfigSection::Limits || state.openLimitsConfigEvent) {
     legacy_config_limits();
+  } else if (state.pendingConfigSection == ConfigSection::Calibration) {
+    legacy_calibration_setup();
   }
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {

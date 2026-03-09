@@ -14,7 +14,11 @@ bool app_handle_msc_keys(char key) {
       return false;
 
     case MscKeyDecision::OpenConfig:
-      app_push_action(make_open_limits_config_action());
+      if (app_mode_is_calibration()) {
+        app_push_action(make_open_calibration_config_action());
+      } else {
+        app_push_action(make_open_limits_config_action());
+      }
       return true;
 
     case MscKeyDecision::Continue:
