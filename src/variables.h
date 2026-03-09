@@ -71,8 +71,6 @@ extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente
 
 extern int16_t adcv, adci;                 // Objetos para los SDC valor en binario del ADC
 extern unsigned long setDAC;               // Voltage de control para el DAC que controlara al MOSFET
-extern float current;                      // Corriente de Carga
-extern float voltage;                      // Voltage de Carga
 extern int CuPo;                           // Posicion inicial del cursor
 extern bool toggle;                        // Conmuta la carga On/Off
 extern float reading;                      // Para tomar valores de encoder
@@ -92,8 +90,6 @@ extern bool hlth;                          // Flag de Salud gral.
 //--------------- Modos CC, CR y CP --------------------------------------
 
 extern float setCurrent;                   // Variable para setear la corriente de carga
-extern float setPower;                     // Variable para setear la potencia de carga
-extern float setResistance;                // Variable para setear la resistencia de carga
 
 //--------------- Variables para Keypad o entrada de valores -------------
 
@@ -139,7 +135,6 @@ extern String BatteryType;          // Para definir el Tipo de Batería
 //----------------- Variables para Control de Temperatura -------------------
 const unsigned long FAN_ON_DRTN = 60000;                    // Tiempo en miliseg. para mantener los fans encendidos (60 segundos)
 const int TMP_CHK_TIME = 1000;                              // Perdíodo de control de temperatura (miliseg.)
-extern int temp;                                            // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
 //----------------- Parametros de validacion para calibracion -------------------
 const float CAL_MIN_VOLTAGE_DELTA = 10.0f;                  // Voltios minimos entre P1 y P2 en calibracion de voltaje
 const float CAL_MIN_CURRENT_DELTA = 4.0f;                   // Amperes minimos entre P1 y P2 en calibracion de corriente/salida
@@ -173,3 +168,4 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
+

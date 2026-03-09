@@ -23,8 +23,6 @@ volatile unsigned long maxEncoder = 999000; // sets maximum Rotary Encoder value
 
 int16_t adcv, adci;                     // Objetos para los SDC valor en binario del ADC
 unsigned long setDAC = 0;               // Voltage de control para el DAC que controlara al MOSFET
-float current = 0;                      // Corriente de Carga
-float voltage = 0;                      // Voltage de Carga
 
 float Sns_Volt_Calib_Fact = 1.0;        // Factor de calibración para el ADC de V
 float Sns_Volt_Calib_Offs = 0.0;        // Offset de calibracion de voltage sensado
@@ -52,8 +50,6 @@ bool hlth = true;                       // Flag de Salud gral.
 //--------------- Modos CC, CR y CP --------------------------------------
 
 float setCurrent = 0;                   // Variable para setear la corriente de carga
-float setPower = 0;                     // Variable para setear la potencia de carga
-float setResistance = 0;                // Variable para setear la resistencia de carga
 
 //--------------- Variables para Keypad o entrada de valores ------------ 
 // Definicion de las teclas del teclado
@@ -100,7 +96,6 @@ float BatteryCurrent;           // Variable usada para setear la corriente de de
 String BatteryType = "    ";    // Para definir el Tipo de Batería
 
 //----------------- Variables para Control de Temperatura -------------------
-int temp = 1;                   // Temp. del disipador de MOSFET, =1 porque cero puede coincidir con un error.
 
 //----------------- Variables para Modos TC y TL Transient -------------------
 float LowCurrent = 0;                 // Configuración de corriente baja para el modo transitorio
@@ -110,3 +105,4 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
+

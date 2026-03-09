@@ -1,29 +1,33 @@
 #include "app_measurements_context.h"
 
-#include "../variables.h"
+namespace {
+float currentA = 0.0f;
+float voltageV = 0.0f;
+int temperatureC = 1;
+}
 
 float app_measurements_current_a() {
-  return current;
+  return currentA;
 }
 
 void app_measurements_set_current_a(float value) {
-  current = value;
+  currentA = value;
 }
 
 float app_measurements_voltage_v() {
-  return voltage;
+  return voltageV;
 }
 
 void app_measurements_set_voltage_v(float value) {
-  voltage = value;
+  voltageV = value;
 }
 
 int app_measurements_temp_c() {
-  return temp;
+  return temperatureC;
 }
 
 void app_measurements_set_temp_c(int value) {
-  temp = value;
+  temperatureC = value;
 }
 
 float app_measurements_power_w() {
