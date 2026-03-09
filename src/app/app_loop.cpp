@@ -61,12 +61,16 @@ void app_tick() {
 
   (void)drain_action_queue();
 
+  // Render target screen before any blocking legacy flow executes.
+  ui_render(core_get_state());
+
   core_tick_10ms();
   legacy_apply_state(core_get_state());
 
   // Process actions queued from blocking legacy flows in the same cycle
   // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
   if (drain_action_queue()) {
+    ui_render(core_get_state());
     core_tick_10ms();
     legacy_apply_state(core_get_state());
   }

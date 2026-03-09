@@ -9,7 +9,9 @@ void screen_enter_home(const UiViewState &viewState) { (void)viewState; }
 void screen_update_home(const UiViewState &viewState) { (void)viewState; }
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
-void screen_enter_menu_root(const UiViewState &viewState) { (void)viewState; }
+void screen_enter_menu_root(const UiViewState &viewState) {
+  ui_draw_config_root_menu(viewState.pendingConfigSection);
+}
 void screen_update_menu_root(const UiViewState &viewState) { (void)viewState; }
 void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 

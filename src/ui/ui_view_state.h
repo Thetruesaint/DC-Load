@@ -17,6 +17,8 @@ struct UiViewState {
   float currentCutOffA;
   float powerCutOffW;
   float tempCutOffC;
+
+  uint8_t pendingConfigSection;
 };
 
 inline UiViewState ui_view_state_make_default() {

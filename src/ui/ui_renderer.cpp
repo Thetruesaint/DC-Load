@@ -17,6 +17,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.currentCutOffA = state.currentCutOffA;
   view.powerCutOffW = state.powerCutOffW;
   view.tempCutOffC = state.tempCutOffC;
+  view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
 }
 }

@@ -60,8 +60,6 @@ void legacy_calibration_mode() {
 }
 
 void legacy_calibration_setup() {
-  ui_draw_calibration_setup_menu();
-
   float selection = 0.0f;
   do {
     const int col = 1;
@@ -155,4 +153,3 @@ void legacy_calibrate(float realValue) {
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
-

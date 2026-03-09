@@ -83,6 +83,18 @@ void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCu
   printLCDRaw("C");
 }
 
+void ui_draw_config_root_menu(uint8_t pendingConfigSection) {
+  clearLCD();
+  printLCD(2, 0, F("Configuration"));
+  printLCD(0, 1, F("1) Limits"));
+  printLCD(0, 2, F("2) Calibration"));
+
+  if (pendingConfigSection == 1) {
+    printLCD(14, 1, F("<"));
+  } else if (pendingConfigSection == 2) {
+    printLCD(14, 2, F("<"));
+  }
+}
 void ui_draw_calibration_setup_menu() {
   clearLCD();
   printLCD(4, 0, F("CALIBRATION"));
@@ -260,4 +272,3 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
-
