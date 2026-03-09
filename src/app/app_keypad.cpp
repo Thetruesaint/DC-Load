@@ -1,6 +1,7 @@
 #include "app_keypad.h"
 
 #include <Keypad.h>
+#include <cmath>
 
 #include "../ui_lcd.h"
 #include "../legacy/legacy_hooks.h"
@@ -68,8 +69,8 @@ void app_read_keypad(int col, int row) {
   if (key == 'E' && app_input_length() != 0) {
     const float parsedValue = app_input_parse_float();
     if (!app_mode_is_calibration()) {
-      app_setpoint_set_reading(parsedValue);
-      app_runtime_set_encoder_position(parsedValue * 1000.0f);
+      const int32_t parsedMilli = static_cast<int32_t>(lroundf(parsedValue * 1000.0f));
+      app_push_action(make_value_confirm_action(parsedMilli));
     } else {
       legacy_calibrate(parsedValue);
     }

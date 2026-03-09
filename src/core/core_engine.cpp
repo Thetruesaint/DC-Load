@@ -55,6 +55,10 @@ void core_dispatch(const UserAction &action) {
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       break;
 
+    case ActionType::ValueConfirm:
+      g_state.encoderPositionRaw = static_cast<float>(action.value);
+      break;
+
     case ActionType::None:
     default:
       return;
