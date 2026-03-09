@@ -1,6 +1,7 @@
 #include "app_io_context.h"
 
-#include "../variables.h"
+#include "../hw/hw_objects.h"
+#include "../config/system_constants.h"
 
 int32_t app_io_encoder_count() {
   return encoder.getCount();
@@ -17,3 +18,4 @@ bool app_io_encoder_button_low() {
 uint32_t app_io_millis() {
   return millis();
 }
+

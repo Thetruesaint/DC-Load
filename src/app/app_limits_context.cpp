@@ -1,6 +1,6 @@
 #include "app_limits_context.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
 
 namespace {
 float currentCutoff = MAX_CURRENT;
