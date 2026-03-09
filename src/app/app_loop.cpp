@@ -66,6 +66,9 @@ void app_tick() {
 
   // Process actions queued from blocking legacy flows in the same cycle
   // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
+  // Start a fresh one-shot window before dispatching post-flow actions so
+  // completed config flows are not re-entered in this same tick.
+  core_begin_cycle();
   if (drain_action_queue()) {
     core_tick_10ms();
     legacy_apply_state(core_get_state());
