@@ -4,6 +4,7 @@
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 
@@ -14,7 +15,7 @@ void legacy_const_current_mode() {
     printLCD(1, 2, F("Set->"));
     printLCD(13, 2, F("A"));
     printLCD(0, 3, F(">"));
-    Encoder_Status(true, CurrentCutOff);
+    Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -26,3 +27,5 @@ void legacy_const_current_mode() {
 
   // Setpoint de CC lo calcula core y se aplica via legacy_apply_state.
 }
+
+

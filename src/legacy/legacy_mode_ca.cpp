@@ -6,6 +6,7 @@
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_calibration_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
@@ -38,7 +39,7 @@ void legacy_calibration_mode() {
     printLCD(13, 2, F("A"));
     printLCD(0, 3, F(">"));
     printLCD(7, 3, F("<Set real"));
-    Encoder_Status(true, CurrentCutOff);
+    Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -161,3 +162,5 @@ void legacy_calibrate(float realValue) {
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
+
+

@@ -3,6 +3,7 @@
 #include "funciones.h"
 #include "app/app_loop.h"
 #include "app/app_runtime.h"
+#include "app/app_limits_context.h"
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
@@ -103,12 +104,12 @@ void setup() {
 
   //---------------------------------------Chequea y Muestra los límites configurados----------------------
   #ifndef WOKWI_SIMULATION
-    CurrentCutOff = Load_EEPROM(ADD_CURRENT_CUT_OFF); // Carga CurrentCutOff desde la EEPROM
-    PowerCutOff = Load_EEPROM(ADD_POWER_CUT_OFF);     // Carga PowerCutOff desde la EEPROM
-    tempCutOff = Load_EEPROM(ADD_TEMP_CUT_OFF);       // Carga tempCutOff desde la EEPROM
-    if (CurrentCutOff <= 1 || CurrentCutOff > 10 ||   // Chequea que los valores de los límites estén en el rango correcto, pudieron quedar en 1 si eran nan.
-        PowerCutOff <= 1 || PowerCutOff > 300 ||
-        tempCutOff < 30 || tempCutOff > 99)
+    app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF)); // Carga CurrentCutOff desde la EEPROM
+    app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));     // Carga PowerCutOff desde la EEPROM
+    app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));       // Carga tempCutOff desde la EEPROM
+    if (app_limits_current_cutoff() <= 1 || app_limits_current_cutoff() > 10 ||   // Chequea que los valores de los límites estén en el rango correcto, pudieron quedar en 1 si eran nan.
+        app_limits_power_cutoff() <= 1 || app_limits_power_cutoff() > 300 ||
+        app_limits_temp_cutoff() < 30 || app_limits_temp_cutoff() > 99)
     {
       Config_Limits();
     }
@@ -119,9 +120,9 @@ void setup() {
 
   #else
     // Simula que se cargan los valores de la EEPROM
-    CurrentCutOff = 10;
-    PowerCutOff = 300;
-    tempCutOff = 80;
+    app_limits_set_current_cutoff(10);
+    app_limits_set_power_cutoff(300);
+    app_limits_set_temp_cutoff(80);
     Load_Calibration();
   #endif
 
@@ -132,3 +133,7 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
+
+
+
+

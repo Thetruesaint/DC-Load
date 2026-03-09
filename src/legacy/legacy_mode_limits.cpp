@@ -4,6 +4,7 @@
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
 
@@ -20,8 +21,8 @@ void legacy_config_limits() {
   if (!Value_Input(col, row)) {
     return;
   }
-  CurrentCutOff = constrain(app_value_result_get(), 1, MAX_CURRENT);
-  printLCDNumber(col, row, CurrentCutOff, ' ', 3);
+  app_limits_set_current_cutoff(constrain(app_value_result_get(), 1, MAX_CURRENT));
+  printLCDNumber(col, row, app_limits_current_cutoff(), ' ', 3);
   printLCDRaw(F("A"));
 
   printLCD(0, 2, F("Power(W):"));
@@ -29,8 +30,8 @@ void legacy_config_limits() {
   if (!Value_Input(col, row)) {
     return;
   }
-  PowerCutOff = constrain(app_value_result_get(), 1, MAX_POWER);
-  printLCDNumber(col, row, PowerCutOff, 'W', 1);
+  app_limits_set_power_cutoff(constrain(app_value_result_get(), 1, MAX_POWER));
+  printLCDNumber(col, row, app_limits_power_cutoff(), 'W', 1);
 
   printLCD(0, 3, F("Temp.("));
   printLCD_S(6, 3, String((char)0xDF) + "C):");
@@ -38,12 +39,12 @@ void legacy_config_limits() {
   if (!Value_Input(col, row, 2)) {
     return;
   }
-  tempCutOff = constrain(app_value_result_get(), 30.0f, MAX_TEMP);
-  printLCD_S(col, row, String(tempCutOff));
+  app_limits_set_temp_cutoff(constrain(app_value_result_get(), 30.0f, MAX_TEMP));
+  printLCD_S(col, row, String(app_limits_temp_cutoff()));
 
-  Save_EEPROM(ADD_CURRENT_CUT_OFF, CurrentCutOff);
-  Save_EEPROM(ADD_POWER_CUT_OFF, PowerCutOff);
-  Save_EEPROM(ADD_TEMP_CUT_OFF, tempCutOff);
+  Save_EEPROM(ADD_CURRENT_CUT_OFF, app_limits_current_cutoff());
+  Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
+  Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
 
   legacy_show_limits();
   delay(2000);
@@ -54,19 +55,21 @@ void legacy_show_limits() {
   clearLCD();
 
 #ifndef WOKWI_SIMULATION
-  CurrentCutOff = Load_EEPROM(ADD_CURRENT_CUT_OFF);
-  PowerCutOff = Load_EEPROM(ADD_POWER_CUT_OFF);
-  tempCutOff = Load_EEPROM(ADD_TEMP_CUT_OFF);
+  app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF));
+  app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));
+  app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));
 #endif
 
   printLCD(1, 0, F("Limits"));
   printLCD(0, 1, F("Current:"));
-  printLCDNumber(9, 1, CurrentCutOff, ' ', 3);
+  printLCDNumber(9, 1, app_limits_current_cutoff(), ' ', 3);
   printLCDRaw(F("A"));
   printLCD(0, 2, F("Power:"));
-  printLCDNumber(9, 2, PowerCutOff, 'W', 2);
+  printLCDNumber(9, 2, app_limits_power_cutoff(), 'W', 2);
   printLCD(0, 3, F("Temp.:"));
-  printLCDNumber(9, 3, tempCutOff, ' ', 0);
+  printLCDNumber(9, 3, app_limits_temp_cutoff(), ' ', 0);
   printLCDRaw(char(0xDF));
   printLCDRaw("C");
 }
+
+

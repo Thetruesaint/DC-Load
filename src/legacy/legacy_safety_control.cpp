@@ -5,6 +5,7 @@
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_setpoint_context.h"
 
 void legacy_temp_control() {
@@ -53,13 +54,13 @@ void legacy_check_limits() {
   if (voltage > MAX_VOLTAGE) {
     strcpy(message, "Max Voltage!      ");
     vlimit = true;
-  } else if (current > CurrentCutOff * 1.01) {
+  } else if (current > app_limits_current_cutoff() * 1.01) {
     strcpy(message, "Current Cut Off!  ");
     ilimit = true;
-  } else if (power > PowerCutOff) {
+  } else if (power > app_limits_power_cutoff()) {
     strcpy(message, "Power Cut Off!    ");
     plimit = true;
-  } else if (temp > tempCutOff) {
+  } else if (temp > app_limits_temp_cutoff()) {
     strcpy(message, "Over Temperature! ");
     climit = true;
   } else if (actpwrdis >= maxpwrdis) {
@@ -104,3 +105,5 @@ void legacy_check_limits() {
     app_mode_state_set_initialized(false);
   }
 }
+
+

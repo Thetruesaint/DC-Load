@@ -3,6 +3,7 @@
 #include "../variables.h"
 #include "../app/app_load_context.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 
@@ -22,7 +23,7 @@ SystemState legacy_capture_state() {
   state.encoderPositionRaw = app_runtime_encoder_position();
   state.encoderStep = app_runtime_encoder_step();
   state.encoderMaxRaw = static_cast<float>(app_runtime_encoder_max());
-  state.currentCutOffA = CurrentCutOff;
+  state.currentCutOffA = app_limits_current_cutoff();
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 
@@ -74,3 +75,5 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+
+

@@ -7,6 +7,7 @@
 #include "../app/app_value_input.h"
 #include "../app/app_io_context.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
@@ -32,7 +33,7 @@ void legacy_battery_mode() {
     printLCDNumber(6, 3, BatteryLife, ' ', 0);
     printLCDRaw(F("mAh"));
     printLCD_S(14, 3, BatteryType);
-    Encoder_Status(true, CurrentCutOff);
+    Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -191,3 +192,5 @@ bool legacy_battery_capacity() {
 
   return false;
 }
+
+

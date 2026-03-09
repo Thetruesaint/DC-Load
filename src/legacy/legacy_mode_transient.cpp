@@ -4,6 +4,7 @@
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_value_result_context.h"
 
@@ -62,14 +63,14 @@ void legacy_transient_cont_setup() {
   if (!Value_Input(col, row)) {
     return;
   }
-  LowCurrent = min(app_value_result_get(), CurrentCutOff);
+  LowCurrent = min(app_value_result_get(), app_limits_current_cutoff());
   printLCDNumber(col, row, LowCurrent, 'A', 3);
 
   row = 2;
   if (!Value_Input(col, row)) {
     return;
   }
-  HighCurrent = min(app_value_result_get(), CurrentCutOff);
+  HighCurrent = min(app_value_result_get(), app_limits_current_cutoff());
   printLCDNumber(col, row, HighCurrent, 'A', 3);
 
   row = 3;
@@ -170,7 +171,7 @@ void legacy_transient_list_setup() {
     if (!Value_Input(col, row)) {
       return;
     }
-    const float currentInput = min(app_value_result_get(), CurrentCutOff);
+    const float currentInput = min(app_value_result_get(), app_limits_current_cutoff());
     printLCDNumber(col, row, currentInput, 'A', 3);
     transientList[i][0] = static_cast<unsigned long>(currentInput * 1000.0f);
 
@@ -217,3 +218,5 @@ void legacy_transient_list_timing() {
     last_time = current_time;
   }
 }
+
+

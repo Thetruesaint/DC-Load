@@ -4,6 +4,7 @@
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_limits_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 
@@ -14,7 +15,7 @@ void legacy_const_power_mode() {
     printLCD(0, 2, F("Set->"));
     printLCD(11, 2, F("W"));
     printLCD(0, 3, F(">"));
-    Encoder_Status(true, PowerCutOff);
+    Encoder_Status(true, app_limits_power_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -26,3 +27,5 @@ void legacy_const_power_mode() {
 
   // Setpoint de CP lo calcula core y se aplica via legacy_apply_state.
 }
+
+
