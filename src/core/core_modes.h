@@ -11,5 +11,6 @@ void core_mode_apply_encoder_delta(SystemState *state, int direction);
 void core_mode_move_cursor(SystemState *state, int direction);
 void core_mode_update_setpoints(SystemState *state);
 void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key);
+void core_mode_update_ui_screen(SystemState *state);
 
 #endif

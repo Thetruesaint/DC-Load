@@ -38,6 +38,7 @@ void core_sync_from_legacy(const SystemState &state) {
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
+  core_mode_update_ui_screen(&g_state);
 }
 
 void core_begin_cycle() {
@@ -88,7 +89,6 @@ void core_dispatch(const UserAction &action) {
       if (g_state.mode == CA) {
         g_state.calibrationRealValue = static_cast<float>(action.value) / 1000.0f;
         g_state.calibrationValueConfirmEvent = true;
-        g_state.uiScreen = UiScreen::MenuCalibration;
       } else {
         g_state.encoderPositionRaw = static_cast<float>(action.value);
       }
@@ -98,9 +98,6 @@ void core_dispatch(const UserAction &action) {
       g_state.pendingConfigSection = decode_config_section(action.value);
       if (g_state.pendingConfigSection == ConfigSection::Limits) {
         g_state.openLimitsConfigEvent = true;
-        g_state.uiScreen = UiScreen::MenuLimits;
-      } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
-        g_state.uiScreen = UiScreen::MenuCalibration;
       }
       break;
 
@@ -110,6 +107,7 @@ void core_dispatch(const UserAction &action) {
   }
 
   core_mode_update_setpoints(&g_state);
+  core_mode_update_ui_screen(&g_state);
   g_state.actionCounter++;
 }
 
