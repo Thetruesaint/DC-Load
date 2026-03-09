@@ -20,6 +20,60 @@ ConfigSection decode_config_section(int32_t raw) {
 ConfigSection default_config_selection(ConfigSection section) {
   return (section == ConfigSection::Calibration) ? ConfigSection::Calibration : ConfigSection::Limits;
 }
+
+void limits_menu_move_field(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0) return;
+
+  int next = static_cast<int>(state->limitsMenuField) + direction;
+  if (next < 0) next = 2;
+  if (next > 2) next = 0;
+  state->limitsMenuField = static_cast<uint8_t>(next);
+}
+
+void limits_menu_adjust_value(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0) return;
+
+  if (state->limitsMenuField == 0) {
+    const float step = 0.1f;
+    state->limitsDraftCurrentA = constrain(
+        state->limitsDraftCurrentA + (direction * step),
+        1.0f,
+        static_cast<float>(MAX_CURRENT));
+    return;
+  }
+
+  if (state->limitsMenuField == 1) {
+    const float step = 1.0f;
+    state->limitsDraftPowerW = constrain(
+        state->limitsDraftPowerW + (direction * step),
+        1.0f,
+        static_cast<float>(MAX_POWER));
+    return;
+  }
+
+  const float step = 1.0f;
+  state->limitsDraftTempC = constrain(
+      state->limitsDraftTempC + (direction * step),
+      30.0f,
+      static_cast<float>(MAX_TEMP));
+}
+
+void limits_menu_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->limitsMenuActive = true;
+  state->limitsMenuField = 0;
+  state->limitsDraftCurrentA = state->currentCutOffA;
+  state->limitsDraftPowerW = state->powerCutOffW;
+  state->limitsDraftTempC = state->tempCutOffC;
+}
+
+void limits_menu_finish(SystemState *state, bool save) {
+  if (state == nullptr) return;
+  state->limitsSaveEvent = save;
+  state->limitsMenuActive = false;
+  state->pendingConfigSection = ConfigSection::None;
+  state->modeInitialized = false;
+}
 }
 
 void core_init() {
@@ -32,6 +86,11 @@ void core_sync_from_legacy(const SystemState &state) {
   const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
   const int32_t lastEncoderDelta = g_state.lastEncoderDelta;
   const char lastKeyPressed = g_state.lastKeyPressed;
+  const bool limitsMenuActive = g_state.limitsMenuActive;
+  const uint8_t limitsMenuField = g_state.limitsMenuField;
+  const float limitsDraftCurrentA = g_state.limitsDraftCurrentA;
+  const float limitsDraftPowerW = g_state.limitsDraftPowerW;
+  const float limitsDraftTempC = g_state.limitsDraftTempC;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -39,6 +98,11 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.pendingConfigSection = pendingConfigSection;
   g_state.lastEncoderDelta = lastEncoderDelta;
   g_state.lastKeyPressed = lastKeyPressed;
+  g_state.limitsMenuActive = limitsMenuActive;
+  g_state.limitsMenuField = limitsMenuField;
+  g_state.limitsDraftCurrentA = limitsDraftCurrentA;
+  g_state.limitsDraftPowerW = limitsDraftPowerW;
+  g_state.limitsDraftTempC = limitsDraftTempC;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -53,6 +117,7 @@ void core_dispatch(const UserAction &action) {
   switch (action.type) {
     case ActionType::EncoderDelta:
       g_state.lastEncoderDelta = action.value;
+
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
         if (direction < 0) {
@@ -62,19 +127,32 @@ void core_dispatch(const UserAction &action) {
         }
         break;
       }
+
+      if (g_state.uiScreen == UiScreen::MenuLimits) {
+        limits_menu_adjust_value(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+        break;
+      }
+
       core_mode_apply_encoder_delta(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
       break;
 
     case ActionType::EncoderButtonPress:
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         if (g_state.pendingConfigSection == ConfigSection::Limits) {
-          g_state.openLimitsConfigEvent = true;
+          limits_menu_begin(&g_state);
+          g_state.pendingConfigSection = ConfigSection::None;
         } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
           g_state.openCalibrationConfigEvent = true;
+          g_state.pendingConfigSection = ConfigSection::None;
         }
-        g_state.pendingConfigSection = ConfigSection::None;
         break;
       }
+
+      if (g_state.uiScreen == UiScreen::MenuLimits) {
+        limits_menu_finish(&g_state, true);
+        break;
+      }
+
       core_mode_move_cursor(&g_state, 1);
       break;
 
@@ -88,13 +166,36 @@ void core_dispatch(const UserAction &action) {
           g_state.pendingConfigSection = ConfigSection::Calibration;
         } else if (action.key == 'E') {
           if (g_state.pendingConfigSection == ConfigSection::Limits) {
-            g_state.openLimitsConfigEvent = true;
+            limits_menu_begin(&g_state);
           } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
             g_state.openCalibrationConfigEvent = true;
           }
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (action.key == '<' || action.key == 'M') {
           g_state.pendingConfigSection = ConfigSection::None;
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuLimits) {
+        if (action.key == '1') {
+          g_state.limitsMenuField = 0;
+        } else if (action.key == '2') {
+          g_state.limitsMenuField = 1;
+        } else if (action.key == '3') {
+          g_state.limitsMenuField = 2;
+        } else if (action.key == 'U') {
+          limits_menu_adjust_value(&g_state, 1);
+        } else if (action.key == 'D') {
+          limits_menu_adjust_value(&g_state, -1);
+        } else if (action.key == 'L') {
+          limits_menu_move_field(&g_state, -1);
+        } else if (action.key == 'R') {
+          limits_menu_move_field(&g_state, 1);
+        } else if (action.key == 'E') {
+          limits_menu_finish(&g_state, true);
+        } else if (action.key == '<' || action.key == 'M') {
+          limits_menu_finish(&g_state, false);
         }
         break;
       }
@@ -128,6 +229,7 @@ void core_dispatch(const UserAction &action) {
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
+      g_state.limitsMenuActive = false;
       break;
 
     case ActionType::ValueConfirm:
@@ -143,6 +245,7 @@ void core_dispatch(const UserAction &action) {
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
+      g_state.limitsMenuActive = false;
       break;
 
     case ActionType::None:

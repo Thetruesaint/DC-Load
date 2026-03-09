@@ -9,7 +9,7 @@ bool core_config_wants_calibration(const SystemState &state) {
 }
 
 UiScreen core_config_target_screen(const SystemState &state) {
-  if (core_config_wants_limits(state)) {
+  if (state.limitsMenuActive) {
     return UiScreen::MenuLimits;
   }
 

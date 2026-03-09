@@ -12,6 +12,7 @@
 #include "../app/app_mode_setpoint_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../core/core_config_flow.h"
+#include "../funciones.h"
 
 SystemState legacy_capture_state() {
   SystemState state = core_state_make_default();
@@ -61,6 +62,18 @@ void legacy_apply_state(const SystemState &state) {
   app_mode_state_set_configured(state.modeConfigured);
   app_setpoint_set_reading(state.readingValue);
   app_load_set_enabled(state.loadEnabled);
+
+  if (state.limitsSaveEvent) {
+    app_limits_set_current_cutoff(state.limitsDraftCurrentA);
+    app_limits_set_power_cutoff(state.limitsDraftPowerW);
+    app_limits_set_temp_cutoff(state.limitsDraftTempC);
+
+    Save_EEPROM(ADD_CURRENT_CUT_OFF, app_limits_current_cutoff());
+    Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
+    Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
+
+    app_mode_state_set_initialized(false);
+  }
 
   if (state.calibrationValueConfirmEvent && state.mode == CA) {
     legacy_calibrate(state.calibrationRealValue);

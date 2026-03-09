@@ -34,8 +34,14 @@ struct SystemState {
   float powerCutOffW;
   float tempCutOffC;
 
+  // Draft values for non-blocking limits menu flow.
+  float limitsDraftCurrentA;
+  float limitsDraftPowerW;
+  float limitsDraftTempC;
+
   int cursorPosition;
   int functionIndex;
+  uint8_t limitsMenuField;
 
   int32_t lastEncoderDelta;
   char lastKeyPressed;
@@ -43,6 +49,8 @@ struct SystemState {
   bool calibrationValueConfirmEvent;
   bool openLimitsConfigEvent;
   bool openCalibrationConfigEvent;
+  bool limitsMenuActive;
+  bool limitsSaveEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
@@ -59,6 +67,7 @@ inline SystemState core_state_make_default() {
   SystemState state = {0};
   state.uiScreen = UiScreen::Home;
   state.pendingConfigSection = ConfigSection::None;
+  state.limitsMenuField = 0;
   return state;
 }
 
@@ -68,6 +77,7 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->calibrationValueConfirmEvent = false;
   state->openLimitsConfigEvent = false;
   state->openCalibrationConfigEvent = false;
+  state->limitsSaveEvent = false;
   state->calibrationRealValue = 0.0f;
 }
 

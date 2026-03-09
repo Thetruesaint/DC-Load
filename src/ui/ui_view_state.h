@@ -18,6 +18,11 @@ struct UiViewState {
   float powerCutOffW;
   float tempCutOffC;
 
+  float limitsDraftCurrentA;
+  float limitsDraftPowerW;
+  float limitsDraftTempC;
+  uint8_t limitsMenuField;
+
   uint8_t pendingConfigSection;
 };
 
