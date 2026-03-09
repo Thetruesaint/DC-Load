@@ -2,9 +2,14 @@
 
 #include "../variables.h"
 
+namespace {
+char inputText[10] = {'\0'};
+byte inputIndex = 0;
+bool hasDecimalPoint = false;
+}
+
 char app_input_read_key() {
-  customKey = customKeypad.getKey();
-  return customKey;
+  return customKeypad.getKey();
 }
 
 char app_input_wait_key() {
@@ -16,47 +21,47 @@ char app_input_wait_key() {
 }
 
 void app_input_reset() {
-  c_index = 0;
-  numbers[c_index] = '\0';
-  decimalPoint = ' ';
+  inputIndex = 0;
+  inputText[inputIndex] = '\0';
+  hasDecimalPoint = false;
 }
 
 uint8_t app_input_length() {
-  return c_index;
+  return inputIndex;
 }
 
 const char* app_input_text() {
-  return numbers;
+  return inputText;
 }
 
 bool app_input_append_digit(char key, int maxDigits) {
   if (key < '0' || key > '9') return false;
-  if (c_index >= maxDigits) return false;
+  if (inputIndex >= maxDigits) return false;
 
-  numbers[c_index++] = key;
-  numbers[c_index] = '\0';
+  inputText[inputIndex++] = key;
+  inputText[inputIndex] = '\0';
   return true;
 }
 
 bool app_input_append_decimal(int maxDigits) {
-  if (decimalPoint == '*') return false;
-  if (c_index >= maxDigits) return false;
+  if (hasDecimalPoint) return false;
+  if (inputIndex >= maxDigits) return false;
 
-  numbers[c_index++] = '.';
-  numbers[c_index] = '\0';
-  decimalPoint = '*';
+  inputText[inputIndex++] = '.';
+  inputText[inputIndex] = '\0';
+  hasDecimalPoint = true;
   return true;
 }
 
 bool app_input_backspace() {
-  if (c_index == 0) return false;
+  if (inputIndex == 0) return false;
 
-  c_index--;
-  if (numbers[c_index] == '.') decimalPoint = ' ';
-  numbers[c_index] = '\0';
+  inputIndex--;
+  if (inputText[inputIndex] == '.') hasDecimalPoint = false;
+  inputText[inputIndex] = '\0';
   return true;
 }
 
 float app_input_parse_float() {
-  return atof(numbers);
+  return atof(inputText);
 }

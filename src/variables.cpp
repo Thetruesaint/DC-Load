@@ -71,10 +71,6 @@ byte colPins[COLS] = {34, 35, 19, 26};
 
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-char customKey;
-char decimalPoint;  // Variable para el punto decimal en la entrada de teclado
-char numbers[10];   // Variable para la entrada de teclado
-byte c_index = 0;   // posicion para el caranter de la variable numbers
 float x = 0;        // Valor que entrega la función Value_Input()
 
 //---------------- Variables LCD y TFT ------------------------------------
@@ -116,3 +112,4 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
+

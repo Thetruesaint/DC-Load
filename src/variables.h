@@ -107,10 +107,6 @@ extern uint8_t colPins[COLS];          // Pineado de las columnas del teclado
 extern char hexaKeys[ROWS][COLS];   // Distribución de Teclas
 
 extern Keypad customKeypad;         // Mapeo de teclas
-extern char customKey;              // Auxiliar para tomar la tecla presionada
-extern char decimalPoint;           // Flag de punto decimal en la entrada de teclado
-extern char numbers[10];            // Guarda valor ingresado
-extern byte c_index;                  // poicion para el caranter de la variable numbers
 extern float x;                     // Auxiliar para carga de valores.
 
 //---------------- Variables LCD y TFT ------------------------------------
@@ -179,3 +175,4 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
+
