@@ -32,6 +32,10 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
+      if (!core_mode_is_managed(g_state.mode)) {
+        break;
+      }
+
       if (action.key == 'U') {
         core_mode_apply_encoder_delta(&g_state, 1);
       } else if (action.key == 'D') {
