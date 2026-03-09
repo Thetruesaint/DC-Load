@@ -35,6 +35,7 @@ SystemState legacy_capture_state() {
   state.lastKeyPressed = '\0';
   state.loadToggleEvent = false;
   state.calibrationValueConfirmEvent = false;
+  state.openLimitsConfigEvent = false;
   state.calibrationRealValue = 0.0f;
   state.actionCounter = 0;
 
@@ -64,6 +65,10 @@ void legacy_apply_state(const SystemState &state) {
 
   if (state.calibrationValueConfirmEvent && state.mode == CA) {
     legacy_calibrate(state.calibrationRealValue);
+  }
+
+  if (state.openLimitsConfigEvent) {
+    legacy_open_config_limits();
   }
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {

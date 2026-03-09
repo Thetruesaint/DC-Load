@@ -11,7 +11,8 @@ enum class ActionType : uint8_t {
   LoadToggle,
   ModeSelect,
   ValueConfirm,
-  CalibrationValueConfirm
+  CalibrationValueConfirm,
+  OpenLimitsConfig
 };
 
 struct UserAction {
@@ -50,6 +51,10 @@ constexpr UserAction make_value_confirm_action(int32_t valueMilli) {
 
 constexpr UserAction make_calibration_value_confirm_action(int32_t valueMilli) {
   return {ActionType::CalibrationValueConfirm, valueMilli, '\0'};
+}
+
+constexpr UserAction make_open_limits_config_action() {
+  return {ActionType::OpenLimitsConfig, 0, '\0'};
 }
 
 #endif

@@ -64,6 +64,10 @@ void core_dispatch(const UserAction &action) {
       g_state.calibrationValueConfirmEvent = true;
       break;
 
+    case ActionType::OpenLimitsConfig:
+      g_state.openLimitsConfigEvent = true;
+      break;
+
     case ActionType::None:
     default:
       return;

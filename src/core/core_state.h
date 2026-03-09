@@ -26,6 +26,7 @@ struct SystemState {
   char lastKeyPressed;
   bool loadToggleEvent;
   bool calibrationValueConfirmEvent;
+  bool openLimitsConfigEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
