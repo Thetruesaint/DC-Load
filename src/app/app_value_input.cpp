@@ -3,6 +3,7 @@
 #include "../ui_lcd.h"
 #include "app_msc.h"
 #include "app_input_buffer.h"
+#include "app_loop.h"
 #include "app_value_result_context.h"
 
 char app_wait_key_pressed() {
@@ -20,6 +21,7 @@ bool app_value_input(int col, int row, int maxDigits, bool decimal) {
 
   while (true) {
     char key = app_wait_key_pressed();
+    app_push_action(make_key_pressed_action(key));
 
     if (!app_handle_msc_keys(key)) {
       return false;
