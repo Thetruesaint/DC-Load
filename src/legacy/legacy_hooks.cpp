@@ -1,7 +1,8 @@
 #include "legacy_hooks.h"
 
 #include "../funciones.h"
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../app/app_mode_state_context.h"
 
 void legacy_open_config_limits() {

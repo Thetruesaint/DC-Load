@@ -1,6 +1,7 @@
 #include "legacy_timing_buzzer.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../app/app_timer_context.h"
 
 #define mytimerStarted (app_timer_running_ref())

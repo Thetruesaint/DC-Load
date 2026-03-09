@@ -1,6 +1,7 @@
 #include "legacy_bridge.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../app/app_load_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"

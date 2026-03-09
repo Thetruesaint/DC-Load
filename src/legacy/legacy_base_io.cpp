@@ -1,6 +1,7 @@
 #include "legacy_base_io.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../funciones.h"
 #include "../app/app_inputs.h"
 #include "../app/app_io_context.h"

@@ -1,6 +1,7 @@
 #include "legacy_mode_cp.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_mode_state_context.h"

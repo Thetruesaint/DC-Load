@@ -1,6 +1,7 @@
 #include "legacy_safety_control.h"
 
-#include "../variables.h"
+#include "../config/system_constants.h"
+#include "../hw/hw_objects.h"
 #include "../funciones.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
