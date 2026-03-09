@@ -7,7 +7,7 @@ void legacy_dac_control() {
 #ifndef WOKWI_SIMULATION
   if (app_load_is_enabled()) {
     const float targetCurrent = app_load_set_current_mA();
-    setDAC = (unsigned long)(constrain(targetCurrent * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs, 0.0f, 12000.0f) * OUT_CURR_FACT);
+    const unsigned long setDAC = (unsigned long)(constrain(targetCurrent * Out_Curr_Calib_Fact + Out_Curr_Calib_Offs, 0.0f, 12000.0f) * OUT_CURR_FACT);
     dac.setVoltage(setDAC, false);
   } else {
     dac.setVoltage(0, false);
@@ -19,3 +19,4 @@ void legacy_dac_control() {
   }
 #endif
 }
+

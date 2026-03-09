@@ -99,13 +99,13 @@ void legacy_read_volts_current() {
   float raw_current;
 
   ads.setGain(GAIN_TWOTHIRDS);
-  adcv = ads.readADC_SingleEnded(VLTG_SNSR);
+  const int16_t adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;
 
   app_measurements_set_voltage_v(raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs);
 
   ads.setGain(GAIN_ONE);
-  adci = ads.readADC_SingleEnded(CRR_SNSR);
+  const int16_t adci = ads.readADC_SingleEnded(CRR_SNSR);
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;
 
   app_measurements_set_current_a(raw_current * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs);
@@ -145,3 +145,4 @@ void legacy_read_volts_current() {
 
 #endif
 }
+

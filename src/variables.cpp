@@ -18,8 +18,6 @@ unsigned long lastButtonPress = 0;          // Use this to store if the encoder 
 
 //--------------- Variables de operacion --------------------------------- 
 
-int16_t adcv, adci;                     // Objetos para los SDC valor en binario del ADC
-unsigned long setDAC = 0;               // Voltage de control para el DAC que controlara al MOSFET
 
 float Sns_Volt_Calib_Fact = 1.0;        // Factor de calibración para el ADC de V
 float Sns_Volt_Calib_Offs = 0.0;        // Offset de calibracion de voltage sensado
@@ -92,4 +90,5 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
+
 
