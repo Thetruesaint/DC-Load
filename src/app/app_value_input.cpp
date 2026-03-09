@@ -1,6 +1,6 @@
 #include "app_value_input.h"
 
-#include "../ui_lcd.h"
+#include "app_value_input_view.h"
 #include "app_msc.h"
 #include "app_input_buffer.h"
 #include "app_loop.h"
@@ -16,8 +16,7 @@ void app_reset_input_pointers() {
 
 bool app_value_input(int col, int row, int maxDigits, bool decimal) {
   app_reset_input_pointers();
-  setCursorLCD(col, row);
-  blinkOnLCD();
+  app_value_input_view_begin(col, row);
 
   while (true) {
     char key = app_wait_key_pressed();
@@ -38,12 +37,10 @@ bool app_value_input(int col, int row, int maxDigits, bool decimal) {
     if (!handled && key == 'E' && app_input_length() > 0) {
       app_value_result_set(app_input_parse_float());
       app_reset_input_pointers();
-      noCursorLCD();
-      blinkOffLCD();
+      app_value_input_view_end();
       return true;
     }
 
-    printLCD_S(col, row, String("     ").substring(0, maxDigits));
-    printLCD_S(col, row, String(app_input_text()));
+    app_value_input_view_render(col, row, maxDigits, app_input_text());
   }
 }
