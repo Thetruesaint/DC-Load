@@ -38,3 +38,24 @@ void ui_draw_bc_template(float cutoffVolts, float batteryLife, const String &bat
   printLCDRaw(F("mAh"));
   printLCD_S(14, 3, batteryType);
 }
+
+void ui_draw_battery_task_menu() {
+  clearLCD();
+  printLCD(2, 0, F("Set Task & Batt"));
+  printLCD(0, 1, F("Stor. 1)LiPo 2)LiIOn"));
+  printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
+  printLCD(2, 3, F("5)Cutoff Voltage"));
+}
+
+void ui_draw_battery_custom_cutoff_prompt(const String &batteryType) {
+  clearLCD();
+  printLCD_S(3, 0, batteryType + " Batt");
+  printLCD(2, 1, F("Voltage Cutoff?"));
+  printLCD(5, 2, F("(0.1-25)V"));
+}
+
+void ui_draw_battery_cell_count_prompt(const String &batteryType) {
+  clearLCD();
+  printLCD_S(3, 0, batteryType + " Batt");
+  printLCD(6, 1, F("(1-6)S?"));
+}

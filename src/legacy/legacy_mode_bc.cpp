@@ -55,11 +55,7 @@ void legacy_battery_mode() {
 }
 
 void legacy_battery_type_selec() {
-  clearLCD();
-  printLCD(2, 0, F("Set Task & Batt"));
-  printLCD(0, 1, F("Stor. 1)LiPo 2)LiIOn"));
-  printLCD(0, 2, F("Disc. 3)LiPo 4)LiIOn"));
-  printLCD(2, 3, F("5)Cutoff Voltage"));
+  ui_draw_battery_task_menu();
 
   while (true) {
     const char key = app_wait_key_pressed();
@@ -95,10 +91,7 @@ void legacy_battery_type_selec() {
   }
 
   if (BatteryType == "Custom") {
-    clearLCD();
-    printLCD_S(3, 0, BatteryType + " Batt");
-    printLCD(2, 1, F("Voltage Cutoff?"));
-    printLCD(5, 2, F("(0.1-25)V"));
+    ui_draw_battery_custom_cutoff_prompt(BatteryType);
 
     float inputValue = 0.0f;
     do {
@@ -117,9 +110,7 @@ void legacy_battery_type_selec() {
   }
 
   if (BatteryType != "Custom") {
-    clearLCD();
-    printLCD_S(3, 0, BatteryType + " Batt");
-    printLCD(6, 1, F("(1-6)S?"));
+    ui_draw_battery_cell_count_prompt(BatteryType);
 
     float inputValue = 0.0f;
     do {
