@@ -1,8 +1,11 @@
-#include "funciones.h"
+#include <Arduino.h>
+
 #include "app/app_loop.h"
 #include "app/app_keypad.h"
 #include "app/app_inputs.h"
 #include "app/app_value_input.h"
+#include "app/app_value_result_context.h"
+#include "app/app_mode_setpoint_context.h"
 #include "legacy/legacy_mode_cc.h"
 #include "legacy/legacy_mode_cp.h"
 #include "legacy/legacy_mode_cr.h"
@@ -185,22 +188,3 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   return legacy_timer_get_time();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
