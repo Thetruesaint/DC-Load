@@ -7,6 +7,7 @@
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
+#include "../app/app_measurements_context.h"
 #include "../app/app_calibration_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
@@ -97,7 +98,7 @@ void legacy_calibrate(float realValue) {
   static float setCurrent1 = 0;
   static float setCurrent2 = 0;
 
-  float measuredValue = app_calibration_is_voltage_mode() ? voltage : current;
+  float measuredValue = app_calibration_is_voltage_mode() ? app_measurements_voltage_v() : app_measurements_current_a();
 
   if (!app_calibration_first_point_taken()) {
     measuredValue1 = measuredValue;
@@ -162,5 +163,3 @@ void legacy_calibrate(float realValue) {
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
-
-

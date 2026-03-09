@@ -1,4 +1,5 @@
 #include "ui_lcd.h"
+#include "app/app_measurements_context.h"
 
 #ifndef WOKWI_SIMULATION
 namespace {
@@ -138,15 +139,15 @@ void Update_LCD(void) {
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
 
   // Evitar valores negativos por errores de medicion
-  if (voltage < 0.011 && Mode != CA) voltage = 0.0;
-  if (current < 0.006 && Mode != CA) current = 0.0;
-  float power = voltage * current;
+  if (app_measurements_voltage_v() < 0.011 && Mode != CA) app_measurements_set_voltage_v(0.0f);
+  if (app_measurements_current_a() < 0.006 && Mode != CA) app_measurements_set_current_a(0.0f);
+  float power = app_measurements_power_w();
 
   printLCD(8, 0, toggle ? F("ON ") : F("OFF"));
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
-  printLCDNumber(0, 1, current, 'A', (current <= 9.999) ? 3 : 2);
-  printLCDNumber(7, 1, voltage, 'v', (voltage <= 9.999) ? 3 : (voltage <= 99.99) ? 2 : 1);
+  printLCDNumber(0, 1, app_measurements_current_a(), 'A', (app_measurements_current_a() <= 9.999f) ? 3 : 2);
+  printLCDNumber(7, 1, app_measurements_voltage_v(), 'v', (app_measurements_voltage_v() <= 9.999f) ? 3 : (app_measurements_voltage_v() <= 99.99f) ? 2 : 1);
   if (Mode != BC && Mode != CA) {
     setCursorLCD(14, 1);
     if (power < 10) {

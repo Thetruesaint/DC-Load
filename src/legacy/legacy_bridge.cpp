@@ -4,20 +4,22 @@
 #include "../app/app_load_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
+#include "../app/app_measurements_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_mode_setpoint_context.h"
 #include "../app/app_setpoint_context.h"
 
 SystemState legacy_capture_state() {
   SystemState state = {0};
 
   state.setCurrent_mA = app_load_set_current_mA();
-  state.setPower_W = setPower;
-  state.setResistance_Ohm = setResistance;
+  state.setPower_W = app_mode_setpoint_power_w();
+  state.setResistance_Ohm = app_mode_setpoint_resistance_ohm();
 
-  state.measuredCurrent_A = current;
-  state.measuredVoltage_V = voltage;
-  state.measuredPower_W = voltage * current;
-  state.temp_C = static_cast<float>(temp);
+  state.measuredCurrent_A = app_measurements_current_a();
+  state.measuredVoltage_V = app_measurements_voltage_v();
+  state.measuredPower_W = app_measurements_power_w();
+  state.temp_C = static_cast<float>(app_measurements_temp_c());
 
   state.readingValue = app_setpoint_reading();
   state.encoderPositionRaw = app_runtime_encoder_position();
@@ -58,8 +60,8 @@ void legacy_apply_state(const SystemState &state) {
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {
     app_load_set_set_current_mA(state.setCurrent_mA);
-    setPower = state.setPower_W;
-    setResistance = state.setResistance_Ohm;
+    app_mode_setpoint_set_power_w(state.setPower_W);
+    app_mode_setpoint_set_resistance_ohm(state.setResistance_Ohm);
   }
 
   if (!app_load_is_enabled()) {
@@ -75,5 +77,3 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
-
-

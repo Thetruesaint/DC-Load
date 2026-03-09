@@ -4,6 +4,7 @@
 #include "app/app_loop.h"
 #include "app/app_runtime.h"
 #include "app/app_limits_context.h"
+#include "app/app_measurements_context.h"
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
@@ -60,11 +61,11 @@ void setup() {
       Serial.print("RTC  NDT");
     }
 
-  temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR; // Convertir a Celsius con factor para ADC@0dB (Vmax≈1.1V)
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR)); // Convertir a Celsius con factor para ADC@0dB (Vmax≈1.1V)
     
-  printLCD_S(11, 1, String(temp) + String((char)0xDF) + "C");
+  printLCD_S(11, 1, String(app_measurements_temp_c()) + String((char)0xDF) + "C");
 
-  if (hlth == true && temp <= 99) {
+  if (hlth == true && app_measurements_temp_c() <= 99) {
     printLCD(0,2, F("Sensor Test OK"));
   } else {
     printLCD(0,2, F("Sensor Test FAIL"));
@@ -133,7 +134,3 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
-
-
-
-

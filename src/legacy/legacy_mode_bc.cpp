@@ -10,6 +10,7 @@
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_measurements_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_result_context.h"
 
@@ -142,10 +143,10 @@ bool legacy_battery_capacity() {
   const unsigned long currentMillis = app_io_millis();
   static unsigned long lastUpdate = 0;
 
-  if (app_load_is_enabled() && voltage >= BatteryCutoffVolts && !mytimerStarted) {
+  if (app_load_is_enabled() && app_measurements_voltage_v() >= BatteryCutoffVolts && !mytimerStarted) {
     timer_start();
   }
-  if (!app_load_is_enabled() && voltage >= BatteryCutoffVolts && mytimerStarted) {
+  if (!app_load_is_enabled() && app_measurements_voltage_v() >= BatteryCutoffVolts && mytimerStarted) {
     timer_stop();
   }
 
@@ -155,7 +156,7 @@ bool legacy_battery_capacity() {
     printLCD_S(0, 3, timer_getTime());
 
     Seconds = timer_getTotalSeconds();
-    LoadCurrent = (!mytimerStarted) ? 0 : current;
+    LoadCurrent = (!mytimerStarted) ? 0 : app_measurements_current_a();
     BatteryLife += (LoadCurrent * 1000) / 7200;
   }
 
@@ -170,7 +171,7 @@ bool legacy_battery_capacity() {
 
   app_load_set_set_current_mA(readingValue * 1000.0f);
 
-  if (voltage <= BatteryCutoffVolts) {
+  if (app_measurements_voltage_v() <= BatteryCutoffVolts) {
     const float nextCurrent = max(app_load_set_current_mA() - CRR_STEP_RDCTN, MIN_DISC_CURR);
     app_load_set_set_current_mA(nextCurrent);
     readingValue = app_load_set_current_mA() / 1000.0f;
@@ -178,8 +179,8 @@ bool legacy_battery_capacity() {
     app_runtime_set_encoder_position(readingValue * 1000.0f);
   }
 
-  if (voltage <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) {
-    BatteryCurrent = current;
+  if (app_measurements_voltage_v() <= (BatteryCutoffVolts - VLTG_DROP_MARGIN)) {
+    BatteryCurrent = app_measurements_current_a();
     app_setpoint_set_reading(0.0f);
     app_runtime_set_encoder_position(0.0f);
     app_load_set_set_current_mA(0.0f);
@@ -192,5 +193,3 @@ bool legacy_battery_capacity() {
 
   return false;
 }
-
-

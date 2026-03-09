@@ -9,6 +9,7 @@
 #include "../app/app_mode_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../app/app_measurements_context.h"
 #include "../core/core_modes.h"
 
 void legacy_load_off() {
@@ -101,13 +102,13 @@ void legacy_read_volts_current() {
   adcv = ads.readADC_SingleEnded(VLTG_SNSR);
   raw_voltage = ads.computeVolts(adcv) * SNS_VOLT_FACT;
 
-  voltage = raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;
+  app_measurements_set_voltage_v(raw_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs);
 
   ads.setGain(GAIN_ONE);
   adci = ads.readADC_SingleEnded(CRR_SNSR);
   raw_current = ads.computeVolts(adci) * SNS_CURR_FACT;
 
-  current = raw_current * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs;
+  app_measurements_set_current_a(raw_current * Sns_Curr_Calib_Fact + Sns_Curr_Calib_Offs);
 
 #else
 
@@ -119,27 +120,27 @@ void legacy_read_volts_current() {
 
   if (!app_mode_is_battery() && !app_mode_is_calibration()) {
     simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
-    voltage = simulatedVoltage;
+    app_measurements_set_voltage_v(simulatedVoltage);
   } else if (app_mode_is_battery()) {
     if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
       lastDecreaseTime = currentMillis;
       simulatedVoltage -= 0.005;
       simulatedVoltage = max(simulatedVoltage, 0.0f);
-      voltage = simulatedVoltage;
+      app_measurements_set_voltage_v(simulatedVoltage);
     } else if (!loadEnabled) {
       simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
-      voltage = simulatedVoltage;
+      app_measurements_set_voltage_v(simulatedVoltage);
     }
   } else if (app_mode_is_calibration()) {
     simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
     float error_voltage = simulatedVoltage * 1.05 - 0.1;
-    voltage = error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs;
+    app_measurements_set_voltage_v(error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs);
   }
 
   if (loadEnabled) {
-    current = app_load_set_current_mA() / 1000;
+    app_measurements_set_current_a(app_load_set_current_mA() / 1000);
   } else {
-    current = 0;
+    app_measurements_set_current_a(0);
   }
 
 #endif

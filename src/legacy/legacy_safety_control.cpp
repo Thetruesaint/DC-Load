@@ -6,6 +6,7 @@
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
+#include "../app/app_measurements_context.h"
 #include "../app/app_setpoint_context.h"
 
 void legacy_temp_control() {
@@ -19,9 +20,9 @@ void legacy_temp_control() {
   }
 
   last_tmpchk = currentMillis;
-  temp = analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR;
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
 
-  if (temp >= 40) {
+  if (app_measurements_temp_c() >= 40) {
     if (!fans_on) {
       digitalWrite(FAN_CTRL, HIGH);
       fans_on = true;
@@ -33,34 +34,34 @@ void legacy_temp_control() {
   }
 
   setCursorLCD(16, 0);
-  if (temp < 10) {
+  if (app_measurements_temp_c() < 10) {
     printLCDRaw(" ");
   }
-  printLCDRaw(temp);
+  printLCDRaw(app_measurements_temp_c());
   printLCDRaw(char(0xDF));
   printLCDRaw("C");
 }
 
 void legacy_check_limits() {
   char message[20] = "";
-  float power = voltage * current;
-  float maxpwrdis = constrain(249 - 1.4 * temp, 0, 214);
+  float power = app_measurements_power_w();
+  float maxpwrdis = constrain(249 - 1.4 * app_measurements_temp_c(), 0, 214);
   float actpwrdis = max(0.0f, power / 4);
   bool vlimit = false;
   bool ilimit = false;
   bool plimit = false;
   bool climit = false;
 
-  if (voltage > MAX_VOLTAGE) {
+  if (app_measurements_voltage_v() > MAX_VOLTAGE) {
     strcpy(message, "Max Voltage!      ");
     vlimit = true;
-  } else if (current > app_limits_current_cutoff() * 1.01) {
+  } else if (app_measurements_current_a() > app_limits_current_cutoff() * 1.01) {
     strcpy(message, "Current Cut Off!  ");
     ilimit = true;
   } else if (power > app_limits_power_cutoff()) {
     strcpy(message, "Power Cut Off!    ");
     plimit = true;
-  } else if (temp > app_limits_temp_cutoff()) {
+  } else if (app_measurements_temp_c() > app_limits_temp_cutoff()) {
     strcpy(message, "Over Temperature! ");
     climit = true;
   } else if (actpwrdis >= maxpwrdis) {
@@ -105,5 +106,3 @@ void legacy_check_limits() {
     app_mode_state_set_initialized(false);
   }
 }
-
-
