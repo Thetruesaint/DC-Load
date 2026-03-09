@@ -1,5 +1,10 @@
 #include "ui_lcd.h"
 #include "app/app_measurements_context.h"
+#include "app/app_load_context.h"
+#include "app/app_mode_context.h"
+#include "app/app_mode_state_context.h"
+#include "app/app_runtime_context.h"
+#include "app/app_setpoint_context.h"
 
 #ifndef WOKWI_SIMULATION
 namespace {
@@ -132,23 +137,24 @@ void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
   static int blink_cntr = 0;
 
-  if (!modeInitialized) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
+  if (!app_mode_state_initialized()) return;  // No actualiza el LCD hasta que el modo dibuje la plantilla y ponga modeInitialized = true
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
   lastUpdateTime = millis();  // Actualizar el tiempo de referencia
 
   // Evitar valores negativos por errores de medicion
-  if (app_measurements_voltage_v() < 0.011 && Mode != CA) app_measurements_set_voltage_v(0.0f);
-  if (app_measurements_current_a() < 0.006 && Mode != CA) app_measurements_set_current_a(0.0f);
+  if (app_measurements_voltage_v() < 0.011f && !app_mode_is_calibration()) app_measurements_set_voltage_v(0.0f);
+  if (app_measurements_current_a() < 0.006f && !app_mode_is_calibration()) app_measurements_set_current_a(0.0f);
   float power = app_measurements_power_w();
 
-  printLCD(8, 0, toggle ? F("ON ") : F("OFF"));
+  printLCD(8, 0, app_load_is_enabled() ? F("ON ") : F("OFF"));
 
   // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, app_measurements_current_a(), 'A', (app_measurements_current_a() <= 9.999f) ? 3 : 2);
   printLCDNumber(7, 1, app_measurements_voltage_v(), 'v', (app_measurements_voltage_v() <= 9.999f) ? 3 : (app_measurements_voltage_v() <= 99.99f) ? 2 : 1);
-  if (Mode != BC && Mode != CA) {
+  const uint8_t mode = app_mode_id();
+  if (mode != BC && mode != CA) {
     setCursorLCD(14, 1);
     if (power < 10) {
       Print_Spaces(14, 1);
@@ -162,23 +168,24 @@ void Update_LCD(void) {
     printLCDRaw(F("w"));
   }
 
-  if (Mode != TC && Mode != TL) {
+  if (mode != TC && mode != TL) {
     setCursorLCD(6, 2);
-    if (Mode == CC || Mode == BC || Mode == CA) {
-      if (reading < 100) Print_Spaces(6, 2);
-      if (reading < 10) Print_Spaces(7, 2);
-      printLCDRaw(reading, 3);
+    const float readingValue = app_setpoint_reading();
+    if (mode == CC || mode == BC || mode == CA) {
+      if (readingValue < 100) Print_Spaces(6, 2);
+      if (readingValue < 10) Print_Spaces(7, 2);
+      printLCDRaw(readingValue, 3);
     } else {
-      if (reading < 100) printLCDRaw("0");
-      if (reading < 10) printLCDRaw("0");
-      printLCDRaw(reading, 1);
+      if (readingValue < 100) printLCDRaw("0");
+      if (readingValue < 10) printLCDRaw("0");
+      printLCDRaw(readingValue, 1);
     }
-    setCursorLCD(CuPo, 2);
+    setCursorLCD(app_runtime_cursor_position(), 2);
 
     blink_cntr = (blink_cntr + 1) % 5;
-    setCursorLCD(CuPo, 2);
+    setCursorLCD(app_runtime_cursor_position(), 2);
     if (blink_cntr == 4) {
-      Print_Spaces(CuPo, 2);
+      Print_Spaces(app_runtime_cursor_position(), 2);
     }
   }
 }
@@ -211,3 +218,5 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
+
+
