@@ -1,5 +1,6 @@
 #include "legacy_bridge.h"
-#include "legacy_hooks.h"
+#include "legacy_mode_ca.h"
+#include "legacy_mode_limits.h"
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
@@ -63,7 +64,7 @@ void legacy_apply_state(const SystemState &state) {
   }
 
   if (state.openLimitsConfigEvent) {
-    legacy_open_config_limits();
+    legacy_config_limits();
   }
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {

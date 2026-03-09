@@ -2,7 +2,7 @@
 
 #include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_dac_control.h"
-#include "../legacy/legacy_hooks.h"
+#include "../legacy/legacy_mode_dispatch.h"
 #include "../legacy/legacy_safety_control.h"
 #include "../ui_lcd.h"
 #include "app_inputs.h"
