@@ -11,7 +11,6 @@
 #include <TFT_eSPI.h>
 #include <SPI.h>
 #include <RTClib.h>
-#include <Keypad.h>
 #include <ESP32Encoder.h>
 #include <EEPROM.h>
 
@@ -59,7 +58,6 @@ const float SNS_CURR_FACT = 4;             // Factor de diseño para Placa power
 const float OUT_CURR_FACT = 0.3375;        // Conviente 12000mA a 4050 para el DAC control
 
 
-extern float ResistorCutOff;                      // Resistencia en Ω
 enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
 
 //--------------- Modos CC, CR y CP --------------------------------------
@@ -67,14 +65,6 @@ enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
 
 //--------------- Variables para Keypad o entrada de valores -------------
 
-const uint8_t ROWS = 5; // Cinco filas
-const uint8_t COLS = 4; // Cuatro columnas
-
-extern uint8_t rowPins[ROWS];          // Pineado de las filas del teclado
-extern uint8_t colPins[COLS];          // Pineado de las columnas del teclado
-extern char hexaKeys[ROWS][COLS];   // Distribución de Teclas
-
-extern Keypad customKeypad;         // Mapeo de teclas
 
 //---------------- Variables LCD y TFT ------------------------------------
 const unsigned long LCD_RFSH_TIME = 100; // Tiempo de refresco del LCD en ms
@@ -125,5 +115,4 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
-
 

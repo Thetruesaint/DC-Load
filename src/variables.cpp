@@ -1,6 +1,4 @@
-
 #include "variables.h"
-
 
 // Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
@@ -12,56 +10,15 @@ TFT_eSPI tft = TFT_eSPI(); // Objeto TFT para la pantalla
 RTC_DS1307 rtc; // Objeto RTC para el DS1307
 ESP32Encoder encoder; // Objeto Encoder para el ESP32Encoder
 
-//--------------- Variables Encoder --------------------------------------
-
-
-//--------------- Variables de operacion --------------------------------- 
-
-
-
-
-
-float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
-
-//--------------- Modos CC, CR y CP --------------------------------------
-
-
-//--------------- Variables para Keypad o entrada de valores ------------ 
-// Definicion de las teclas del teclado
-
-char hexaKeys[ROWS][COLS] = {
-	{'1', '2', '3', 'M',},
-	{'4', '5', '6', 'C'},
-	{'7', '8', '9', 'S'},
-	{'<', '0', '.', 'E'},
-	{'U', 'D', 'L', 'R'}};
-byte rowPins[ROWS] = {33, 5, 27, 12, 0};  
-byte colPins[COLS] = {34, 35, 19, 26};
-
-Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
-
-
 //---------------- Variables LCD y TFT ------------------------------------
-
-byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar valores que pueden cambiar. Los de Set son con mayusculas comunes
-    0b00000,  //      
-    0b00000,  //      
-    0b00100,  //   *  
-    0b01010,  //  * *
-    0b10001,  // *   *
-    0b11111,  // *****
-    0b10001,  // *   *
-    0b00000,  //      
-  };
-
-// uint16_t cellW = 22;
-// uint16_t cellH = 32;
-
-//---------------- Variables para Modo BC --------------------------------
-
-
-//----------------- Variables para Control de Temperatura -------------------
-
-//----------------- Variables para Modos TC y TL Transient -------------------
-
+byte amp_char[8] = {
+  0b00000,
+  0b00000,
+  0b00100,
+  0b01010,
+  0b10001,
+  0b11111,
+  0b10001,
+  0b00000,
+};
 
