@@ -30,9 +30,6 @@ float Sns_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente se
 float Out_Curr_Calib_Fact = 1.0;        // Factor de calibración para el DAC de I
 float Out_Curr_Calib_Offs = 0.0;        // Offset de calibracion de corriente máxima de salida
 
-bool toggle = false;                    // Conmuta la carga On/Off
-float reading = 0;                      // Variable para Encoder dividido por 1000
-float maxReading = 0;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
 float CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
 float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
 float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
@@ -45,7 +42,6 @@ bool hlth = true;                       // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
 
-float setCurrent = 0;                   // Variable para setear la corriente de carga
 
 //--------------- Variables para Keypad o entrada de valores ------------ 
 // Definicion de las teclas del teclado
@@ -101,5 +97,4 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
-
 

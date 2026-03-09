@@ -1,6 +1,9 @@
 #include "app_setpoint_context.h"
 
-#include "../variables.h"
+namespace {
+float reading = 0.0f;
+float maxReading = 0.0f;
+}
 
 float app_setpoint_reading() {
   return reading;

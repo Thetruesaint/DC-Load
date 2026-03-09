@@ -1,19 +1,22 @@
 #include "app_load_context.h"
 
-#include "../variables.h"
+namespace {
+bool loadEnabled = false;
+float setCurrent_mA = 0.0f;
+}
 
 bool app_load_is_enabled() {
-  return toggle;
+  return loadEnabled;
 }
 
 void app_load_set_enabled(bool enabled) {
-  toggle = enabled;
+  loadEnabled = enabled;
 }
 
 float app_load_set_current_mA() {
-  return setCurrent;
+  return setCurrent_mA;
 }
 
 void app_load_set_set_current_mA(float value) {
-  setCurrent = value;
+  setCurrent_mA = value;
 }

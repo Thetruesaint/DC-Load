@@ -68,9 +68,6 @@ extern float Out_Curr_Calib_Offs;          // Offset de calibracion de corriente
 
 extern int16_t adcv, adci;                 // Objetos para los SDC valor en binario del ADC
 extern unsigned long setDAC;               // Voltage de control para el DAC que controlara al MOSFET
-extern bool toggle;                        // Conmuta la carga On/Off
-extern float reading;                      // Para tomar valores de encoder
-extern float maxReading;                   // Máximo valor permitido para reading (en unidades, ej. A, W, Ω)
 extern float CurrentCutOff;                // Corriente máxima de corte seteado o cargado de la EEPROM
 extern float PowerCutOff;                  // Potencia de corte seteado o cargado de la EEPROM
 extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM
@@ -85,7 +82,6 @@ extern bool hlth;                          // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
 
-extern float setCurrent;                   // Variable para setear la corriente de carga
 
 //--------------- Variables para Keypad o entrada de valores -------------
 
@@ -164,5 +160,4 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
-
 
