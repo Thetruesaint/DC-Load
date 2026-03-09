@@ -14,7 +14,6 @@ ESP32Encoder encoder; // Objeto Encoder para el ESP32Encoder
 
 //--------------- Variables Encoder --------------------------------------
 
-unsigned long lastButtonPress = 0;          // Use this to store if the encoder button was pressed or not
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -22,9 +21,6 @@ unsigned long lastButtonPress = 0;          // Use this to store if the encoder 
 
 
 
-float CurrentCutOff = MAX_CURRENT;      // Mantendra el valor de la corriente de corte seteado o cargado de la EEPROM
-float PowerCutOff = MAX_POWER;          // Mantendra el valor de la potencia de corte seteado o cargado de la EEPROM
-float tempCutOff = MAX_TEMP;            // Mantendra el valor de la temperatura de corte seteado o cargado de la EEPROM
 float ResistorCutOff = MAX_RESISTOR;    // Maximo valor de resistencia en Ω
 
 //--------------- Modos CC, CR y CP --------------------------------------
@@ -44,7 +40,6 @@ byte colPins[COLS] = {34, 35, 19, 26};
 
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-float x = 0;        // Valor que entrega la función Value_Input()
 
 //---------------- Variables LCD y TFT ------------------------------------
 
@@ -68,4 +63,5 @@ byte amp_char[8] = {       // Unidad de Amperes con custom A, solo para indicar 
 //----------------- Variables para Control de Temperatura -------------------
 
 //----------------- Variables para Modos TC y TL Transient -------------------
+
 

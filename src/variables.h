@@ -43,7 +43,6 @@ const uint8_t VLTG_SNSR = 3;   // Input A3 from ADC (real hardware ADS1115)
 
 //--------------- Variables Encoder --------------------------------------
 
-extern unsigned long lastButtonPress;     // Use this to store if the encoder button was pressed or not
 
 //--------------- Variables de operacion --------------------------------- 
 
@@ -60,12 +59,8 @@ const float SNS_CURR_FACT = 4;             // Factor de diseño para Placa power
 const float OUT_CURR_FACT = 0.3375;        // Conviente 12000mA a 4050 para el DAC control
 
 
-extern float CurrentCutOff;                // Corriente máxima de corte seteado o cargado de la EEPROM
-extern float PowerCutOff;                  // Potencia de corte seteado o cargado de la EEPROM
-extern float tempCutOff;                   // Temperatura máxima de corte seteado o cargado de la EEPROM
 extern float ResistorCutOff;                      // Resistencia en Ω
 enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
-extern const char* ModeNames[];            // Modos Permitidos
 
 //--------------- Modos CC, CR y CP --------------------------------------
 
@@ -80,7 +75,6 @@ extern uint8_t colPins[COLS];          // Pineado de las columnas del teclado
 extern char hexaKeys[ROWS][COLS];   // Distribución de Teclas
 
 extern Keypad customKeypad;         // Mapeo de teclas
-extern float x;                     // Auxiliar para carga de valores.
 
 //---------------- Variables LCD y TFT ------------------------------------
 const unsigned long LCD_RFSH_TIME = 100; // Tiempo de refresco del LCD en ms
@@ -131,4 +125,5 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
+
 
