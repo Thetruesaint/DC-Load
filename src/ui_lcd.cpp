@@ -179,7 +179,7 @@ void Update_LCD(void) {
     blinkOffLCD();
   }
 
-  const SystemState &state = ui_state_cache_get();
+  const UiViewState &state = ui_state_cache_get();
   if (!state.modeInitialized) return;
 
   // Esperar 100ms antes de actualizar el resto del codigo en el LCD
