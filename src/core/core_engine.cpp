@@ -83,6 +83,9 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::ModeSelect:
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
+      g_state.pendingConfigSection = ConfigSection::None;
+      g_state.openLimitsConfigEvent = false;
+      g_state.calibrationValueConfirmEvent = false;
       break;
 
     case ActionType::ValueConfirm:
