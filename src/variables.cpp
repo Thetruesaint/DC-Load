@@ -1,4 +1,5 @@
-#include "variables.h"
+#include "hw/hw_objects.h"
+#include "ui/ui_symbols.h"
 
 // Creamos los objetos que vamos a utilizar
 #ifndef WOKWI_SIMULATION
