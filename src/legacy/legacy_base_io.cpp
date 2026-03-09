@@ -122,14 +122,19 @@ void legacy_read_volts_current() {
 
 #else
 
-  int potValue = analogRead(VSIM);
+  const int potValue = analogRead(VSIM);
   static float simulatedVoltage = 0;
   static unsigned long lastDecreaseTime = 0;
-  unsigned long currentMillis = app_io_millis();
+  const unsigned long currentMillis = app_io_millis();
   const bool loadEnabled = app_load_is_enabled();
 
+  // ESP32 ADC in Wokwi is 12-bit. Keep simulated source linear in 0..40V.
+  constexpr float SIM_VOLTAGE_MAX = 40.0f;
+  constexpr float ESP32_ADC_MAX = 4095.0f;
+  const float simulatedPotVoltage = constrain((static_cast<float>(potValue) / ESP32_ADC_MAX) * SIM_VOLTAGE_MAX, 0.0f, SIM_VOLTAGE_MAX);
+
   if (!app_mode_is_battery() && !app_mode_is_calibration()) {
-    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
+    simulatedVoltage = simulatedPotVoltage;
     app_measurements_set_voltage_v(simulatedVoltage);
   } else if (app_mode_is_battery()) {
     if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
@@ -138,12 +143,12 @@ void legacy_read_volts_current() {
       simulatedVoltage = max(simulatedVoltage, 0.0f);
       app_measurements_set_voltage_v(simulatedVoltage);
     } else if (!loadEnabled) {
-      simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
+      simulatedVoltage = simulatedPotVoltage;
       app_measurements_set_voltage_v(simulatedVoltage);
     }
   } else if (app_mode_is_calibration()) {
-    simulatedVoltage = map(potValue, 0, 1023, 550, 0) / 10.0;
-    float error_voltage = simulatedVoltage * 1.05 - 0.1;
+    simulatedVoltage = simulatedPotVoltage;
+    float error_voltage = simulatedVoltage * 1.05f - 0.1f;
     app_measurements_set_voltage_v(error_voltage * Sns_Volt_Calib_Fact + Sns_Volt_Calib_Offs);
   }
 
