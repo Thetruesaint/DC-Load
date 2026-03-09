@@ -1,23 +1,26 @@
 #include "app_mode_context.h"
 
+#include "app_mode_state_context.h"
 #include "../variables.h"
 
 bool app_mode_config_allowed() {
-  return (Mode != TC && Mode != TL);
+  const uint8_t mode = app_mode_state_mode();
+  return (mode != TC && mode != TL);
 }
 
 bool app_mode_is_transient() {
-  return (Mode == TC || Mode == TL);
+  const uint8_t mode = app_mode_state_mode();
+  return (mode == TC || mode == TL);
 }
 
 bool app_mode_is_calibration() {
-  return (Mode == CA);
+  return (app_mode_state_mode() == CA);
 }
 
 bool app_mode_is_battery() {
-  return (Mode == BC);
+  return (app_mode_state_mode() == BC);
 }
 
 uint8_t app_mode_id() {
-  return static_cast<uint8_t>(Mode);
+  return app_mode_state_mode();
 }
