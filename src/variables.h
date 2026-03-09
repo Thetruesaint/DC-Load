@@ -87,8 +87,6 @@ extern const char* ModeNames[];            // Modos Permitidos
 extern bool modeInitialized;               // Para reimplirmir la plantilla del modo y/o inicializar valores
 extern bool modeConfigured;                // Para BC, TC o TL, indica que hay que seterarlos
 extern int functionIndex;                  // Para seleccionar los Modos.
-extern bool calibrateVoltage;              // True si estoy calibrando V, I si es false
-extern bool firstPointTaken;               // Flag de pto uno tomado
 extern bool hlth;                          // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
@@ -175,4 +173,3 @@ const int ADD_SNS_CURR_OFF_CAL = 28;    // Dirección para Sns_Curr_Calib_Offs
 const int ADD_OUT_CURR_OFF_CAL = 32;    // Dirección para Out_Curr_Calib_Offs
 
 #endif
-

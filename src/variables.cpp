@@ -47,8 +47,6 @@ ModeType Mode = CC;                     // Modo de operación, CC Default
 bool modeInitialized = false;           // Para reimprimir la plantilla del modo y/o inicializar valores
 bool modeConfigured = false;            // Para BC, TC o TL, indica que hay que seterarlos
 int functionIndex = 0;                  // Para seleccionar los Modos.
-bool calibrateVoltage = false;          // True si estoy calibrando V, I si es false
-bool firstPointTaken = false;           // Flag de pto uno tomado
 bool hlth = true;                       // Flag de Salud gral.
 
 //--------------- Modos CC, CR y CP --------------------------------------
@@ -112,4 +110,3 @@ unsigned long current_time;           // Para almacenar el tiempo actual en micr
 unsigned long transientList[10][2];   // Array para almacenar los datos de la lista transitoria
 int total_steps;               // Utilizado en el modo de Transient List Mode
 int current_step;              // Utilizado en el modo de Transient List Mode
-

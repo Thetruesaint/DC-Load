@@ -6,6 +6,7 @@
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
+#include "../app/app_calibration_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
@@ -19,11 +20,11 @@ void legacy_calibration_mode() {
   if (!app_mode_state_initialized()) {
     const float selection = app_value_result_get();
     if (selection == 1.0f) {
-      calibrateVoltage = true;
+      app_calibration_set_voltage_mode(true);
       Sns_Volt_Calib_Fact = 1.0;
       Sns_Volt_Calib_Offs = 0.0;
     } else if (selection == 2.0f) {
-      calibrateVoltage = false;
+      app_calibration_set_voltage_mode(false);
       Sns_Curr_Calib_Fact = 1.0;
       Sns_Curr_Calib_Offs = 0.0;
       Out_Curr_Calib_Fact = 1.0;
@@ -31,8 +32,8 @@ void legacy_calibration_mode() {
     }
 
     clearLCD();
-    printLCD(0, 0, calibrateVoltage ? F("CA VOLT") : F("CA CURR"));
-    printLCD(14, 1, firstPointTaken ? F("Set P2") : F("Set P1"));
+    printLCD(0, 0, app_calibration_is_voltage_mode() ? F("CA VOLT") : F("CA CURR"));
+    printLCD(14, 1, app_calibration_first_point_taken() ? F("Set P2") : F("Set P1"));
     printLCD(1, 2, F("Adj->"));
     printLCD(13, 2, F("A"));
     printLCD(0, 3, F(">"));
@@ -85,7 +86,7 @@ void legacy_calibration_setup() {
     app_mode_state_set_configured(false);
   }
 
-  firstPointTaken = false;
+  app_calibration_set_first_point_taken(false);
   app_mode_state_set_initialized(false);
 }
 
@@ -95,13 +96,13 @@ void legacy_calibrate(float realValue) {
   static float setCurrent1 = 0;
   static float setCurrent2 = 0;
 
-  float measuredValue = calibrateVoltage ? voltage : current;
+  float measuredValue = app_calibration_is_voltage_mode() ? voltage : current;
 
-  if (!firstPointTaken) {
+  if (!app_calibration_first_point_taken()) {
     measuredValue1 = measuredValue;
     realValue1 = realValue;
     setCurrent1 = app_load_set_current_mA() / 1000.0f;
-    firstPointTaken = true;
+    app_calibration_set_first_point_taken(true);
     app_mode_state_set_initialized(false);
     return;
   }
@@ -110,19 +111,19 @@ void legacy_calibrate(float realValue) {
   realValue2 = realValue;
   setCurrent2 = app_load_set_current_mA() / 1000.0f;
   Load_OFF();
-  firstPointTaken = false;
+  app_calibration_set_first_point_taken(false);
 
   float measuredDelta = fabsf(measuredValue2 - measuredValue1);
   float setCurrentDelta = fabsf(setCurrent2 - setCurrent1);
 
-  bool pointsTooClose = calibrateVoltage
+  bool pointsTooClose = app_calibration_is_voltage_mode()
     ? (measuredDelta < CAL_MIN_VOLTAGE_DELTA)
     : (setCurrentDelta < CAL_MIN_CURRENT_DELTA);
 
   float errRatio1 = 0.0f;
   float errRatio2 = 0.0f;
   bool pointMismatch = false;
-  if (!calibrateVoltage) {
+  if (!app_calibration_is_voltage_mode()) {
     errRatio1 = fabsf(measuredValue1 - setCurrent1) / max(setCurrent1, 0.001f);
     errRatio2 = fabsf(measuredValue2 - setCurrent2) / max(setCurrent2, 0.001f);
     pointMismatch = (errRatio1 > CAL_MAX_POINT_ERROR_RATIO) || (errRatio2 > CAL_MAX_POINT_ERROR_RATIO);
@@ -144,7 +145,7 @@ void legacy_calibrate(float realValue) {
   float factor = max(0.9f, min(1.1f, (realValue2 - realValue1) / (measuredValue2 - measuredValue1)));
   float offset = max(-0.1f, min(0.1f, realValue1 - (measuredValue1 * factor)));
 
-  if (calibrateVoltage) {
+  if (app_calibration_is_voltage_mode()) {
     Sns_Volt_Calib_Fact = factor;
     Sns_Volt_Calib_Offs = offset;
   } else {
@@ -157,6 +158,6 @@ void legacy_calibrate(float realValue) {
   clearLCD();
   printLCD(4, 1, F("Calibrated!"));
   app_mode_state_set_configured(false);
-  firstPointTaken = false;
+  app_calibration_set_first_point_taken(false);
   delay(2000);
 }
