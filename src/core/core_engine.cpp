@@ -16,6 +16,10 @@ ConfigSection decode_config_section(int32_t raw) {
   }
   return ConfigSection::None;
 }
+
+ConfigSection default_config_selection(ConfigSection section) {
+  return (section == ConfigSection::Calibration) ? ConfigSection::Calibration : ConfigSection::Limits;
+}
 }
 
 void core_init() {
@@ -49,10 +53,28 @@ void core_dispatch(const UserAction &action) {
   switch (action.type) {
     case ActionType::EncoderDelta:
       g_state.lastEncoderDelta = action.value;
+      if (g_state.uiScreen == UiScreen::MenuRoot) {
+        const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
+        if (direction < 0) {
+          g_state.pendingConfigSection = ConfigSection::Limits;
+        } else if (direction > 0) {
+          g_state.pendingConfigSection = ConfigSection::Calibration;
+        }
+        break;
+      }
       core_mode_apply_encoder_delta(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
       break;
 
     case ActionType::EncoderButtonPress:
+      if (g_state.uiScreen == UiScreen::MenuRoot) {
+        if (g_state.pendingConfigSection == ConfigSection::Limits) {
+          g_state.openLimitsConfigEvent = true;
+        } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
+          g_state.openCalibrationConfigEvent = true;
+        }
+        g_state.pendingConfigSection = ConfigSection::None;
+        break;
+      }
       core_mode_move_cursor(&g_state, 1);
       break;
 
@@ -60,9 +82,9 @@ void core_dispatch(const UserAction &action) {
       g_state.lastKeyPressed = action.key;
 
       if (g_state.uiScreen == UiScreen::MenuRoot) {
-        if (action.key == '1') {
+        if (action.key == '1' || action.key == 'U' || action.key == 'L') {
           g_state.pendingConfigSection = ConfigSection::Limits;
-        } else if (action.key == '2') {
+        } else if (action.key == '2' || action.key == 'D' || action.key == 'R') {
           g_state.pendingConfigSection = ConfigSection::Calibration;
         } else if (action.key == 'E') {
           if (g_state.pendingConfigSection == ConfigSection::Limits) {
@@ -118,7 +140,7 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::OpenConfigSection:
-      g_state.pendingConfigSection = decode_config_section(action.value);
+      g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       break;

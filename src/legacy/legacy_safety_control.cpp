@@ -4,6 +4,7 @@
 #include "../hw/hw_objects.h"
 #include "../funciones.h"
 #include "../ui/ui_mode_templates.h"
+#include "../ui/ui_state_machine.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_mode_state_context.h"
@@ -35,7 +36,9 @@ void legacy_temp_control() {
     fans_on = false;
   }
 
-  ui_draw_header_temperature(app_measurements_temp_c());
+  if (ui_state_machine_current_screen() == UiScreen::Home) {
+    ui_draw_header_temperature(app_measurements_temp_c());
+  }
 }
 
 void legacy_check_limits() {

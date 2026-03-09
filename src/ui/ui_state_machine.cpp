@@ -4,15 +4,25 @@
 
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
+uint8_t g_lastMenuRootSection = 0;
+
+void draw_menu_root_if_needed(const UiViewState &viewState) {
+  if (g_lastMenuRootSection == viewState.pendingConfigSection) return;
+  ui_draw_config_root_menu(viewState.pendingConfigSection);
+  g_lastMenuRootSection = viewState.pendingConfigSection;
+}
 
 void screen_enter_home(const UiViewState &viewState) { (void)viewState; }
 void screen_update_home(const UiViewState &viewState) { (void)viewState; }
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_root(const UiViewState &viewState) {
-  ui_draw_config_root_menu(viewState.pendingConfigSection);
+  g_lastMenuRootSection = 0xFF;
+  draw_menu_root_if_needed(viewState);
 }
-void screen_update_menu_root(const UiViewState &viewState) { (void)viewState; }
+void screen_update_menu_root(const UiViewState &viewState) {
+  draw_menu_root_if_needed(viewState);
+}
 void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_limits(const UiViewState &viewState) {
@@ -61,6 +71,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 
 void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
+  g_lastMenuRootSection = 0;
 }
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
