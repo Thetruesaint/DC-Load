@@ -19,8 +19,6 @@ void app_run_cycle() {
   legacy_dac_control();
 
   legacy_run_mode_logic();
-
-  ui_render_cycle();
-
   app_tick();
+  ui_render_cycle();
 }
