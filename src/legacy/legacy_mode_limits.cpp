@@ -21,22 +21,21 @@ void legacy_config_limits() {
     return;
   }
   app_limits_set_current_cutoff(constrain(app_value_result_get(), 1, MAX_CURRENT));
-  printLCDNumber(col, row, app_limits_current_cutoff(), ' ', 3);
-  printLCDRaw(F("A"));
+  ui_show_current_limit_value(col, row, app_limits_current_cutoff());
 
   row = 2;
   if (!Value_Input(col, row)) {
     return;
   }
   app_limits_set_power_cutoff(constrain(app_value_result_get(), 1, MAX_POWER));
-  printLCDNumber(col, row, app_limits_power_cutoff(), 'W', 1);
+  ui_show_value_number(col, row, app_limits_power_cutoff(), 'W', 1);
 
   row = 3;
   if (!Value_Input(col, row, 2)) {
     return;
   }
   app_limits_set_temp_cutoff(constrain(app_value_result_get(), 30.0f, MAX_TEMP));
-  printLCD_S(col, row, String(app_limits_temp_cutoff()));
+  ui_show_value_text(col, row, String(app_limits_temp_cutoff()));
 
   Save_EEPROM(ADD_CURRENT_CUT_OFF, app_limits_current_cutoff());
   Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
@@ -59,3 +58,4 @@ void legacy_show_limits() {
       app_limits_power_cutoff(),
       app_limits_temp_cutoff());
 }
+

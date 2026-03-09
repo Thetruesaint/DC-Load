@@ -2,7 +2,6 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../app/app_msc.h"
 #include "../app/app_value_input.h"
@@ -95,8 +94,7 @@ void legacy_battery_type_selec() {
     do {
       const int col = 7;
       const int row = 3;
-      printLCD(col - 1, row, F(">"));
-      Print_Spaces(col, row, 5);
+      ui_prepare_value_input_prompt(col, row, 5);
 
       if (!Value_Input(col, row)) {
         return;
@@ -114,8 +112,7 @@ void legacy_battery_type_selec() {
     do {
       const int col = 9;
       const int row = 2;
-      printLCD(col - 1, row, F(">"));
-      Print_Spaces(col, row, 5);
+      ui_prepare_value_input_prompt(col, row, 5);
       if (!Value_Input(col, row, 1, false)) {
         return;
       }

@@ -239,3 +239,25 @@ void ui_update_transient_list_period(unsigned long periodMs) {
   Print_Spaces(8, 3, 5);
   printLCD_S(8, 3, String(periodMs));
 }
+void ui_prepare_value_input_prompt(int col, int row, int width) {
+  printLCD(col - 1, row, F(">"));
+  Print_Spaces(col, row, width);
+}
+
+void ui_show_value_number(int col, int row, float value, char unit, int decimals) {
+  printLCDNumber(col, row, value, unit, decimals);
+}
+
+void ui_show_value_text(int col, int row, const String &text) {
+  printLCD_S(col, row, text);
+}
+
+void ui_show_current_limit_value(int col, int row, float current) {
+  printLCDNumber(col, row, current, ' ', 3);
+  printLCDRaw(F("A"));
+}
+
+void ui_clear_mode_screen() {
+  clearLCD();
+}
+

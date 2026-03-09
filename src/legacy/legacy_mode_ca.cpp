@@ -66,8 +66,7 @@ void legacy_calibration_setup() {
   do {
     const int col = 1;
     const int row = 3;
-    printLCD(col - 1, row, F(">"));
-    Print_Spaces(col, row, 1);
+    ui_prepare_value_input_prompt(col, row, 1);
     if (!Value_Input(col, row, 1, false)) {
       return;
     }
@@ -156,3 +155,4 @@ void legacy_calibrate(float realValue) {
   app_calibration_set_first_point_taken(false);
   delay(2000);
 }
+

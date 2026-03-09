@@ -31,5 +31,11 @@ void ui_show_battery_done();
 void ui_update_battery_timer(const String &timeText);
 void ui_update_transient_list_step(int step);
 void ui_update_transient_list_period(unsigned long periodMs);
+void ui_prepare_value_input_prompt(int col, int row, int width);
+void ui_show_value_number(int col, int row, float value, char unit, int decimals);
+void ui_show_value_text(int col, int row, const String &text);
+void ui_show_current_limit_value(int col, int row, float current);
+void ui_clear_mode_screen();
 
 #endif
+

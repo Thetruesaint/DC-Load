@@ -2,7 +2,6 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../ui_lcd.h"
 #include "../funciones.h"
 #include "../ui/ui_mode_templates.h"
 #include "../app/app_mode_state_context.h"
@@ -44,14 +43,14 @@ void legacy_transient_cont_setup() {
     return;
   }
   LowCurrent = min(app_value_result_get(), app_limits_current_cutoff());
-  printLCDNumber(col, row, LowCurrent, 'A', 3);
+  ui_show_value_number(col, row, LowCurrent, 'A', 3);
 
   row = 2;
   if (!Value_Input(col, row)) {
     return;
   }
   HighCurrent = min(app_value_result_get(), app_limits_current_cutoff());
-  printLCDNumber(col, row, HighCurrent, 'A', 3);
+  ui_show_value_number(col, row, HighCurrent, 'A', 3);
 
   row = 3;
   if (!Value_Input(col, row, 5, false)) {
@@ -59,7 +58,7 @@ void legacy_transient_cont_setup() {
   }
   transientPeriod = static_cast<unsigned long>(app_value_result_get());
 
-  clearLCD();
+  ui_clear_mode_screen();
   app_mode_state_set_configured(true);
   app_mode_state_set_initialized(false);
 }
@@ -121,8 +120,7 @@ void legacy_transient_list_setup() {
   do {
     const int col = 9;
     const int row = 2;
-    printLCD(col - 1, row, F(">"));
-    Print_Spaces(col, row, 2);
+    ui_prepare_value_input_prompt(col, row, 2);
     if (!Value_Input(col, row, 2, false)) {
       return;
     }
@@ -131,7 +129,7 @@ void legacy_transient_list_setup() {
 
   total_steps = static_cast<int>(stepsInput) - 1;
 
-  clearLCD();
+  ui_clear_mode_screen();
   for (int i = 0; i <= total_steps; i++) {
     ui_draw_transient_list_step_template(i);
 
@@ -141,7 +139,7 @@ void legacy_transient_list_setup() {
       return;
     }
     const float currentInput = min(app_value_result_get(), app_limits_current_cutoff());
-    printLCDNumber(col, row, currentInput, 'A', 3);
+    ui_show_value_number(col, row, currentInput, 'A', 3);
     transientList[i][0] = static_cast<unsigned long>(currentInput * 1000.0f);
 
     row = 3;
@@ -149,7 +147,7 @@ void legacy_transient_list_setup() {
       return;
     }
     transientList[i][1] = static_cast<unsigned long>(app_value_result_get());
-    clearLCD();
+    ui_clear_mode_screen();
   }
 
   app_load_set_set_current_mA(0.0f);
