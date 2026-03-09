@@ -104,10 +104,9 @@ void legacy_transient_list_mode() {
   }
 
   if (app_mode_state_configured()) {
-    printLCD_S(12, 2, String(current_step));
+    ui_update_transient_list_step(current_step);
     if (transientPeriod != last_transientPeriod) {
-      Print_Spaces(8, 3, 5);
-      printLCD_S(8, 3, String(transientPeriod));
+      ui_update_transient_list_period(transientPeriod);
       last_transientPeriod = transientPeriod;
     }
   }
@@ -188,3 +187,4 @@ void legacy_transient_list_timing() {
     last_time = current_time;
   }
 }
+

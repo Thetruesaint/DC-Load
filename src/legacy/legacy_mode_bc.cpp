@@ -41,14 +41,12 @@ void legacy_battery_mode() {
   }
 
   if (BatteryLife > BatteryLifePrevious) {
-    printLCDNumber(6, 3, BatteryLife, ' ', 0);
-    printLCDRaw(F("mAh"));
-    Print_Spaces(16, 2, 4);
+    ui_update_battery_life(BatteryLife);
     BatteryLifePrevious = BatteryLife;
   }
 
   if (legacy_battery_capacity()) {
-    printLCD(16, 2, F("Done"));
+    ui_show_battery_done();
   }
 
   Cursor_Position();
@@ -146,7 +144,7 @@ bool legacy_battery_capacity() {
   if (currentMillis - lastUpdate >= 500) {
     lastUpdate = currentMillis;
 
-    printLCD_S(0, 3, timer_getTime());
+    ui_update_battery_timer(timer_getTime());
 
     LoadCurrent = (!mytimerStarted) ? 0 : app_measurements_current_a();
     BatteryLife += (LoadCurrent * 1000) / 7200;
@@ -185,3 +183,4 @@ bool legacy_battery_capacity() {
 
   return false;
 }
+

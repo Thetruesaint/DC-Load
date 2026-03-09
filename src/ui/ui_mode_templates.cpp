@@ -216,3 +216,26 @@ void ui_blink_limit_alarm(const char *message, bool vlimit, bool ilimit, bool pl
 void ui_set_setpoint_cursor(int cursorColumn) {
   setCursorLCD(cursorColumn, 2);
 }
+
+void ui_update_battery_life(float batteryLife) {
+  printLCDNumber(6, 3, batteryLife, ' ', 0);
+  printLCDRaw(F("mAh"));
+  Print_Spaces(16, 2, 4);
+}
+
+void ui_show_battery_done() {
+  printLCD(16, 2, F("Done"));
+}
+
+void ui_update_battery_timer(const String &timeText) {
+  printLCD_S(0, 3, timeText);
+}
+
+void ui_update_transient_list_step(int step) {
+  printLCD_S(12, 2, String(step));
+}
+
+void ui_update_transient_list_period(unsigned long periodMs) {
+  Print_Spaces(8, 3, 5);
+  printLCD_S(8, 3, String(periodMs));
+}
