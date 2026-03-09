@@ -29,6 +29,8 @@ SystemState legacy_capture_state() {
   state.encoderStep = app_runtime_encoder_step();
   state.encoderMaxRaw = static_cast<float>(app_runtime_encoder_max());
   state.currentCutOffA = app_limits_current_cutoff();
+  state.powerCutOffW = app_limits_power_cutoff();
+  state.tempCutOffC = app_limits_temp_cutoff();
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 

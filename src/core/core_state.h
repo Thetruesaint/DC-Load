@@ -31,6 +31,8 @@ struct SystemState {
   float encoderStep;
   float encoderMaxRaw;
   float currentCutOffA;
+  float powerCutOffW;
+  float tempCutOffC;
 
   int cursorPosition;
   int functionIndex;

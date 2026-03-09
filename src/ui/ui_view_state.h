@@ -13,6 +13,10 @@ struct UiViewState {
   float measuredVoltage_V;
   float measuredPower_W;
   float readingValue;
+
+  float currentCutOffA;
+  float powerCutOffW;
+  float tempCutOffC;
 };
 
 inline UiViewState ui_view_state_make_default() {

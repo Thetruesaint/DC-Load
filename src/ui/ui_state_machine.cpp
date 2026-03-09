@@ -1,5 +1,7 @@
 #include "ui_state_machine.h"
 
+#include "ui_mode_templates.h"
+
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
 
@@ -11,11 +13,16 @@ void screen_enter_menu_root(const UiViewState &viewState) { (void)viewState; }
 void screen_update_menu_root(const UiViewState &viewState) { (void)viewState; }
 void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 
-void screen_enter_menu_limits(const UiViewState &viewState) { (void)viewState; }
+void screen_enter_menu_limits(const UiViewState &viewState) {
+  ui_draw_limits_summary(viewState.currentCutOffA, viewState.powerCutOffW, viewState.tempCutOffC);
+}
 void screen_update_menu_limits(const UiViewState &viewState) { (void)viewState; }
 void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; }
 
-void screen_enter_menu_calibration(const UiViewState &viewState) { (void)viewState; }
+void screen_enter_menu_calibration(const UiViewState &viewState) {
+  (void)viewState;
+  ui_draw_calibration_setup_menu();
+}
 void screen_update_menu_calibration(const UiViewState &viewState) { (void)viewState; }
 void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewState; }
 

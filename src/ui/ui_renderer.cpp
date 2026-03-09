@@ -14,6 +14,9 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.measuredVoltage_V = state.measuredVoltage_V;
   view.measuredPower_W = state.measuredPower_W;
   view.readingValue = state.readingValue;
+  view.currentCutOffA = state.currentCutOffA;
+  view.powerCutOffW = state.powerCutOffW;
+  view.tempCutOffC = state.tempCutOffC;
   return view;
 }
 }
