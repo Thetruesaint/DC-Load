@@ -59,3 +59,26 @@ void ui_draw_battery_cell_count_prompt(const String &batteryType) {
   printLCD_S(3, 0, batteryType + " Batt");
   printLCD(6, 1, F("(1-6)S?"));
 }
+
+void ui_draw_limits_config_template() {
+  clearLCD();
+  printLCD(4, 0, F("Set Limits"));
+  printLCD(0, 1, F("Current(A):"));
+  printLCD(0, 2, F("Power(W):"));
+  printLCD(0, 3, F("Temp.("));
+  printLCD_S(6, 3, String((char)0xDF) + "C):");
+}
+
+void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCutoff) {
+  clearLCD();
+  printLCD(1, 0, F("Limits"));
+  printLCD(0, 1, F("Current:"));
+  printLCDNumber(9, 1, currentCutoff, ' ', 3);
+  printLCDRaw(F("A"));
+  printLCD(0, 2, F("Power:"));
+  printLCDNumber(9, 2, powerCutoff, 'W', 2);
+  printLCD(0, 3, F("Temp.:"));
+  printLCDNumber(9, 3, tempCutoff, ' ', 0);
+  printLCDRaw(char(0xDF));
+  printLCDRaw("C");
+}

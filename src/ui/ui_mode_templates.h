@@ -10,5 +10,7 @@ void ui_draw_bc_template(float cutoffVolts, float batteryLife, const String &bat
 void ui_draw_battery_task_menu();
 void ui_draw_battery_custom_cutoff_prompt(const String &batteryType);
 void ui_draw_battery_cell_count_prompt(const String &batteryType);
+void ui_draw_limits_config_template();
+void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCutoff);
 
 #endif
