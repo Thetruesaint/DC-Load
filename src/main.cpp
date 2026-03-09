@@ -88,20 +88,15 @@ void setup() {
   String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()); // Formatea la hora
 
   clearLCD();
-  // tft.fillScreen(TFT_BLACK);
   printLCD(0, 0, F("*DC Electronic Load*"));
   printLCD_S(0, 1, date + " - " + time);
-  // tft.setCursor(0 * cellW, 1 * cellH); tft.print(date + " - " + time);
-  #ifndef WOKWI_SIMULATION
   printLCD(0, 2, F("By Guy & Codex"));
-  #else
-  printLCD(0, 2, F("v2.xx-rcx sim"));
-  #endif
-  printLCD(0, 3, F("v2.xx-rcx"));
 
   #ifndef WOKWI_SIMULATION
+  printLCD(0, 3, F("v2.02-rc1"));
   delay (2000);
   #else
+  printLCD(0, 3, F("v2.02-rc1 sim"));
   delay(1000);     //Para probar mas rapido
   #endif
 
@@ -136,5 +131,4 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
-
 
