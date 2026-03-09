@@ -1,20 +1,15 @@
 #include "legacy_mode_cr.h"
 
-#include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
-#include "../ui_lcd.h"
-#include "../funciones.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../config/system_constants.h"
+#include "../funciones.h"
+#include "../ui/ui_mode_templates.h"
 
 void legacy_const_resistance_mode() {
   if (!app_mode_state_initialized()) {
-    clearLCD();
-    printLCD(0, 0, F("CR LOAD"));
-    printLCD(0, 2, F("Set->"));
-    printLCD_S(11, 2, String((char)0xF4));
-    printLCD(0, 3, F(">"));
+    ui_draw_cr_template();
     Encoder_Status(true, MAX_RESISTOR);
     app_runtime_set_encoder_position(MAX_RESISTOR * 1000.0f);
     app_mode_state_set_initialized(true);

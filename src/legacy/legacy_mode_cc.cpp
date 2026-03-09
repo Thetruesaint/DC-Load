@@ -1,21 +1,16 @@
 #include "legacy_mode_cc.h"
 
-#include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
-#include "../ui_lcd.h"
-#include "../funciones.h"
-#include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
+#include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../config/system_constants.h"
+#include "../funciones.h"
+#include "../ui/ui_mode_templates.h"
 
 void legacy_const_current_mode() {
   if (!app_mode_state_initialized()) {
-    clearLCD();
-    printLCD(0, 0, F("CC LOAD"));
-    printLCD(1, 2, F("Set->"));
-    printLCD(13, 2, F("A"));
-    printLCD(0, 3, F(">"));
+    ui_draw_cc_template();
     Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -28,5 +23,3 @@ void legacy_const_current_mode() {
 
   // Setpoint de CC lo calcula core y se aplica via legacy_apply_state.
 }
-
-
