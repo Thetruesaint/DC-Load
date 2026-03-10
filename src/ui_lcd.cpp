@@ -23,7 +23,7 @@ void initLCD(void) {
   lcd.createChar(0, amp_char);
 #else
   tft.init();
-  tft.setRotation(3);
+  tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextFont(1);

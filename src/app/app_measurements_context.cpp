@@ -31,5 +31,6 @@ void app_measurements_set_temp_c(int value) {
 }
 
 float app_measurements_power_w() {
-  return app_measurements_voltage_v() * app_measurements_current_a();
+  const float power = app_measurements_voltage_v() * app_measurements_current_a();
+  return (power < 0.0f) ? 0.0f : power;
 }
