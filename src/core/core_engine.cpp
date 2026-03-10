@@ -39,7 +39,7 @@ uint8_t *config_menu_selection_ptr(SystemState *state, ConfigMenu menu) {
 }
 
 uint8_t config_menu_item_count(ConfigMenu menu) {
-  return (menu == ConfigMenu::Root) ? 2 : 1;
+  return (menu == ConfigMenu::Root) ? 2 : (menu == ConfigMenu::Protection) ? 1 : 0;
 }
 
 ConfigMenu config_menu_selected_target(const SystemState &state, ConfigMenu menu) {
@@ -52,15 +52,19 @@ ConfigMenu config_menu_selected_target(const SystemState &state, ConfigMenu menu
   return ConfigMenu::None;
 }
 
+ConfigSection config_menu_pending_section_for_target(ConfigMenu target) {
+  if (target == ConfigMenu::Calibration) {
+    return ConfigSection::Calibration;
+  }
+  if (target == ConfigMenu::Protection || target == ConfigMenu::Limits) {
+    return ConfigSection::Limits;
+  }
+  return ConfigSection::None;
+}
+
 void config_menu_sync_pending_section(SystemState *state, ConfigMenu menu) {
   if (state == nullptr) return;
-
-  const ConfigMenu target = config_menu_selected_target(*state, menu);
-  if (target == ConfigMenu::Calibration) {
-    state->pendingConfigSection = ConfigSection::Calibration;
-  } else if (target == ConfigMenu::Protection || target == ConfigMenu::Limits) {
-    state->pendingConfigSection = ConfigSection::Limits;
-  }
+  state->pendingConfigSection = config_menu_pending_section_for_target(config_menu_selected_target(*state, menu));
 }
 
 void config_menu_step_selection(SystemState *state, ConfigMenu menu, int direction) {
@@ -95,6 +99,28 @@ void config_menu_enter(SystemState *state, ConfigMenu menu, ConfigMenu parent) {
   state->currentConfigMenu = menu;
   state->parentConfigMenu = parent;
   config_menu_sync_pending_section(state, menu);
+}
+
+void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent) {
+  if (state == nullptr) return;
+
+  state->currentConfigMenu = parent;
+  state->parentConfigMenu = (parent == ConfigMenu::Protection) ? ConfigMenu::Root : ConfigMenu::None;
+  state->modeInitialized = false;
+
+  if (parent == ConfigMenu::Root) {
+    state->menuRootSelection = menu_root_index_for_menu(ConfigMenu::Protection);
+  }
+
+  config_menu_sync_pending_section(state, parent);
+}
+
+void config_menu_close(SystemState *state) {
+  if (state == nullptr) return;
+  state->pendingConfigSection = ConfigSection::None;
+  state->currentConfigMenu = ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
+  state->modeInitialized = false;
 }
 
 void limits_input_reset(SystemState *state) {
@@ -136,13 +162,20 @@ void limits_menu_begin(SystemState *state) {
 
 void limits_menu_finish(SystemState *state, bool save, bool returnToParent = false) {
   if (state == nullptr) return;
+  const ConfigMenu parent = state->parentConfigMenu;
   state->limitsSaveEvent = save;
   state->limitsMenuActive = false;
   state->limitsEditActive = false;
   limits_input_reset(state);
-  state->pendingConfigSection = returnToParent ? ConfigSection::Limits : ConfigSection::None;
-  state->currentConfigMenu = returnToParent ? ConfigMenu::Protection : ConfigMenu::None;
-  state->parentConfigMenu = returnToParent ? ConfigMenu::Root : ConfigMenu::None;
+
+  if (returnToParent && parent != ConfigMenu::None) {
+    config_menu_leave_to_parent(state, parent);
+    return;
+  }
+
+  state->pendingConfigSection = ConfigSection::None;
+  state->currentConfigMenu = ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
   state->modeInitialized = false;
 }
 
@@ -221,12 +254,19 @@ void calibration_menu_begin(SystemState *state) {
   }
 }
 
-void calibration_menu_finish(SystemState *state, bool apply, bool returnToRoot = false) {
+void calibration_menu_finish(SystemState *state, bool apply, bool returnToParent = false) {
   if (state == nullptr) return;
+  const ConfigMenu parent = state->parentConfigMenu;
   state->calibrationMenuApplyEvent = apply;
   state->calibrationMenuActive = false;
-  state->pendingConfigSection = returnToRoot ? ConfigSection::Calibration : ConfigSection::None;
-  state->currentConfigMenu = returnToRoot ? ConfigMenu::Root : ConfigMenu::None;
+
+  if (returnToParent && parent != ConfigMenu::None) {
+    config_menu_leave_to_parent(state, parent);
+    return;
+  }
+
+  state->pendingConfigSection = ConfigSection::None;
+  state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
   state->modeInitialized = false;
 }
@@ -257,19 +297,12 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
   if (state == nullptr) return;
 
   if (menu == ConfigMenu::Root) {
-    state->pendingConfigSection = ConfigSection::None;
-    state->currentConfigMenu = ConfigMenu::None;
-    state->parentConfigMenu = ConfigMenu::None;
-    state->modeInitialized = false;
+    config_menu_close(state);
     return;
   }
 
   if (menu == ConfigMenu::Protection) {
-    state->menuRootSelection = 0;
-    state->pendingConfigSection = ConfigSection::Limits;
-    state->currentConfigMenu = ConfigMenu::Root;
-    state->parentConfigMenu = ConfigMenu::None;
-    state->modeInitialized = false;
+    config_menu_leave_to_parent(state, ConfigMenu::Root);
   }
 }
 }
