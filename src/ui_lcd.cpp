@@ -11,8 +11,8 @@
 
 #ifndef WOKWI_SIMULATION
 namespace {
-constexpr uint16_t TFT_CELL_W = 12;  // Grid column width for 20x4 layout
-constexpr uint16_t TFT_CELL_H = 18;  // Grid row height for 20x4 layout
+constexpr uint16_t TFT_CELL_W = 18;  // Grid column width for 20x4 layout on TFT
+constexpr uint16_t TFT_CELL_H = 24;  // Grid row height for 20x4 layout on TFT
 }
 #endif
 
@@ -27,7 +27,7 @@ void initLCD(void) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextFont(1);
-  tft.setTextSize(2);
+  tft.setTextSize(3);
   tft.setTextWrap(false);
 #endif
 }
@@ -267,4 +267,6 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
+
+
 
