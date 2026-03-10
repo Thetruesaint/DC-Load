@@ -9,7 +9,6 @@
 
 void legacy_const_resistance_mode() {
   if (!app_mode_state_initialized()) {
-    ui_draw_cr_template();
     Encoder_Status(true, MAX_RESISTOR);
     app_runtime_set_encoder_position(MAX_RESISTOR * 1000.0f);
     app_mode_state_set_initialized(true);
@@ -23,3 +22,4 @@ void legacy_const_resistance_mode() {
 
   // Setpoint de CR lo calcula core y se aplica via legacy_apply_state.
 }
+

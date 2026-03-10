@@ -10,7 +10,6 @@
 
 void legacy_const_power_mode() {
   if (!app_mode_state_initialized()) {
-    ui_draw_cp_template();
     Encoder_Status(true, app_limits_power_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -23,3 +22,4 @@ void legacy_const_power_mode() {
 
   // Setpoint de CP lo calcula core y se aplica via legacy_apply_state.
 }
+

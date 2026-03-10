@@ -19,6 +19,13 @@ struct LimitsRenderCache {
   bool valid;
 };
 
+
+struct HomeRenderCache {
+  uint8_t mode;
+  bool valid;
+};
+
+HomeRenderCache g_homeCache = {0, false};
 struct CalibrationRenderCache {
   uint8_t option;
   bool valid;
@@ -33,6 +40,34 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
   g_lastMenuRootSection = viewState.pendingConfigSection;
 }
 
+bool home_mode_uses_ui_template(uint8_t mode) {
+  return mode == 0 || mode == 1 || mode == 2;
+}
+
+void draw_home_template_for_mode(uint8_t mode) {
+  if (mode == 0) {
+    ui_draw_cc_template();
+  } else if (mode == 1) {
+    ui_draw_cp_template();
+  } else if (mode == 2) {
+    ui_draw_cr_template();
+  }
+}
+
+void draw_home_if_needed(const UiViewState &viewState) {
+  if (!home_mode_uses_ui_template(viewState.mode)) {
+    g_homeCache.valid = false;
+    return;
+  }
+
+  if (g_homeCache.valid && g_homeCache.mode == viewState.mode) {
+    return;
+  }
+
+  draw_home_template_for_mode(viewState.mode);
+  g_homeCache.mode = viewState.mode;
+  g_homeCache.valid = true;
+}
 void draw_limits_value_or_input(const UiViewState &viewState, int col, int row, float value, char unit, int decimals) {
   Print_Spaces(col, row, 9);
   if (viewState.limitsEditActive) {
@@ -130,13 +165,14 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_home(const UiViewState &viewState) {
-  (void)viewState;
   g_lastMenuRootSection = 0;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_homeCache.valid = false;
+  draw_home_if_needed(viewState);
 }
 void screen_update_home(const UiViewState &viewState) {
-  (void)viewState;
+  draw_home_if_needed(viewState);
   Update_LCD();
 }
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
@@ -204,6 +240,7 @@ void ui_state_machine_reset() {
   g_lastMenuRootSection = 0;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_homeCache.valid = false;
 }
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
@@ -219,5 +256,7 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
+
 
 

@@ -10,7 +10,6 @@
 
 void legacy_const_current_mode() {
   if (!app_mode_state_initialized()) {
-    ui_draw_cc_template();
     Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -23,3 +22,4 @@ void legacy_const_current_mode() {
 
   // Setpoint de CC lo calcula core y se aplica via legacy_apply_state.
 }
+
