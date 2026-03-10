@@ -9,11 +9,6 @@
 #include "../ui/ui_mode_templates.h"
 
 void legacy_const_power_mode() {
-  if (!app_mode_state_initialized()) {
-    Encoder_Status(true, app_limits_power_cutoff());
-    app_mode_state_set_initialized(true);
-  }
-
   float readingValue = app_runtime_encoder_position() / 1000.0f;
   readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
   app_setpoint_set_reading(readingValue);

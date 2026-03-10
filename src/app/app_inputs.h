@@ -4,5 +4,6 @@
 void app_read_encoder();
 void app_read_encoder_button();
 void app_read_load_button();
+void app_reset_encoder_tracking();
 
 #endif

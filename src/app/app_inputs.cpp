@@ -6,15 +6,22 @@
 #include "../hal/hal_inputs.h"
 #include "app_loop.h"
 
+namespace {
+int32_t g_lastEncoderCount = 0;
+}
+
 void app_read_encoder() {
-  static int32_t lastCount = 0;
   int32_t newCount = hal_encoder_count();
-  int32_t diff = newCount - lastCount;
+  int32_t diff = newCount - g_lastEncoderCount;
 
   if (abs(diff) >= 4) {
-    lastCount = newCount;
+    g_lastEncoderCount = newCount;
     app_push_action(make_encoder_delta_action(diff));
   }
+}
+
+void app_reset_encoder_tracking() {
+  g_lastEncoderCount = hal_encoder_count();
 }
 
 void app_read_encoder_button() {

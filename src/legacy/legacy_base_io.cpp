@@ -42,8 +42,10 @@ void legacy_encoder_status(bool encOnOff, float limit) {
     app_runtime_set_encoder_max(static_cast<unsigned long>(app_setpoint_max_reading() * 1000));
 
     encoder.clearCount();
+    app_reset_encoder_tracking();
   } else {
     encoder.clearCount();
+    app_reset_encoder_tracking();
   }
 }
 
@@ -159,5 +161,4 @@ void legacy_read_volts_current() {
 
 #endif
 }
-
 
