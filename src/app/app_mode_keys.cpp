@@ -13,6 +13,9 @@ bool handle_mode_hotkeys(char key) {
 
   if (shiftPressed) {
     shiftPressed = false;
+    if (key == 'C') {
+      return true;
+    }
     app_push_action(make_mode_select_action(true, key));
     return false;
   }
@@ -37,3 +40,4 @@ MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
 
   return MscKeyDecision::Continue;
 }
+
