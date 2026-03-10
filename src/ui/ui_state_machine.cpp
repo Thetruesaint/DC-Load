@@ -129,8 +129,16 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
   g_calibrationCache.valid = true;
 }
 
-void screen_enter_home(const UiViewState &viewState) { (void)viewState; }
-void screen_update_home(const UiViewState &viewState) { (void)viewState; }
+void screen_enter_home(const UiViewState &viewState) {
+  (void)viewState;
+  g_lastMenuRootSection = 0;
+  g_limitsCache.valid = false;
+  g_calibrationCache.valid = false;
+}
+void screen_update_home(const UiViewState &viewState) {
+  (void)viewState;
+  Update_LCD();
+}
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_root(const UiViewState &viewState) {
@@ -211,3 +219,5 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
+

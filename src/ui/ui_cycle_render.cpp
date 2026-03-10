@@ -1,10 +1,8 @@
 #include "ui_cycle_render.h"
 
-#include "../ui_lcd.h"
-
 void ui_render_cycle() {
-  Update_LCD();
 #ifndef WOKWI_SIMULATION
-  // Update_TFT();
+  // Future TFT-native renderer entry point.
+  // LCD/TFT 20x4-compatible home updates now run from the UI state machine.
 #endif
 }
