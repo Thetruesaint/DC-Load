@@ -75,7 +75,6 @@ void legacy_cursor_position() {
 
   if (managedMode) {
     lastCursor = cursor;
-    ui_set_setpoint_cursor(cursor);
     return;
   }
 
@@ -160,4 +159,5 @@ void legacy_read_volts_current() {
 
 #endif
 }
+
 
