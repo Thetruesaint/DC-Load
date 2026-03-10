@@ -28,6 +28,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.limitsInputText[sizeof(view.limitsInputText) - 1] = '\0';
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
+  view.protectionMenuSelection = state.protectionMenuSelection;
   view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
 }
@@ -38,4 +39,5 @@ void ui_render(const SystemState &state) {
   ui_state_cache_set(view);
   ui_state_machine_tick(state.uiScreen, view);
 }
+
 

@@ -1,6 +1,7 @@
 #include "ui_state_machine.h"
 
 #include <Arduino.h>
+#include <cstring>
 
 #include "../ui_lcd.h"
 #include "ui_mode_templates.h"
@@ -19,18 +20,23 @@ struct LimitsRenderCache {
   bool valid;
 };
 
-
 struct HomeRenderCache {
   uint8_t mode;
   bool valid;
 };
 
-HomeRenderCache g_homeCache = {0, false};
+struct ProtectionRenderCache {
+  uint8_t option;
+  bool valid;
+};
+
 struct CalibrationRenderCache {
   uint8_t option;
   bool valid;
 };
 
+HomeRenderCache g_homeCache = {0, false};
+ProtectionRenderCache g_protectionCache = {0, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 
@@ -68,13 +74,15 @@ void draw_home_if_needed(const UiViewState &viewState) {
   g_homeCache.mode = viewState.mode;
   g_homeCache.valid = true;
 }
-void draw_limits_value_or_input(const UiViewState &viewState, int col, int row, float value, char unit, int decimals) {
-  Print_Spaces(col, row, 9);
-  if (viewState.limitsEditActive) {
-    printLCD_S(col, row, String(viewState.limitsInputText));
+
+void draw_protection_if_needed(const UiViewState &viewState) {
+  if (g_protectionCache.valid && g_protectionCache.option == viewState.protectionMenuSelection) {
     return;
   }
-  ui_show_value_number(col, row, value, unit, decimals);
+
+  ui_draw_protection_menu(viewState.protectionMenuSelection);
+  g_protectionCache.option = viewState.protectionMenuSelection;
+  g_protectionCache.valid = true;
 }
 
 void draw_limits_menu(const UiViewState &viewState) {
@@ -125,7 +133,7 @@ void draw_limits_if_needed(const UiViewState &viewState) {
       g_limitsCache.powerW == viewState.limitsDraftPowerW &&
       g_limitsCache.tempC == viewState.limitsDraftTempC &&
       g_limitsCache.editActive == viewState.limitsEditActive &&
-      strcmp(g_limitsCache.inputText, viewState.limitsInputText) == 0) {
+      std::strcmp(g_limitsCache.inputText, viewState.limitsInputText) == 0) {
     return;
   }
 
@@ -135,7 +143,7 @@ void draw_limits_if_needed(const UiViewState &viewState) {
   g_limitsCache.tempC = viewState.limitsDraftTempC;
   g_limitsCache.field = viewState.limitsMenuField;
   g_limitsCache.editActive = viewState.limitsEditActive;
-  strncpy(g_limitsCache.inputText, viewState.limitsInputText, sizeof(g_limitsCache.inputText) - 1);
+  std::strncpy(g_limitsCache.inputText, viewState.limitsInputText, sizeof(g_limitsCache.inputText) - 1);
   g_limitsCache.inputText[sizeof(g_limitsCache.inputText) - 1] = '\0';
   g_limitsCache.valid = true;
 }
@@ -166,48 +174,69 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
 
 void screen_enter_home(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
+  g_protectionCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_homeCache.valid = false;
   draw_home_if_needed(viewState);
 }
+
 void screen_update_home(const UiViewState &viewState) {
   draw_home_if_needed(viewState);
   Update_LCD();
 }
+
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_root(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   draw_menu_root_if_needed(viewState);
 }
+
 void screen_update_menu_root(const UiViewState &viewState) {
   draw_menu_root_if_needed(viewState);
 }
+
 void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
+
+void screen_enter_menu_protection(const UiViewState &viewState) {
+  g_protectionCache.valid = false;
+  draw_protection_if_needed(viewState);
+}
+
+void screen_update_menu_protection(const UiViewState &viewState) {
+  draw_protection_if_needed(viewState);
+}
+
+void screen_render_menu_protection(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_limits(const UiViewState &viewState) {
   g_limitsCache.valid = false;
   draw_limits_if_needed(viewState);
 }
+
 void screen_update_menu_limits(const UiViewState &viewState) {
   draw_limits_if_needed(viewState);
 }
+
 void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_calibration(const UiViewState &viewState) {
   g_calibrationCache.valid = false;
   draw_calibration_if_needed(viewState);
 }
+
 void screen_update_menu_calibration(const UiViewState &viewState) {
   draw_calibration_if_needed(viewState);
 }
+
 void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewState; }
 
 void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_enter_home(viewState); break;
     case UiScreen::MenuRoot: screen_enter_menu_root(viewState); break;
+    case UiScreen::MenuProtection: screen_enter_menu_protection(viewState); break;
     case UiScreen::MenuLimits: screen_enter_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_enter_menu_calibration(viewState); break;
     default: break;
@@ -218,6 +247,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_update_home(viewState); break;
     case UiScreen::MenuRoot: screen_update_menu_root(viewState); break;
+    case UiScreen::MenuProtection: screen_update_menu_protection(viewState); break;
     case UiScreen::MenuLimits: screen_update_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_update_menu_calibration(viewState); break;
     default: break;
@@ -228,6 +258,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_render_home(viewState); break;
     case UiScreen::MenuRoot: screen_render_menu_root(viewState); break;
+    case UiScreen::MenuProtection: screen_render_menu_protection(viewState); break;
     case UiScreen::MenuLimits: screen_render_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_render_menu_calibration(viewState); break;
     default: break;
@@ -238,6 +269,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
   g_lastMenuRootSelection = 0xFF;
+  g_protectionCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_homeCache.valid = false;
@@ -256,8 +288,3 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
-
-
-
-
-

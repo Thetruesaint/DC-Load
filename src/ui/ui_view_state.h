@@ -27,6 +27,7 @@ struct UiViewState {
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
+  uint8_t protectionMenuSelection;
 
   uint8_t pendingConfigSection;
 };
@@ -35,8 +36,10 @@ inline UiViewState ui_view_state_make_default() {
   UiViewState state = {0};
   state.calibrationMenuOption = 1;
   state.menuRootSelection = 0;
+  state.protectionMenuSelection = 0;
   return state;
 }
 
 #endif
+
 

@@ -23,12 +23,12 @@ ConfigSection default_config_selection(ConfigSection section) {
   return (section == ConfigSection::Calibration) ? ConfigSection::Calibration : ConfigSection::Limits;
 }
 
-uint8_t menu_root_index_for_section(ConfigSection section) {
-  return (section == ConfigSection::Calibration) ? 1 : 0;
+ConfigMenu menu_root_menu_for_index(uint8_t index) {
+  return (index == 1) ? ConfigMenu::Calibration : ConfigMenu::Protection;
 }
 
-ConfigSection menu_root_section_for_index(uint8_t index) {
-  return (index == 1) ? ConfigSection::Calibration : ConfigSection::Limits;
+uint8_t menu_root_index_for_menu(ConfigMenu menu) {
+  return (menu == ConfigMenu::Calibration) ? 1 : 0;
 }
 
 void menu_root_step_selection(SystemState *state, int direction) {
@@ -39,7 +39,12 @@ void menu_root_step_selection(SystemState *state, int direction) {
   if (next < 0) next = itemCount - 1;
   if (next >= itemCount) next = 0;
   state->menuRootSelection = static_cast<uint8_t>(next);
-  state->pendingConfigSection = menu_root_section_for_index(state->menuRootSelection);
+
+  const ConfigMenu selectedMenu = menu_root_menu_for_index(state->menuRootSelection);
+  state->currentConfigMenu = ConfigMenu::Root;
+  state->pendingConfigSection = (selectedMenu == ConfigMenu::Calibration)
+                                    ? ConfigSection::Calibration
+                                    : ConfigSection::Limits;
 }
 
 void limits_input_reset(SystemState *state) {
@@ -66,37 +71,11 @@ void limits_menu_move_field(SystemState *state, int direction) {
   state->limitsMenuField = static_cast<uint8_t>(next);
 }
 
-void limits_menu_adjust_value(SystemState *state, int direction) {
-  if (state == nullptr || direction == 0) return;
-  if (state->limitsEditActive) return;
-
-  if (state->limitsMenuField == 0) {
-    state->limitsDraftCurrentA = constrain(
-        state->limitsDraftCurrentA + (direction * 0.1f),
-        1.0f,
-        static_cast<float>(MAX_CURRENT));
-    return;
-  }
-
-  if (state->limitsMenuField == 1) {
-    state->limitsDraftPowerW = constrain(
-        state->limitsDraftPowerW + (direction * 1.0f),
-        1.0f,
-        static_cast<float>(MAX_POWER));
-    return;
-  }
-
-  state->limitsDraftTempC = constrain(
-      state->limitsDraftTempC + (direction * 1.0f),
-      30.0f,
-      static_cast<float>(MAX_TEMP));
-}
-
 void limits_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->limitsMenuActive = true;
   state->currentConfigMenu = ConfigMenu::Limits;
-  state->parentConfigMenu = ConfigMenu::Root;
+  state->parentConfigMenu = ConfigMenu::Protection;
   state->limitsMenuField = 0;
   state->limitsDraftCurrentA = state->currentCutOffA;
   state->limitsDraftPowerW = state->powerCutOffW;
@@ -105,15 +84,15 @@ void limits_menu_begin(SystemState *state) {
   limits_input_reset(state);
 }
 
-void limits_menu_finish(SystemState *state, bool save, bool returnToRoot = false) {
+void limits_menu_finish(SystemState *state, bool save, bool returnToParent = false) {
   if (state == nullptr) return;
   state->limitsSaveEvent = save;
   state->limitsMenuActive = false;
   state->limitsEditActive = false;
   limits_input_reset(state);
-  state->pendingConfigSection = returnToRoot ? ConfigSection::Limits : ConfigSection::None;
-  state->currentConfigMenu = returnToRoot ? ConfigMenu::Root : ConfigMenu::None;
-  state->parentConfigMenu = ConfigMenu::None;
+  state->pendingConfigSection = returnToParent ? ConfigSection::Limits : ConfigSection::None;
+  state->currentConfigMenu = returnToParent ? ConfigMenu::Protection : ConfigMenu::None;
+  state->parentConfigMenu = returnToParent ? ConfigMenu::Root : ConfigMenu::None;
   state->modeInitialized = false;
 }
 
@@ -212,6 +191,7 @@ void core_sync_from_legacy(const SystemState &state) {
   const UiScreen uiScreen = g_state.uiScreen;
   const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
   const uint8_t menuRootSelection = g_state.menuRootSelection;
+  const uint8_t protectionMenuSelection = g_state.protectionMenuSelection;
   const ConfigMenu currentConfigMenu = g_state.currentConfigMenu;
   const ConfigMenu parentConfigMenu = g_state.parentConfigMenu;
   const int32_t lastEncoderDelta = g_state.lastEncoderDelta;
@@ -234,6 +214,7 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.uiScreen = uiScreen;
   g_state.pendingConfigSection = pendingConfigSection;
   g_state.menuRootSelection = menuRootSelection;
+  g_state.protectionMenuSelection = protectionMenuSelection;
   g_state.currentConfigMenu = currentConfigMenu;
   g_state.parentConfigMenu = parentConfigMenu;
   g_state.lastEncoderDelta = lastEncoderDelta;
@@ -271,6 +252,13 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuProtection) {
+        if (action.value != 0) {
+          g_state.protectionMenuSelection = 0;
+        }
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuLimits) {
         if (!g_state.limitsEditActive) {
           limits_menu_move_field(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
@@ -288,14 +276,22 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::EncoderButtonPress:
       if (g_state.uiScreen == UiScreen::MenuRoot) {
-        const ConfigSection selectedSection = menu_root_section_for_index(g_state.menuRootSelection);
-        if (selectedSection == ConfigSection::Limits) {
-          limits_menu_begin(&g_state);
-          g_state.pendingConfigSection = ConfigSection::None;
-        } else if (selectedSection == ConfigSection::Calibration) {
+        const ConfigMenu selectedMenu = menu_root_menu_for_index(g_state.menuRootSelection);
+        if (selectedMenu == ConfigMenu::Protection) {
+          g_state.currentConfigMenu = ConfigMenu::Protection;
+          g_state.parentConfigMenu = ConfigMenu::Root;
+          g_state.protectionMenuSelection = 0;
+          g_state.pendingConfigSection = ConfigSection::Limits;
+        } else {
           calibration_menu_begin(&g_state);
           g_state.pendingConfigSection = ConfigSection::None;
         }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuProtection) {
+        limits_menu_begin(&g_state);
+        g_state.pendingConfigSection = ConfigSection::None;
         break;
       }
 
@@ -323,24 +319,48 @@ void core_dispatch(const UserAction &action) {
         if (action.key == '1') {
           g_state.menuRootSelection = 0;
           g_state.pendingConfigSection = ConfigSection::Limits;
+          g_state.currentConfigMenu = ConfigMenu::Root;
         } else if (action.key == '2') {
           g_state.menuRootSelection = 1;
           g_state.pendingConfigSection = ConfigSection::Calibration;
+          g_state.currentConfigMenu = ConfigMenu::Root;
         } else if (action.key == 'U' || action.key == 'L') {
           menu_root_step_selection(&g_state, -1);
         } else if (action.key == 'D' || action.key == 'R') {
           menu_root_step_selection(&g_state, 1);
         } else if (action.key == 'E') {
-          const ConfigSection selectedSection = menu_root_section_for_index(g_state.menuRootSelection);
-          if (selectedSection == ConfigSection::Limits) {
-            limits_menu_begin(&g_state);
-          } else if (selectedSection == ConfigSection::Calibration) {
+          const ConfigMenu selectedMenu = menu_root_menu_for_index(g_state.menuRootSelection);
+          if (selectedMenu == ConfigMenu::Protection) {
+            g_state.currentConfigMenu = ConfigMenu::Protection;
+            g_state.parentConfigMenu = ConfigMenu::Root;
+            g_state.protectionMenuSelection = 0;
+            g_state.pendingConfigSection = ConfigSection::Limits;
+          } else {
             calibration_menu_begin(&g_state);
+            g_state.pendingConfigSection = ConfigSection::None;
           }
-          g_state.pendingConfigSection = ConfigSection::None;
         } else if (action.key == '<' || action.key == 'M') {
           g_state.pendingConfigSection = ConfigSection::None;
           g_state.currentConfigMenu = ConfigMenu::None;
+          g_state.parentConfigMenu = ConfigMenu::None;
+          g_state.modeInitialized = false;
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuProtection) {
+        if (action.key == '1') {
+          g_state.protectionMenuSelection = 0;
+          g_state.pendingConfigSection = ConfigSection::Limits;
+        } else if (action.key == 'U' || action.key == 'L' || action.key == 'D' || action.key == 'R') {
+          g_state.protectionMenuSelection = 0;
+        } else if (action.key == 'E') {
+          limits_menu_begin(&g_state);
+          g_state.pendingConfigSection = ConfigSection::None;
+        } else if (action.key == '<' || action.key == 'M') {
+          g_state.menuRootSelection = 0;
+          g_state.pendingConfigSection = ConfigSection::Limits;
+          g_state.currentConfigMenu = ConfigMenu::Root;
           g_state.parentConfigMenu = ConfigMenu::None;
           g_state.modeInitialized = false;
         }
@@ -423,6 +443,7 @@ void core_dispatch(const UserAction &action) {
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       g_state.pendingConfigSection = ConfigSection::None;
       g_state.menuRootSelection = 0;
+      g_state.protectionMenuSelection = 0;
       g_state.currentConfigMenu = ConfigMenu::None;
       g_state.parentConfigMenu = ConfigMenu::None;
       g_state.openLimitsConfigEvent = false;
@@ -448,7 +469,11 @@ void core_dispatch(const UserAction &action) {
         break;
       }
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
-      g_state.menuRootSelection = menu_root_index_for_section(g_state.pendingConfigSection);
+      g_state.menuRootSelection = menu_root_index_for_menu(
+          (decode_config_section(action.value) == ConfigSection::Calibration)
+              ? ConfigMenu::Calibration
+              : ConfigMenu::Protection);
+      g_state.protectionMenuSelection = 0;
       g_state.currentConfigMenu = ConfigMenu::Root;
       g_state.parentConfigMenu = ConfigMenu::None;
       g_state.openLimitsConfigEvent = false;
@@ -478,8 +503,3 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
-
-
-
-
-
