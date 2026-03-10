@@ -22,6 +22,8 @@ struct LimitsRenderCache {
 
 struct HomeRenderCache {
   uint8_t mode;
+  float batteryCutoffVolts;
+  char batteryType[8];
   bool valid;
 };
 
@@ -44,7 +46,7 @@ struct CalibrationRenderCache {
   bool valid;
 };
 
-HomeRenderCache g_homeCache = {0, false};
+HomeRenderCache g_homeCache = {0, 0.0f, {'\0'}, false};
 ProtectionRenderCache g_protectionCache = {0, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
@@ -57,16 +59,20 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
 }
 
 bool home_mode_uses_ui_template(uint8_t mode) {
-  return mode == 0 || mode == 1 || mode == 2;
+  return mode == 0 || mode == 1 || mode == 2 || mode == 3;
 }
 
-void draw_home_template_for_mode(uint8_t mode) {
-  if (mode == 0) {
+void draw_home_template_for_mode(const UiViewState &viewState) {
+  if (viewState.mode == 0) {
     ui_draw_cc_template();
-  } else if (mode == 1) {
+  } else if (viewState.mode == 1) {
     ui_draw_cp_template();
-  } else if (mode == 2) {
+  } else if (viewState.mode == 2) {
     ui_draw_cr_template();
+  } else if (viewState.mode == 3) {
+    ui_draw_bc_template(viewState.batteryCutoffVolts,
+                        viewState.batteryLife,
+                        String(viewState.batteryType));
   }
 }
 
@@ -76,12 +82,16 @@ void draw_home_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  if (g_homeCache.valid && g_homeCache.mode == viewState.mode) {
+  if (g_homeCache.valid &&
+      g_homeCache.mode == viewState.mode &&
+      g_homeCache.batteryCutoffVolts == viewState.batteryCutoffVolts &&      std::strcmp(g_homeCache.batteryType, viewState.batteryType) == 0) {
     return;
   }
 
-  draw_home_template_for_mode(viewState.mode);
+  draw_home_template_for_mode(viewState);
   g_homeCache.mode = viewState.mode;
+  g_homeCache.batteryCutoffVolts = viewState.batteryCutoffVolts;  std::strncpy(g_homeCache.batteryType, viewState.batteryType, sizeof(g_homeCache.batteryType) - 1);
+  g_homeCache.batteryType[sizeof(g_homeCache.batteryType) - 1] = '\0';
   g_homeCache.valid = true;
 }
 

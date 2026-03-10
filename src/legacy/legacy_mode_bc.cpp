@@ -34,7 +34,6 @@ void legacy_battery_mode() {
     timer_reset();
     BatteryLife = 0;
     BatteryLifePrevious = 0;
-    ui_draw_bc_template(BatteryCutoffVolts, BatteryLife, BatteryType);
     Encoder_Status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -180,4 +179,6 @@ bool legacy_battery_capacity() {
 
   return false;
 }
+
+
 

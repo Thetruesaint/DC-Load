@@ -21,6 +21,10 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.tempCutOffC = state.tempCutOffC;
   view.fanTempOnC = state.fanTempOnC;
   view.fanHoldSeconds = state.fanHoldSeconds;
+  view.batteryCutoffVolts = state.batteryCutoffVolts;
+  view.batteryLife = state.batteryLife;
+  std::strncpy(view.batteryType, state.batteryType, sizeof(view.batteryType) - 1);
+  view.batteryType[sizeof(view.batteryType) - 1] = '\0';
   view.limitsDraftCurrentA = state.limitsDraftCurrentA;
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;

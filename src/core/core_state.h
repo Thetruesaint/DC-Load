@@ -46,6 +46,9 @@ struct SystemState {
   float tempCutOffC;
   float fanTempOnC;
   float fanHoldSeconds;
+  float batteryCutoffVolts;
+  float batteryLife;
+  char batteryType[8];
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;

@@ -1,4 +1,6 @@
 #include "legacy_bridge.h"
+#include <cstring>
+
 #include "legacy_mode_ca.h"
 #include "legacy_mode_limits.h"
 
@@ -14,6 +16,7 @@
 #include "../app/app_value_result_context.h"
 #include "../app/app_calibration_context.h"
 #include "../app/app_fan_context.h"
+#include "../app/app_battery_context.h"
 #include "../core/core_config_flow.h"
 #include "../ui/ui_mode_templates.h"
 #include "../funciones.h"
@@ -39,6 +42,10 @@ SystemState legacy_capture_state() {
   state.tempCutOffC = app_limits_temp_cutoff();
   state.fanTempOnC = static_cast<float>(app_fan_temp_on_c());
   state.fanHoldSeconds = static_cast<float>(app_fan_hold_seconds());
+  state.batteryCutoffVolts = app_battery_cutoff_volts_ref();
+  state.batteryLife = app_battery_life_ref();
+  std::strncpy(state.batteryType, app_battery_type_ref().c_str(), sizeof(state.batteryType) - 1);
+  state.batteryType[sizeof(state.batteryType) - 1] = '\0';
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 
