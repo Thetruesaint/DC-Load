@@ -17,6 +17,8 @@ struct UiViewState {
   float currentCutOffA;
   float powerCutOffW;
   float tempCutOffC;
+  float fanTempOnC;
+  float fanHoldSeconds;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
@@ -24,6 +26,11 @@ struct UiViewState {
   uint8_t limitsMenuField;
   bool limitsEditActive;
   char limitsInputText[8];
+
+  float fanDraftTempC;
+  float fanDraftHoldSeconds;
+  bool fanEditActive;
+  char fanInputText[8];
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;

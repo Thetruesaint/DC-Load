@@ -1,4 +1,3 @@
-
 #include "config/system_constants.h"
 #include "hw/hw_objects.h"
 #include "funciones.h"
@@ -7,6 +6,7 @@
 #include "app/app_limits_context.h"
 #include "app/app_measurements_context.h"
 #include "app/app_health_context.h"
+#include "app/app_fan_context.h"
 
 //---------------------------------------Variables para el Set Up-----------------------------------------
 void setup() {
@@ -24,11 +24,11 @@ void setup() {
   pinMode (BUZZER, OUTPUT);
 
   #ifdef WOKWI_SIMULATION
-  pinMode(VSIM, INPUT);   // Pin para simular el voltaje de carga con un potenciómetro en la simulación. Ajusta el pin según tu conexión.
+  pinMode(VSIM, INPUT);   // Pin para simular el voltaje de carga con un potenciometro en la simulacion.
   #endif
 
   //-------------------------------------Inicializa perifericos-------------------------------------------
-  EEPROM.begin(64);   // tamaño en bytes (mínimo 64)
+  EEPROM.begin(64);   // tamano en bytes (minimo 64)
   Serial.begin(115200);
   Wire.begin(21, 22);   // SDA=21, SCL=22, fuerza modo Master
   initLCD();
@@ -36,17 +36,17 @@ void setup() {
 
   #ifndef WOKWI_SIMULATION
 
-  if (dac.begin(0x60)){                 // initialize the dac with address 0x60
+  if (dac.begin(0x60)){
     printLCD(0,0, F("dac OK"));
     Serial.print("dac OK");
-    ads.setGain(GAIN_TWOTHIRDS);              // Setea la ganancia del ADC a 2/3x gain +/- 6.144V  1 bit = 0.1875mV
+    ads.setGain(GAIN_TWOTHIRDS);
   } else{
       printLCD(0,0, F("dac NDT")); app_health_set_ok(false);
       Serial.print("dac NDT");
     }
 
-  if (ads.begin()){                             // initialize the ads, default address 0x48
-      ads.setGain(GAIN_TWOTHIRDS);              // 2/3x gain +/- 6.144V  1 bit = 0.1875mV
+  if (ads.begin()){
+      ads.setGain(GAIN_TWOTHIRDS);
       printLCD(0,1, F("ads OK"));
   } else{
       printLCD(0,1, F("ads NDT")); app_health_set_ok(false);
@@ -55,7 +55,7 @@ void setup() {
  
   #endif
 
-  if (rtc.begin()){                             // Inicializa el RTC en teoría en address 0x68
+  if (rtc.begin()){
     printLCD(8, 0, F("RTC OK"));
     Serial.print("RTC  OK");
   } else{
@@ -63,8 +63,7 @@ void setup() {
       Serial.print("RTC  NDT");
     }
 
-  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR)); // Convertir a Celsius con factor para ADC@0dB (Vmax≈1.1V)
-    
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
   printLCD_S(11, 1, String(app_measurements_temp_c()) + String((char)0xDF) + "C");
 
   if (app_health_is_ok() && app_measurements_temp_c() <= 99) {
@@ -75,17 +74,16 @@ void setup() {
 
   delay(2000);
  
-  //----------------------------------------Configuraciones iniciales de única vez----------------------------------------------
+  //----------------------------------------Configuraciones iniciales de unica vez----------------------------------------------
 
-  //dac.setVoltage(0,false);     // IMPORTANTE, grabar en 0 para que apague la carga apenas se encienca. Cambio a "True" para que guarde este valor en la Emprom.
   if (!rtc.isrunning()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // sincroniza con la hora de compilación
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
   //------------------------------------Pantalla Inicio--------------------------------------------------
-  DateTime now = rtc.now();                                                                   // Obtiene la fecha y hora actual del RTC
-  String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());     // Formatea la fecha
-  String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()); // Formatea la hora
+  DateTime now = rtc.now();
+  String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());
+  String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
 
   clearLCD();
   printLCD(0, 0, F("*DC Electronic Load*"));
@@ -97,30 +95,48 @@ void setup() {
   delay (2000);
   #else
   printLCD(0, 3, F("v2.11 sim"));
-  delay(1000);     //Para probar mas rapido
+  delay(1000);
   #endif
 
-  //---------------------------------------Chequea y Muestra los límites configurados----------------------
+  //---------------------------------------Chequea y Muestra los limites configurados----------------------
   #ifndef WOKWI_SIMULATION
-    app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF)); // Carga CurrentCutOff desde la EEPROM
-    app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));     // Carga PowerCutOff desde la EEPROM
-    app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));       // Carga tempCutOff desde la EEPROM
-    if (app_limits_current_cutoff() <= 1 || app_limits_current_cutoff() > 10 ||   // Chequea que los valores de los límites estén en el rango correcto, pudieron quedar en 1 si eran nan.
+    app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF));
+    app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));
+    app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));
+    app_fan_set_temp_on_c(static_cast<int>(Load_EEPROM(ADD_FAN_TEMP_ON)));
+    app_fan_set_hold_ms(static_cast<unsigned long>(Load_EEPROM(ADD_FAN_HOLD_MS)));
+
+    const bool invalidLimits =
+        app_limits_current_cutoff() <= 1 || app_limits_current_cutoff() > 10 ||
         app_limits_power_cutoff() <= 1 || app_limits_power_cutoff() > 300 ||
-        app_limits_temp_cutoff() < 30 || app_limits_temp_cutoff() > 99)
-    {
+        app_limits_temp_cutoff() < 30 || app_limits_temp_cutoff() > 99;
+
+    const bool invalidFan =
+        app_fan_temp_on_c() < MIN_FAN_TEMP_ON_C || app_fan_temp_on_c() > MAX_FAN_TEMP_ON_C ||
+        app_fan_hold_ms() < MIN_FAN_HOLD_MS || app_fan_hold_ms() > MAX_FAN_HOLD_MS;
+
+    if (invalidLimits) {
       Config_Limits();
     }
+
+    if (invalidFan) {
+      app_fan_set_temp_on_c(DEFAULT_FAN_TEMP_ON_C);
+      app_fan_set_hold_ms(DEFAULT_FAN_HOLD_MS);
+      Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
+      Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
+    }
+
     Show_Limits();
     Load_Calibration();
     delay(2000);
     clearLCD();
 
   #else
-    // Simula que se cargan los valores de la EEPROM
     app_limits_set_current_cutoff(10);
     app_limits_set_power_cutoff(300);
     app_limits_set_temp_cutoff(80);
+    app_fan_set_temp_on_c(DEFAULT_FAN_TEMP_ON_C);
+    app_fan_set_hold_ms(DEFAULT_FAN_HOLD_MS);
     Load_Calibration();
   #endif
 
@@ -131,4 +147,3 @@ void setup() {
 void loop() {
   app_run_cycle();
 }
-

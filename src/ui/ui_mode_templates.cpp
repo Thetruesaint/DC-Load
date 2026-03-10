@@ -1,6 +1,5 @@
 #include "ui_mode_templates.h"
 
-#include "../config/system_constants.h"
 #include "../ui_lcd.h"
 
 void ui_draw_cc_template() {
@@ -108,15 +107,29 @@ void ui_draw_protection_menu(uint8_t selectedIndex) {
   }
 }
 
-void ui_draw_fan_settings_menu(uint8_t selectedIndex) {
+void ui_draw_fan_settings_menu(uint8_t selectedIndex, float tempC, float holdSeconds, bool editActive, const char *inputText) {
   clearLCD();
   printLCD(3, 0, F("Fan Setting"));
-  printLCD(0, 1, F("Temp(C): 40"));
-  printLCD(0, 2, F("Time(seg): 60"));
-  printLCD(1, 3, F("1-Back"));
+  printLCD(1, 1, F("1-Temp(C):"));
+  printLCD(1, 2, F("2-Time(seg):"));
+  printLCD(1, 3, F("3-Back"));
 
-  if (selectedIndex == 0) {
-    printLCD(0, 3, F(">"));
+  if (selectedIndex <= 2) {
+    printLCD(0, 1 + selectedIndex, F(">"));
+  }
+
+  Print_Spaces(12, 1, 3);
+  if (selectedIndex == 0 && editActive) {
+    printLCD_S(12, 1, String(inputText));
+  } else {
+    printLCDNumber(12, 1, tempC, ' ', 0);
+  }
+
+  Print_Spaces(13, 2, 2);
+  if (selectedIndex == 1 && editActive) {
+    printLCD_S(13, 2, String(inputText));
+  } else {
+    printLCDNumber(13, 2, holdSeconds, ' ', 0);
   }
 }
 
@@ -298,3 +311,5 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
+
+

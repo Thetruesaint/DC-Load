@@ -19,6 +19,8 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.currentCutOffA = state.currentCutOffA;
   view.powerCutOffW = state.powerCutOffW;
   view.tempCutOffC = state.tempCutOffC;
+  view.fanTempOnC = state.fanTempOnC;
+  view.fanHoldSeconds = state.fanHoldSeconds;
   view.limitsDraftCurrentA = state.limitsDraftCurrentA;
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
@@ -26,6 +28,11 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.limitsEditActive = state.limitsEditActive;
   std::strncpy(view.limitsInputText, state.limitsInputText, sizeof(view.limitsInputText) - 1);
   view.limitsInputText[sizeof(view.limitsInputText) - 1] = '\0';
+  view.fanDraftTempC = state.fanDraftTempC;
+  view.fanDraftHoldSeconds = state.fanDraftHoldSeconds;
+  view.fanEditActive = state.fanEditActive;
+  std::strncpy(view.fanInputText, state.fanInputText, sizeof(view.fanInputText) - 1);
+  view.fanInputText[sizeof(view.fanInputText) - 1] = '\0';
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;

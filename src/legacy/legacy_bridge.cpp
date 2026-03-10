@@ -13,6 +13,7 @@
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_result_context.h"
 #include "../app/app_calibration_context.h"
+#include "../app/app_fan_context.h"
 #include "../core/core_config_flow.h"
 #include "../ui/ui_mode_templates.h"
 #include "../funciones.h"
@@ -36,6 +37,8 @@ SystemState legacy_capture_state() {
   state.currentCutOffA = app_limits_current_cutoff();
   state.powerCutOffW = app_limits_power_cutoff();
   state.tempCutOffC = app_limits_temp_cutoff();
+  state.fanTempOnC = static_cast<float>(app_fan_temp_on_c());
+  state.fanHoldSeconds = static_cast<float>(app_fan_hold_seconds());
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 
@@ -75,6 +78,14 @@ void legacy_apply_state(const SystemState &state) {
     Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
     Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
 
+    app_mode_state_set_initialized(false);
+  }
+
+  if (state.fanSaveEvent) {
+    app_fan_set_temp_on_c(static_cast<int>(state.fanDraftTempC));
+    app_fan_set_hold_seconds(static_cast<uint8_t>(state.fanDraftHoldSeconds));
+    Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
+    Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
     app_mode_state_set_initialized(false);
   }
 

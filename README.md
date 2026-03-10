@@ -8,7 +8,6 @@
 **Trabajando:**
 - Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
 
-
 **A Trabajar:**
 - Continuar migracion de arquitectura para luego introducir mejoras en TFT
     
@@ -28,11 +27,11 @@
 - Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
 - Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
 - IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
-- Nuevo esquema de Menues para Calibración y Limites!
+- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites y seteos para el Fan.
 
 **Posibles Mejoras SW:**
 - Dejar solo TL?.. TC se puede hacer con TL.
-- Control de velocidad de Fans.
+- Control de velocidad de Fans o test de encendido y apagado
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
 - En CC, CP, CR y BC, con BTN encoder habilito cambiar de valor o de unidad para --CuPo, reqiuere reingenieriaa Cursor_Position
 - Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
@@ -40,16 +39,12 @@
 - En TC y TL: mostrar mSec decrecientes?
 - En TC, ajustar timing con encoder?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
-- Healt Checks con beeps si encuentra errores
-- Activar el LOAD ON OFF por interrupción?
 - Setear hora y fecha del RTC y poder mirarla boton Shift?: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
 
 **Posibles Mejoras de HW:**
-- Pasar de LCD a TFT
 - Medición de baterias por celda 
 - Medir frecuencia máxima TC y TL con el osciloscopio a ver hasta donde llega, usar Lipo.
 - Habilitar control externo de MOSFETs?
-- Teclas con extrusor de 0.2mm
-- Reg. de 4.096V para ADC.
+- Reg. de 4.096V para ADC?
 - R Shunt con buen coheficiente de temperatura.

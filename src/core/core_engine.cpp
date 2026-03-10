@@ -47,7 +47,7 @@ uint8_t config_menu_item_count(ConfigMenu menu) {
   switch (menu) {
     case ConfigMenu::Root: return 3;
     case ConfigMenu::Protection: return 3;
-    case ConfigMenu::FanSettings: return 1;
+    case ConfigMenu::FanSettings: return 3;
     case ConfigMenu::Calibration: return 5;
     default: return 0;
   }
@@ -167,6 +167,28 @@ void limits_input_reset(SystemState *state) {
   state->limitsInputHasDecimal = false;
 }
 
+void fan_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->fanInputText[0] = '\0';
+  state->fanInputLength = 0;
+}
+
+bool numeric_input_append_digit(char *buffer, uint8_t *length, uint8_t maxDigits, char key) {
+  if (buffer == nullptr || length == nullptr || key < '0' || key > '9') return false;
+  if (*length >= maxDigits) return false;
+  buffer[*length] = key;
+  (*length)++;
+  buffer[*length] = '\0';
+  return true;
+}
+
+bool numeric_input_backspace(char *buffer, uint8_t *length) {
+  if (buffer == nullptr || length == nullptr || *length == 0) return false;
+  (*length)--;
+  buffer[*length] = '\0';
+  return true;
+}
+
 bool limits_field_allows_decimal(const SystemState &state) {
   return state.limitsMenuField != 2;
 }
@@ -272,6 +294,71 @@ void limits_menu_commit_edit(SystemState *state) {
   limits_menu_cancel_edit(state);
 }
 
+void fan_menu_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->currentConfigMenu = ConfigMenu::FanSettings;
+  state->parentConfigMenu = ConfigMenu::Protection;
+  state->fanSettingsMenuSelection = 0;
+  state->fanDraftTempC = state->fanTempOnC;
+  state->fanDraftHoldSeconds = state->fanHoldSeconds;
+  state->fanEditActive = false;
+  fan_input_reset(state);
+}
+
+void fan_menu_finish(SystemState *state, bool save, bool returnToParent = false) {
+  if (state == nullptr) return;
+  const ConfigMenu parent = state->parentConfigMenu;
+  state->fanSaveEvent = save;
+  state->fanEditActive = false;
+  fan_input_reset(state);
+
+  if (returnToParent && parent != ConfigMenu::None) {
+    config_menu_leave_to_parent(state, parent, ConfigMenu::FanSettings);
+    return;
+  }
+
+  state->pendingConfigSection = ConfigSection::None;
+  state->currentConfigMenu = ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
+  state->modeInitialized = false;
+}
+
+void fan_menu_start_edit(SystemState *state) {
+  if (state == nullptr) return;
+  if (state->fanSettingsMenuSelection >= 2) return;
+  state->fanEditActive = true;
+  fan_input_reset(state);
+}
+
+void fan_menu_cancel_edit(SystemState *state) {
+  if (state == nullptr) return;
+  state->fanEditActive = false;
+  fan_input_reset(state);
+}
+
+bool fan_menu_append_digit(SystemState *state, char key) {
+  if (state == nullptr) return false;
+  return numeric_input_append_digit(state->fanInputText, &state->fanInputLength, 2, key);
+}
+
+bool fan_menu_backspace(SystemState *state) {
+  if (state == nullptr) return false;
+  return numeric_input_backspace(state->fanInputText, &state->fanInputLength);
+}
+
+void fan_menu_commit_edit(SystemState *state) {
+  if (state == nullptr || state->fanInputLength == 0) return;
+  const int value = atoi(state->fanInputText);
+
+  if (state->fanSettingsMenuSelection == 0) {
+    state->fanDraftTempC = static_cast<float>(constrain(value, MIN_FAN_TEMP_ON_C, MAX_FAN_TEMP_ON_C));
+  } else if (state->fanSettingsMenuSelection == 1) {
+    state->fanDraftHoldSeconds = static_cast<float>(constrain(value, static_cast<int>(MIN_FAN_HOLD_MS / 1000UL), static_cast<int>(MAX_FAN_HOLD_MS / 1000UL)));
+  }
+
+  fan_menu_cancel_edit(state);
+}
+
 void calibration_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->calibrationMenuActive = true;
@@ -313,7 +400,14 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
   }
 
   if (menu == ConfigMenu::FanSettings) {
-    config_menu_leave_to_parent(state, ConfigMenu::Protection, ConfigMenu::FanSettings);
+    const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::FanSettings);
+    if (state->fanEditActive) {
+      fan_menu_commit_edit(state);
+    } else if (selection == 2) {
+      fan_menu_finish(state, true, true);
+    } else {
+      fan_menu_start_edit(state);
+    }
     return;
   }
 
@@ -335,8 +429,7 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
   }
 
   if (target == ConfigMenu::FanSettings) {
-    config_menu_set_selection_index(state, ConfigMenu::FanSettings, 0);
-    config_menu_enter(state, ConfigMenu::FanSettings, ConfigMenu::Protection);
+    fan_menu_begin(state);
     return;
   }
 
@@ -366,7 +459,11 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
   }
 
   if (menu == ConfigMenu::FanSettings) {
-    config_menu_leave_to_parent(state, ConfigMenu::Protection, ConfigMenu::FanSettings);
+    if (state->fanEditActive) {
+      fan_menu_cancel_edit(state);
+    } else {
+      fan_menu_finish(state, true, true);
+    }
     return;
   }
 
@@ -403,6 +500,12 @@ void core_sync_from_legacy(const SystemState &state) {
   const bool limitsInputHasDecimal = g_state.limitsInputHasDecimal;
   const bool calibrationMenuActive = g_state.calibrationMenuActive;
   const uint8_t calibrationMenuOption = g_state.calibrationMenuOption;
+  const float fanDraftTempC = g_state.fanDraftTempC;
+  const float fanDraftHoldSeconds = g_state.fanDraftHoldSeconds;
+  const bool fanEditActive = g_state.fanEditActive;
+  char fanInputText[8] = {0};
+  std::strncpy(fanInputText, g_state.fanInputText, sizeof(fanInputText) - 1);
+  const uint8_t fanInputLength = g_state.fanInputLength;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -427,6 +530,12 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.limitsInputHasDecimal = limitsInputHasDecimal;
   g_state.calibrationMenuActive = calibrationMenuActive;
   g_state.calibrationMenuOption = calibrationMenuOption;
+  g_state.fanDraftTempC = fanDraftTempC;
+  g_state.fanDraftHoldSeconds = fanDraftHoldSeconds;
+  g_state.fanEditActive = fanEditActive;
+  std::strncpy(g_state.fanInputText, fanInputText, sizeof(g_state.fanInputText) - 1);
+  g_state.fanInputText[sizeof(g_state.fanInputText) - 1] = '\0';
+  g_state.fanInputLength = fanInputLength;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -455,8 +564,10 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
-        const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
-        config_menu_step_selection(&g_state, ConfigMenu::FanSettings, direction);
+        if (!g_state.fanEditActive) {
+          const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
+          config_menu_step_selection(&g_state, ConfigMenu::FanSettings, direction);
+        }
         break;
       }
 
@@ -551,8 +662,27 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
+        if (g_state.fanEditActive) {
+          if (action.key == '<') {
+            if (!fan_menu_backspace(&g_state)) {
+              fan_menu_cancel_edit(&g_state);
+            }
+          } else if (action.key == 'E') {
+            fan_menu_commit_edit(&g_state);
+          } else if (action.key == 'M') {
+            fan_menu_cancel_edit(&g_state);
+          } else {
+            (void)fan_menu_append_digit(&g_state, action.key);
+          }
+          break;
+        }
+
         if (action.key == '1') {
           config_menu_select_index(&g_state, ConfigMenu::FanSettings, 0);
+        } else if (action.key == '2') {
+          config_menu_select_index(&g_state, ConfigMenu::FanSettings, 1);
+        } else if (action.key == '3') {
+          config_menu_select_index(&g_state, ConfigMenu::FanSettings, 2);
         } else if (action.key == 'U' || action.key == 'L') {
           config_menu_step_selection(&g_state, ConfigMenu::FanSettings, -1);
         } else if (action.key == 'D' || action.key == 'R') {
@@ -652,6 +782,8 @@ void core_dispatch(const UserAction &action) {
       g_state.limitsEditActive = false;
       limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
+      g_state.fanEditActive = false;
+      fan_input_reset(&g_state);
       break;
 
     case ActionType::ValueConfirm:
@@ -682,6 +814,8 @@ void core_dispatch(const UserAction &action) {
       g_state.limitsEditActive = false;
       limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
+      g_state.fanEditActive = false;
+      fan_input_reset(&g_state);
       break;
 
     case ActionType::None:

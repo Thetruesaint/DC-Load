@@ -44,6 +44,8 @@ struct SystemState {
   float currentCutOffA;
   float powerCutOffW;
   float tempCutOffC;
+  float fanTempOnC;
+  float fanHoldSeconds;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
@@ -52,6 +54,12 @@ struct SystemState {
   char limitsInputText[8];
   uint8_t limitsInputLength;
   bool limitsInputHasDecimal;
+
+  float fanDraftTempC;
+  float fanDraftHoldSeconds;
+  bool fanEditActive;
+  char fanInputText[8];
+  uint8_t fanInputLength;
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
@@ -72,6 +80,7 @@ struct SystemState {
   bool limitsSaveEvent;
   bool calibrationMenuActive;
   bool calibrationMenuApplyEvent;
+  bool fanSaveEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
@@ -107,6 +116,7 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->openCalibrationConfigEvent = false;
   state->limitsSaveEvent = false;
   state->calibrationMenuApplyEvent = false;
+  state->fanSaveEvent = false;
   state->calibrationRealValue = 0.0f;
 }
 

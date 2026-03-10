@@ -11,6 +11,7 @@
 #include "../app/app_limits_context.h"
 #include "../app/app_measurements_context.h"
 #include "../app/app_setpoint_context.h"
+#include "../app/app_fan_context.h"
 
 void legacy_temp_control() {
   static unsigned long fan_on_time = 0;
@@ -25,13 +26,13 @@ void legacy_temp_control() {
   last_tmpchk = currentMillis;
   app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
 
-  if (app_measurements_temp_c() >= 40) {
+  if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
     if (!fans_on) {
       digitalWrite(FAN_CTRL, HIGH);
       fans_on = true;
     }
     fan_on_time = currentMillis;
-  } else if (fans_on && (currentMillis - fan_on_time) >= FAN_ON_DRTN) {
+  } else if (fans_on && (currentMillis - fan_on_time) >= app_fan_hold_ms()) {
     digitalWrite(FAN_CTRL, LOW);
     fans_on = false;
   }

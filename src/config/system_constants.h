@@ -41,7 +41,12 @@ const unsigned long CRR_STEP_RDCTN = 10;
 const float VLTG_DROP_MARGIN = 0.02f;
 const float MIN_DISC_CURR = 100.0f;
 
-const unsigned long FAN_ON_DRTN = 60000;
+const int MIN_FAN_TEMP_ON_C = 30;
+const int MAX_FAN_TEMP_ON_C = 90;
+const int DEFAULT_FAN_TEMP_ON_C = 40;
+const unsigned long MIN_FAN_HOLD_MS = 10000UL;
+const unsigned long MAX_FAN_HOLD_MS = 90000UL;
+const unsigned long DEFAULT_FAN_HOLD_MS = 60000UL;
 const int TMP_CHK_TIME = 1000;
 
 const float CAL_MIN_VOLTAGE_DELTA = 10.0f;
@@ -64,6 +69,7 @@ const int ADD_OUT_CURR_FAC_CAL = 20;
 const int ADD_SNS_VOLT_OFF_CAL = 24;
 const int ADD_SNS_CURR_OFF_CAL = 28;
 const int ADD_OUT_CURR_OFF_CAL = 32;
+const int ADD_FAN_TEMP_ON = 36;
+const int ADD_FAN_HOLD_MS = 40;
 
 #endif
-

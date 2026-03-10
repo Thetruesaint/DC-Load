@@ -32,6 +32,10 @@ struct ProtectionRenderCache {
 
 struct FanSettingsRenderCache {
   uint8_t option;
+  float tempC;
+  float holdSeconds;
+  bool editActive;
+  char inputText[8];
   bool valid;
 };
 
@@ -42,7 +46,7 @@ struct CalibrationRenderCache {
 
 HomeRenderCache g_homeCache = {0, false};
 ProtectionRenderCache g_protectionCache = {0, false};
-FanSettingsRenderCache g_fanSettingsCache = {0, false};
+FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 
@@ -92,12 +96,26 @@ void draw_protection_if_needed(const UiViewState &viewState) {
 }
 
 void draw_fan_settings_if_needed(const UiViewState &viewState) {
-  if (g_fanSettingsCache.valid && g_fanSettingsCache.option == viewState.fanSettingsMenuSelection) {
+  if (g_fanSettingsCache.valid &&
+      g_fanSettingsCache.option == viewState.fanSettingsMenuSelection &&
+      g_fanSettingsCache.tempC == viewState.fanDraftTempC &&
+      g_fanSettingsCache.holdSeconds == viewState.fanDraftHoldSeconds &&
+      g_fanSettingsCache.editActive == viewState.fanEditActive &&
+      std::strcmp(g_fanSettingsCache.inputText, viewState.fanInputText) == 0) {
     return;
   }
 
-  ui_draw_fan_settings_menu(viewState.fanSettingsMenuSelection);
+  ui_draw_fan_settings_menu(viewState.fanSettingsMenuSelection,
+                            viewState.fanDraftTempC,
+                            viewState.fanDraftHoldSeconds,
+                            viewState.fanEditActive,
+                            viewState.fanInputText);
   g_fanSettingsCache.option = viewState.fanSettingsMenuSelection;
+  g_fanSettingsCache.tempC = viewState.fanDraftTempC;
+  g_fanSettingsCache.holdSeconds = viewState.fanDraftHoldSeconds;
+  g_fanSettingsCache.editActive = viewState.fanEditActive;
+  std::strncpy(g_fanSettingsCache.inputText, viewState.fanInputText, sizeof(g_fanSettingsCache.inputText) - 1);
+  g_fanSettingsCache.inputText[sizeof(g_fanSettingsCache.inputText) - 1] = '\0';
   g_fanSettingsCache.valid = true;
 }
 
@@ -321,3 +339,4 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
