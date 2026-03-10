@@ -23,17 +23,23 @@ ConfigSection default_config_selection(ConfigSection section) {
   return (section == ConfigSection::Calibration) ? ConfigSection::Calibration : ConfigSection::Limits;
 }
 
+uint8_t menu_root_index_for_section(ConfigSection section) {
+  return (section == ConfigSection::Calibration) ? 1 : 0;
+}
+
+ConfigSection menu_root_section_for_index(uint8_t index) {
+  return (index == 1) ? ConfigSection::Calibration : ConfigSection::Limits;
+}
+
 void menu_root_step_selection(SystemState *state, int direction) {
   if (state == nullptr || direction == 0) return;
 
-  if (state->pendingConfigSection != ConfigSection::Limits &&
-      state->pendingConfigSection != ConfigSection::Calibration) {
-    state->pendingConfigSection = ConfigSection::Limits;
-  }
-
-  state->pendingConfigSection = (state->pendingConfigSection == ConfigSection::Limits)
-                                    ? ConfigSection::Calibration
-                                    : ConfigSection::Limits;
+  const int itemCount = 2;
+  int next = static_cast<int>(state->menuRootSelection) + direction;
+  if (next < 0) next = itemCount - 1;
+  if (next >= itemCount) next = 0;
+  state->menuRootSelection = static_cast<uint8_t>(next);
+  state->pendingConfigSection = menu_root_section_for_index(state->menuRootSelection);
 }
 
 void limits_input_reset(SystemState *state) {
@@ -197,6 +203,7 @@ void core_sync_from_legacy(const SystemState &state) {
   const uint32_t actionCounter = g_state.actionCounter;
   const UiScreen uiScreen = g_state.uiScreen;
   const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
+  const uint8_t menuRootSelection = g_state.menuRootSelection;
   const int32_t lastEncoderDelta = g_state.lastEncoderDelta;
   const char lastKeyPressed = g_state.lastKeyPressed;
   const bool limitsMenuActive = g_state.limitsMenuActive;
@@ -216,6 +223,7 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.actionCounter = actionCounter;
   g_state.uiScreen = uiScreen;
   g_state.pendingConfigSection = pendingConfigSection;
+  g_state.menuRootSelection = menuRootSelection;
   g_state.lastEncoderDelta = lastEncoderDelta;
   g_state.lastKeyPressed = lastKeyPressed;
   g_state.limitsMenuActive = limitsMenuActive;
@@ -268,10 +276,11 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::EncoderButtonPress:
       if (g_state.uiScreen == UiScreen::MenuRoot) {
-        if (g_state.pendingConfigSection == ConfigSection::Limits) {
+        const ConfigSection selectedSection = menu_root_section_for_index(g_state.menuRootSelection);
+        if (selectedSection == ConfigSection::Limits) {
           limits_menu_begin(&g_state);
           g_state.pendingConfigSection = ConfigSection::None;
-        } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
+        } else if (selectedSection == ConfigSection::Calibration) {
           calibration_menu_begin(&g_state);
           g_state.pendingConfigSection = ConfigSection::None;
         }
@@ -300,17 +309,20 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         if (action.key == '1') {
+          g_state.menuRootSelection = 0;
           g_state.pendingConfigSection = ConfigSection::Limits;
         } else if (action.key == '2') {
+          g_state.menuRootSelection = 1;
           g_state.pendingConfigSection = ConfigSection::Calibration;
         } else if (action.key == 'U' || action.key == 'L') {
           menu_root_step_selection(&g_state, -1);
         } else if (action.key == 'D' || action.key == 'R') {
           menu_root_step_selection(&g_state, 1);
         } else if (action.key == 'E') {
-          if (g_state.pendingConfigSection == ConfigSection::Limits) {
+          const ConfigSection selectedSection = menu_root_section_for_index(g_state.menuRootSelection);
+          if (selectedSection == ConfigSection::Limits) {
             limits_menu_begin(&g_state);
-          } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
+          } else if (selectedSection == ConfigSection::Calibration) {
             calibration_menu_begin(&g_state);
           }
           g_state.pendingConfigSection = ConfigSection::None;
@@ -396,6 +408,7 @@ void core_dispatch(const UserAction &action) {
     case ActionType::ModeSelect:
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       g_state.pendingConfigSection = ConfigSection::None;
+      g_state.menuRootSelection = 0;
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
@@ -419,6 +432,7 @@ void core_dispatch(const UserAction &action) {
         break;
       }
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
+      g_state.menuRootSelection = menu_root_index_for_section(g_state.pendingConfigSection);
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.limitsMenuActive = false;
@@ -446,6 +460,7 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
 
 
 

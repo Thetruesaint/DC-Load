@@ -26,6 +26,7 @@ struct UiViewState {
   char limitsInputText[8];
 
   uint8_t calibrationMenuOption;
+  uint8_t menuRootSelection;
 
   uint8_t pendingConfigSection;
 };
@@ -33,7 +34,9 @@ struct UiViewState {
 inline UiViewState ui_view_state_make_default() {
   UiViewState state = {0};
   state.calibrationMenuOption = 1;
+  state.menuRootSelection = 0;
   return state;
 }
 
 #endif
+

@@ -43,6 +43,7 @@ struct SystemState {
   bool limitsInputHasDecimal;
 
   uint8_t calibrationMenuOption;
+  uint8_t menuRootSelection;
 
   int cursorPosition;
   int functionIndex;
@@ -91,3 +92,4 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
 }
 
 #endif
+

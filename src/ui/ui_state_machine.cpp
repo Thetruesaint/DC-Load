@@ -7,7 +7,7 @@
 
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
-uint8_t g_lastMenuRootSection = 0;
+uint8_t g_lastMenuRootSelection = 0xFF;
 
 struct LimitsRenderCache {
   float currentA;
@@ -35,9 +35,9 @@ LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
-  if (g_lastMenuRootSection == viewState.pendingConfigSection) return;
-  ui_draw_config_root_menu(viewState.pendingConfigSection);
-  g_lastMenuRootSection = viewState.pendingConfigSection;
+  if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
+  ui_draw_config_root_menu(viewState.menuRootSelection);
+  g_lastMenuRootSelection = viewState.menuRootSelection;
 }
 
 bool home_mode_uses_ui_template(uint8_t mode) {
@@ -165,7 +165,7 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_home(const UiViewState &viewState) {
-  g_lastMenuRootSection = 0;
+  g_lastMenuRootSelection = 0xFF;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_homeCache.valid = false;
@@ -178,7 +178,7 @@ void screen_update_home(const UiViewState &viewState) {
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_root(const UiViewState &viewState) {
-  g_lastMenuRootSection = 0xFF;
+  g_lastMenuRootSelection = 0xFF;
   draw_menu_root_if_needed(viewState);
 }
 void screen_update_menu_root(const UiViewState &viewState) {
@@ -237,7 +237,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 
 void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
-  g_lastMenuRootSection = 0;
+  g_lastMenuRootSelection = 0xFF;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_homeCache.valid = false;
@@ -256,6 +256,7 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
 
 
 
