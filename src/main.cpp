@@ -93,10 +93,10 @@ void setup() {
   printLCD(0, 2, F("By Guy & Codex"));
 
   #ifndef WOKWI_SIMULATION
-  printLCD(0, 3, F("v2.02-rc1"));
+  printLCD(0, 3, F("v2.11"));
   delay (2000);
   #else
-  printLCD(0, 3, F("v2.02-rc1 sim"));
+  printLCD(0, 3, F("v2.11 sim"));
   delay(1000);     //Para probar mas rapido
   #endif
 

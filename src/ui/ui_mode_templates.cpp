@@ -62,7 +62,7 @@ void ui_draw_battery_cell_count_prompt(const String &batteryType) {
 
 void ui_draw_limits_config_template() {
   clearLCD();
-  printLCD(4, 0, F("Set Limits"));
+  printLCD(5, 0, F("Set Limits"));
   printLCD(0, 1, F("Current(A):"));
   printLCD(0, 2, F("Power(W):"));
   printLCD(0, 3, F("Temp.("));
@@ -85,7 +85,7 @@ void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCu
 
 void ui_draw_config_root_menu(uint8_t pendingConfigSection) {
   clearLCD();
-  printLCD(2, 0, F("Configuration"));
+  printLCD(3, 0, F("Configuration"));
   printLCD(0, 1, F("1) Limits"));
   printLCD(0, 2, F("2) Calibration"));
 

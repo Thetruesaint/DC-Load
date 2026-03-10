@@ -316,6 +316,7 @@ void core_dispatch(const UserAction &action) {
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (action.key == '<' || action.key == 'M') {
           g_state.pendingConfigSection = ConfigSection::None;
+          g_state.modeInitialized = false;
         }
         break;
       }
@@ -445,5 +446,6 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
 
 

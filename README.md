@@ -1,4 +1,4 @@
-## v2.10 ## BY LCD HELLOW TFT
+## v2.11 ## BY LCD HELLOW TFT & AI
 
 ## Hardware Versions
 
@@ -7,16 +7,16 @@
 
 **Trabajando:**
 - Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
-- Prueba migración a TFT
+
 
 **A Trabajar:**
-- Usar Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente. 
+- Continuar migracion de arquitectura para luego introducir mejoras en TFT
     
 **En Cola:**
-- Hacer un solo menu de configuracion para Limits y Calibación!! como en Fuente Lineal
+- 
 
 **Bugs**
-- 
+- Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR
 
 **Fixes**
 - Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
@@ -26,6 +26,9 @@
 - Se pasaron todas las funciones "lcd." a ui_lcd lo mismo para el manejo de EEPROM
 - En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
 - Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
+- Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
+- IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
+- Nuevo esquema de Menues para Calibración y Limites!
 
 **Posibles Mejoras SW:**
 - Dejar solo TL?.. TC se puede hacer con TL.
