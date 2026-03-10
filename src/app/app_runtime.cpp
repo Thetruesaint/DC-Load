@@ -39,6 +39,20 @@ void prepare_core_managed_home_mode() {
       break;
   }
 }
+
+void update_core_managed_home_cursor() {
+  if (core_get_state().uiScreen != UiScreen::Home) return;
+
+  switch (app_mode_state_mode()) {
+    case CC:
+    case CP:
+    case CR:
+      legacy_cursor_position();
+      break;
+    default:
+      break;
+  }
+}
 }
 
 void app_run_cycle() {
@@ -61,9 +75,11 @@ void app_run_cycle() {
   // This prevents background templates from overwriting menu/config screens.
   if (core_get_state().uiScreen == UiScreen::Home) {
     prepare_core_managed_home_mode();
+    update_core_managed_home_cursor();
     legacy_run_mode_logic();
   }
 
   app_tick();
   ui_render_cycle();
 }
+
