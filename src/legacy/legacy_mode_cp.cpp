@@ -1,20 +1,9 @@
 #include "legacy_mode_cp.h"
 
-#include "../app/app_limits_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_setpoint_context.h"
-#include "../config/system_constants.h"
 #include "../funciones.h"
-#include "../ui/ui_mode_templates.h"
 
 void legacy_const_power_mode() {
-  float readingValue = app_runtime_encoder_position() / 1000.0f;
-  readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
-  app_setpoint_set_reading(readingValue);
-  app_runtime_set_encoder_position(readingValue * 1000.0f);
   Cursor_Position();
 
   // Setpoint de CP lo calcula core y se aplica via legacy_apply_state.
 }
-
