@@ -88,7 +88,7 @@ void ui_draw_config_root_menu(uint8_t selectedIndex) {
   printLCD(3, 0, F("Configuration"));
   printLCD(1, 1, F("1-Limits"));
   printLCD(1, 2, F("2-Calibration"));
-  printLCD(1, 3, F("< Exit"));
+  printLCD(1, 3, F("<-Exit"));
 
   if (selectedIndex == 0) {
     printLCD(0, 1, F(">"));
