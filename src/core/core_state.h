@@ -16,6 +16,13 @@ enum class ConfigSection : uint8_t {
   Calibration
 };
 
+enum class ConfigMenu : uint8_t {
+  None = 0,
+  Root,
+  Limits,
+  Calibration
+};
+
 struct SystemState {
   float setCurrent_mA;
   float setPower_W;
@@ -69,12 +76,16 @@ struct SystemState {
 
   UiScreen uiScreen;
   ConfigSection pendingConfigSection;
+  ConfigMenu currentConfigMenu;
+  ConfigMenu parentConfigMenu;
 };
 
 inline SystemState core_state_make_default() {
   SystemState state = {0};
   state.uiScreen = UiScreen::Home;
   state.pendingConfigSection = ConfigSection::None;
+  state.currentConfigMenu = ConfigMenu::None;
+  state.parentConfigMenu = ConfigMenu::None;
   state.limitsMenuField = 0;
   state.calibrationMenuOption = 1;
   return state;
@@ -92,4 +103,5 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
 }
 
 #endif
+
 

@@ -9,18 +9,20 @@ bool core_config_wants_calibration(const SystemState &state) {
 }
 
 UiScreen core_config_target_screen(const SystemState &state) {
-  if (state.limitsMenuActive) {
+  if (state.currentConfigMenu == ConfigMenu::Limits || state.limitsMenuActive) {
     return UiScreen::MenuLimits;
   }
 
-  if (state.calibrationMenuActive) {
+  if (state.currentConfigMenu == ConfigMenu::Calibration || state.calibrationMenuActive) {
     return UiScreen::MenuCalibration;
   }
 
-  if (state.pendingConfigSection == ConfigSection::Limits ||
+  if (state.currentConfigMenu == ConfigMenu::Root ||
+      state.pendingConfigSection == ConfigSection::Limits ||
       state.pendingConfigSection == ConfigSection::Calibration) {
     return UiScreen::MenuRoot;
   }
 
   return UiScreen::Home;
 }
+

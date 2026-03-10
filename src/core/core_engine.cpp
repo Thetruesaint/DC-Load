@@ -95,6 +95,8 @@ void limits_menu_adjust_value(SystemState *state, int direction) {
 void limits_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->limitsMenuActive = true;
+  state->currentConfigMenu = ConfigMenu::Limits;
+  state->parentConfigMenu = ConfigMenu::Root;
   state->limitsMenuField = 0;
   state->limitsDraftCurrentA = state->currentCutOffA;
   state->limitsDraftPowerW = state->powerCutOffW;
@@ -110,6 +112,8 @@ void limits_menu_finish(SystemState *state, bool save, bool returnToRoot = false
   state->limitsEditActive = false;
   limits_input_reset(state);
   state->pendingConfigSection = returnToRoot ? ConfigSection::Limits : ConfigSection::None;
+  state->currentConfigMenu = returnToRoot ? ConfigMenu::Root : ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
   state->modeInitialized = false;
 }
 
@@ -181,6 +185,8 @@ void calibration_menu_step_option(SystemState *state, int direction) {
 void calibration_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->calibrationMenuActive = true;
+  state->currentConfigMenu = ConfigMenu::Calibration;
+  state->parentConfigMenu = ConfigMenu::Root;
   if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 4) {
     state->calibrationMenuOption = 1;
   }
@@ -191,6 +197,8 @@ void calibration_menu_finish(SystemState *state, bool apply, bool returnToRoot =
   state->calibrationMenuApplyEvent = apply;
   state->calibrationMenuActive = false;
   state->pendingConfigSection = returnToRoot ? ConfigSection::Calibration : ConfigSection::None;
+  state->currentConfigMenu = returnToRoot ? ConfigMenu::Root : ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
   state->modeInitialized = false;
 }
 }
@@ -204,6 +212,8 @@ void core_sync_from_legacy(const SystemState &state) {
   const UiScreen uiScreen = g_state.uiScreen;
   const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
   const uint8_t menuRootSelection = g_state.menuRootSelection;
+  const ConfigMenu currentConfigMenu = g_state.currentConfigMenu;
+  const ConfigMenu parentConfigMenu = g_state.parentConfigMenu;
   const int32_t lastEncoderDelta = g_state.lastEncoderDelta;
   const char lastKeyPressed = g_state.lastKeyPressed;
   const bool limitsMenuActive = g_state.limitsMenuActive;
@@ -224,6 +234,8 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.uiScreen = uiScreen;
   g_state.pendingConfigSection = pendingConfigSection;
   g_state.menuRootSelection = menuRootSelection;
+  g_state.currentConfigMenu = currentConfigMenu;
+  g_state.parentConfigMenu = parentConfigMenu;
   g_state.lastEncoderDelta = lastEncoderDelta;
   g_state.lastKeyPressed = lastKeyPressed;
   g_state.limitsMenuActive = limitsMenuActive;
@@ -328,6 +340,8 @@ void core_dispatch(const UserAction &action) {
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (action.key == '<' || action.key == 'M') {
           g_state.pendingConfigSection = ConfigSection::None;
+          g_state.currentConfigMenu = ConfigMenu::None;
+          g_state.parentConfigMenu = ConfigMenu::None;
           g_state.modeInitialized = false;
         }
         break;
@@ -409,6 +423,8 @@ void core_dispatch(const UserAction &action) {
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       g_state.pendingConfigSection = ConfigSection::None;
       g_state.menuRootSelection = 0;
+      g_state.currentConfigMenu = ConfigMenu::None;
+      g_state.parentConfigMenu = ConfigMenu::None;
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
@@ -433,6 +449,8 @@ void core_dispatch(const UserAction &action) {
       }
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
       g_state.menuRootSelection = menu_root_index_for_section(g_state.pendingConfigSection);
+      g_state.currentConfigMenu = ConfigMenu::Root;
+      g_state.parentConfigMenu = ConfigMenu::None;
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.limitsMenuActive = false;
@@ -460,6 +478,7 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
 
 
 

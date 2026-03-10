@@ -151,7 +151,7 @@ void draw_calibration_menu(const UiViewState &viewState) {
   printLCD(1, 2, F("3-Load"));
   printLCD(10, 2, (viewState.calibrationMenuOption == 4) ? F(">") : F(" "));
   printLCD(11, 2, F("4-Save"));
-  printLCD(0, 3, F("< Back"));
+  printLCD(1, 3, F("< Back"));
 }
 
 void draw_calibration_if_needed(const UiViewState &viewState) {
