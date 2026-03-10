@@ -92,11 +92,11 @@ void calibration_menu_begin(SystemState *state) {
   }
 }
 
-void calibration_menu_finish(SystemState *state, bool apply) {
+void calibration_menu_finish(SystemState *state, bool apply, bool returnToRoot = false) {
   if (state == nullptr) return;
   state->calibrationMenuApplyEvent = apply;
   state->calibrationMenuActive = false;
-  state->pendingConfigSection = ConfigSection::None;
+  state->pendingConfigSection = returnToRoot ? ConfigSection::Calibration : ConfigSection::None;
   state->modeInitialized = false;
 }
 }
@@ -249,7 +249,7 @@ void core_dispatch(const UserAction &action) {
         } else if (action.key == 'E') {
           calibration_menu_finish(&g_state, true);
         } else if (action.key == '<' || action.key == 'M') {
-          calibration_menu_finish(&g_state, false);
+          calibration_menu_finish(&g_state, false, true);
         }
         break;
       }
@@ -326,3 +326,4 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+

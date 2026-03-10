@@ -13,6 +13,13 @@
 void app_run_cycle() {
   legacy_temp_control();
   legacy_read_encoder();
+
+  // Menus use the new state machine and do not pass through legacy cursor handling,
+  // so encoder button presses must be dispatched from app-level input polling here.
+  if (core_get_state().uiScreen != UiScreen::Home) {
+    app_read_encoder_button();
+  }
+
   app_read_keypad(1, 3);
   app_read_load_button();
   legacy_read_volts_current();

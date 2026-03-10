@@ -65,11 +65,16 @@ void draw_limits_if_needed(const UiViewState &viewState) {
 
 void draw_calibration_menu(const UiViewState &viewState) {
   clearLCD();
-  printLCD(4, 0, F("CALIBRATION"));
-  printLCD(0, 1, F("1)V 2)I 3)Load"));
-  printLCD(0, 2, F("4)Save   E=OK"));
-  printLCD(0, 3, F("< Back Sel:"));
-  printLCDRaw(static_cast<int>(viewState.calibrationMenuOption));
+  printLCD(4, 0, F("Calibration"));
+  printLCD(0, 1, (viewState.calibrationMenuOption == 1) ? F(">") : F(" "));
+  printLCD(1, 1, F("1-Voltage"));
+  printLCD(10, 1, (viewState.calibrationMenuOption == 2) ? F(">") : F(" "));
+  printLCD(11, 1, F("2-Current"));
+  printLCD(0, 2, (viewState.calibrationMenuOption == 3) ? F(">") : F(" "));
+  printLCD(1, 2, F("3-Load"));
+  printLCD(10, 2, (viewState.calibrationMenuOption == 4) ? F(">") : F(" "));
+  printLCD(11, 2, F("4-Save"));
+  printLCD(0, 3, F("< Back"));
 }
 
 void draw_calibration_if_needed(const UiViewState &viewState) {
@@ -179,3 +184,5 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
+
