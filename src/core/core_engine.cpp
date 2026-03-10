@@ -31,15 +31,32 @@ uint8_t menu_root_index_for_menu(ConfigMenu menu) {
   return (menu == ConfigMenu::Calibration) ? 1 : 0;
 }
 
-uint8_t *config_menu_selection_ptr(SystemState *state, ConfigMenu menu) {
-  if (state == nullptr) return nullptr;
-  if (menu == ConfigMenu::Root) return &state->menuRootSelection;
-  if (menu == ConfigMenu::Protection) return &state->protectionMenuSelection;
-  return nullptr;
+uint8_t config_menu_item_count(ConfigMenu menu) {
+  switch (menu) {
+    case ConfigMenu::Root: return 2;
+    case ConfigMenu::Protection: return 1;
+    case ConfigMenu::Calibration: return 4;
+    default: return 0;
+  }
 }
 
-uint8_t config_menu_item_count(ConfigMenu menu) {
-  return (menu == ConfigMenu::Root) ? 2 : (menu == ConfigMenu::Protection) ? 1 : 0;
+uint8_t config_menu_selection_index(const SystemState &state, ConfigMenu menu) {
+  if (menu == ConfigMenu::Root) return state.menuRootSelection;
+  if (menu == ConfigMenu::Protection) return state.protectionMenuSelection;
+  if (menu == ConfigMenu::Calibration) return (state.calibrationMenuOption > 0) ? static_cast<uint8_t>(state.calibrationMenuOption - 1) : 0;
+  return 0;
+}
+
+void config_menu_set_selection_index(SystemState *state, ConfigMenu menu, uint8_t index) {
+  if (state == nullptr) return;
+
+  if (menu == ConfigMenu::Root) {
+    state->menuRootSelection = index;
+  } else if (menu == ConfigMenu::Protection) {
+    state->protectionMenuSelection = index;
+  } else if (menu == ConfigMenu::Calibration) {
+    state->calibrationMenuOption = static_cast<uint8_t>(index + 1);
+  }
 }
 
 ConfigMenu config_menu_selected_target(const SystemState &state, ConfigMenu menu) {
@@ -64,20 +81,23 @@ ConfigSection config_menu_pending_section_for_target(ConfigMenu target) {
 
 void config_menu_sync_pending_section(SystemState *state, ConfigMenu menu) {
   if (state == nullptr) return;
+  if (menu == ConfigMenu::Calibration) {
+    state->pendingConfigSection = ConfigSection::Calibration;
+    return;
+  }
   state->pendingConfigSection = config_menu_pending_section_for_target(config_menu_selected_target(*state, menu));
 }
 
 void config_menu_step_selection(SystemState *state, ConfigMenu menu, int direction) {
   if (state == nullptr || direction == 0) return;
 
-  uint8_t *selection = config_menu_selection_ptr(state, menu);
-  if (selection == nullptr) return;
-
   const int itemCount = config_menu_item_count(menu);
-  int next = static_cast<int>(*selection) + direction;
+  if (itemCount == 0) return;
+
+  int next = static_cast<int>(config_menu_selection_index(*state, menu)) + direction;
   if (next < 0) next = itemCount - 1;
   if (next >= itemCount) next = 0;
-  *selection = static_cast<uint8_t>(next);
+  config_menu_set_selection_index(state, menu, static_cast<uint8_t>(next));
   state->currentConfigMenu = menu;
   config_menu_sync_pending_section(state, menu);
 }
@@ -85,11 +105,10 @@ void config_menu_step_selection(SystemState *state, ConfigMenu menu, int directi
 void config_menu_select_index(SystemState *state, ConfigMenu menu, uint8_t index) {
   if (state == nullptr) return;
 
-  uint8_t *selection = config_menu_selection_ptr(state, menu);
-  if (selection == nullptr) return;
-
   const uint8_t itemCount = config_menu_item_count(menu);
-  *selection = (index < itemCount) ? index : 0;
+  if (itemCount == 0) return;
+
+  config_menu_set_selection_index(state, menu, (index < itemCount) ? index : 0);
   state->currentConfigMenu = menu;
   config_menu_sync_pending_section(state, menu);
 }
@@ -101,7 +120,7 @@ void config_menu_enter(SystemState *state, ConfigMenu menu, ConfigMenu parent) {
   config_menu_sync_pending_section(state, menu);
 }
 
-void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent) {
+void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent, ConfigMenu child) {
   if (state == nullptr) return;
 
   state->currentConfigMenu = parent;
@@ -109,7 +128,7 @@ void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent) {
   state->modeInitialized = false;
 
   if (parent == ConfigMenu::Root) {
-    state->menuRootSelection = menu_root_index_for_menu(ConfigMenu::Protection);
+    state->menuRootSelection = menu_root_index_for_menu(child);
   }
 
   config_menu_sync_pending_section(state, parent);
@@ -169,7 +188,7 @@ void limits_menu_finish(SystemState *state, bool save, bool returnToParent = fal
   limits_input_reset(state);
 
   if (returnToParent && parent != ConfigMenu::None) {
-    config_menu_leave_to_parent(state, parent);
+    config_menu_leave_to_parent(state, parent, ConfigMenu::Protection);
     return;
   }
 
@@ -235,15 +254,6 @@ void limits_menu_commit_edit(SystemState *state) {
   limits_menu_cancel_edit(state);
 }
 
-void calibration_menu_step_option(SystemState *state, int direction) {
-  if (state == nullptr || direction == 0) return;
-
-  int option = static_cast<int>(state->calibrationMenuOption) + direction;
-  if (option < 1) option = 4;
-  if (option > 4) option = 1;
-  state->calibrationMenuOption = static_cast<uint8_t>(option);
-}
-
 void calibration_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->calibrationMenuActive = true;
@@ -261,7 +271,7 @@ void calibration_menu_finish(SystemState *state, bool apply, bool returnToParent
   state->calibrationMenuActive = false;
 
   if (returnToParent && parent != ConfigMenu::None) {
-    config_menu_leave_to_parent(state, parent);
+    config_menu_leave_to_parent(state, parent, ConfigMenu::Calibration);
     return;
   }
 
@@ -274,9 +284,14 @@ void calibration_menu_finish(SystemState *state, bool apply, bool returnToParent
 void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
   if (state == nullptr) return;
 
+  if (menu == ConfigMenu::Calibration) {
+    calibration_menu_finish(state, true);
+    return;
+  }
+
   const ConfigMenu target = config_menu_selected_target(*state, menu);
   if (target == ConfigMenu::Protection) {
-    state->protectionMenuSelection = 0;
+    config_menu_set_selection_index(state, ConfigMenu::Protection, 0);
     config_menu_enter(state, ConfigMenu::Protection, ConfigMenu::Root);
     return;
   }
@@ -302,7 +317,12 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
   }
 
   if (menu == ConfigMenu::Protection) {
-    config_menu_leave_to_parent(state, ConfigMenu::Root);
+    config_menu_leave_to_parent(state, ConfigMenu::Root, ConfigMenu::Protection);
+    return;
+  }
+
+  if (menu == ConfigMenu::Calibration) {
+    calibration_menu_finish(state, false, true);
   }
 }
 }
@@ -391,7 +411,8 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuCalibration) {
-        calibration_menu_step_option(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+        const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
+        config_menu_step_selection(&g_state, ConfigMenu::Calibration, direction);
         break;
       }
 
@@ -419,7 +440,7 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuCalibration) {
-        calibration_menu_finish(&g_state, true);
+        config_menu_activate_selection(&g_state, ConfigMenu::Calibration);
         break;
       }
 
@@ -497,15 +518,15 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::MenuCalibration) {
         if (action.key >= '1' && action.key <= '4') {
-          g_state.calibrationMenuOption = static_cast<uint8_t>(action.key - '0');
+          config_menu_select_index(&g_state, ConfigMenu::Calibration, static_cast<uint8_t>(action.key - '1'));
         } else if (action.key == 'U' || action.key == 'L') {
-          calibration_menu_step_option(&g_state, -1);
+          config_menu_step_selection(&g_state, ConfigMenu::Calibration, -1);
         } else if (action.key == 'D' || action.key == 'R') {
-          calibration_menu_step_option(&g_state, 1);
+          config_menu_step_selection(&g_state, ConfigMenu::Calibration, 1);
         } else if (action.key == 'E') {
-          calibration_menu_finish(&g_state, true);
+          config_menu_activate_selection(&g_state, ConfigMenu::Calibration);
         } else if (action.key == '<' || action.key == 'M') {
-          calibration_menu_finish(&g_state, false, true);
+          config_menu_back(&g_state, ConfigMenu::Calibration);
         }
         break;
       }
