@@ -1,6 +1,8 @@
 #include "core_engine.h"
 
 #include <Arduino.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "../config/system_constants.h"
 #include "core_modes.h"
@@ -21,6 +23,34 @@ ConfigSection default_config_selection(ConfigSection section) {
   return (section == ConfigSection::Calibration) ? ConfigSection::Calibration : ConfigSection::Limits;
 }
 
+void menu_root_step_selection(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0) return;
+
+  if (state->pendingConfigSection != ConfigSection::Limits &&
+      state->pendingConfigSection != ConfigSection::Calibration) {
+    state->pendingConfigSection = ConfigSection::Limits;
+  }
+
+  state->pendingConfigSection = (state->pendingConfigSection == ConfigSection::Limits)
+                                    ? ConfigSection::Calibration
+                                    : ConfigSection::Limits;
+}
+
+void limits_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->limitsInputText[0] = '\0';
+  state->limitsInputLength = 0;
+  state->limitsInputHasDecimal = false;
+}
+
+bool limits_field_allows_decimal(const SystemState &state) {
+  return state.limitsMenuField != 2;
+}
+
+int limits_field_max_digits(const SystemState &state) {
+  return (state.limitsMenuField == 2) ? 2 : 5;
+}
+
 void limits_menu_move_field(SystemState *state, int direction) {
   if (state == nullptr || direction == 0) return;
 
@@ -32,28 +62,26 @@ void limits_menu_move_field(SystemState *state, int direction) {
 
 void limits_menu_adjust_value(SystemState *state, int direction) {
   if (state == nullptr || direction == 0) return;
+  if (state->limitsEditActive) return;
 
   if (state->limitsMenuField == 0) {
-    const float step = 0.1f;
     state->limitsDraftCurrentA = constrain(
-        state->limitsDraftCurrentA + (direction * step),
+        state->limitsDraftCurrentA + (direction * 0.1f),
         1.0f,
         static_cast<float>(MAX_CURRENT));
     return;
   }
 
   if (state->limitsMenuField == 1) {
-    const float step = 1.0f;
     state->limitsDraftPowerW = constrain(
-        state->limitsDraftPowerW + (direction * step),
+        state->limitsDraftPowerW + (direction * 1.0f),
         1.0f,
         static_cast<float>(MAX_POWER));
     return;
   }
 
-  const float step = 1.0f;
   state->limitsDraftTempC = constrain(
-      state->limitsDraftTempC + (direction * step),
+      state->limitsDraftTempC + (direction * 1.0f),
       30.0f,
       static_cast<float>(MAX_TEMP));
 }
@@ -65,14 +93,74 @@ void limits_menu_begin(SystemState *state) {
   state->limitsDraftCurrentA = state->currentCutOffA;
   state->limitsDraftPowerW = state->powerCutOffW;
   state->limitsDraftTempC = state->tempCutOffC;
+  state->limitsEditActive = false;
+  limits_input_reset(state);
 }
 
-void limits_menu_finish(SystemState *state, bool save) {
+void limits_menu_finish(SystemState *state, bool save, bool returnToRoot = false) {
   if (state == nullptr) return;
   state->limitsSaveEvent = save;
   state->limitsMenuActive = false;
-  state->pendingConfigSection = ConfigSection::None;
+  state->limitsEditActive = false;
+  limits_input_reset(state);
+  state->pendingConfigSection = returnToRoot ? ConfigSection::Limits : ConfigSection::None;
   state->modeInitialized = false;
+}
+
+void limits_menu_start_edit(SystemState *state) {
+  if (state == nullptr) return;
+  state->limitsEditActive = true;
+  limits_input_reset(state);
+}
+
+void limits_menu_cancel_edit(SystemState *state) {
+  if (state == nullptr) return;
+  state->limitsEditActive = false;
+  limits_input_reset(state);
+}
+
+bool limits_menu_append_digit(SystemState *state, char key) {
+  if (state == nullptr || key < '0' || key > '9') return false;
+  const int maxDigits = limits_field_max_digits(*state);
+  if (state->limitsInputLength >= maxDigits) return false;
+  state->limitsInputText[state->limitsInputLength++] = key;
+  state->limitsInputText[state->limitsInputLength] = '\0';
+  return true;
+}
+
+bool limits_menu_append_decimal(SystemState *state) {
+  if (state == nullptr || !limits_field_allows_decimal(*state)) return false;
+  const int maxDigits = limits_field_max_digits(*state);
+  if (state->limitsInputHasDecimal || state->limitsInputLength >= maxDigits) return false;
+  state->limitsInputText[state->limitsInputLength++] = '.';
+  state->limitsInputText[state->limitsInputLength] = '\0';
+  state->limitsInputHasDecimal = true;
+  return true;
+}
+
+bool limits_menu_backspace(SystemState *state) {
+  if (state == nullptr || state->limitsInputLength == 0) return false;
+  state->limitsInputLength--;
+  if (state->limitsInputText[state->limitsInputLength] == '.') {
+    state->limitsInputHasDecimal = false;
+  }
+  state->limitsInputText[state->limitsInputLength] = '\0';
+  return true;
+}
+
+void limits_menu_commit_edit(SystemState *state) {
+  if (state == nullptr || state->limitsInputLength == 0) return;
+  const float value = static_cast<float>(atof(state->limitsInputText));
+
+  if (state->limitsMenuField == 0) {
+    state->limitsDraftCurrentA = constrain(value, 1.0f, static_cast<float>(MAX_CURRENT));
+  } else if (state->limitsMenuField == 1) {
+    state->limitsDraftPowerW = constrain(value, 1.0f, static_cast<float>(MAX_POWER));
+  } else {
+    state->limitsDraftTempC = constrain(value, 30.0f, static_cast<float>(MAX_TEMP));
+  }
+
+  limits_menu_cancel_edit(state);
 }
 
 void calibration_menu_step_option(SystemState *state, int direction) {
@@ -116,6 +204,11 @@ void core_sync_from_legacy(const SystemState &state) {
   const float limitsDraftCurrentA = g_state.limitsDraftCurrentA;
   const float limitsDraftPowerW = g_state.limitsDraftPowerW;
   const float limitsDraftTempC = g_state.limitsDraftTempC;
+  const bool limitsEditActive = g_state.limitsEditActive;
+  char limitsInputText[8] = {0};
+  std::strncpy(limitsInputText, g_state.limitsInputText, sizeof(limitsInputText) - 1);
+  const uint8_t limitsInputLength = g_state.limitsInputLength;
+  const bool limitsInputHasDecimal = g_state.limitsInputHasDecimal;
   const bool calibrationMenuActive = g_state.calibrationMenuActive;
   const uint8_t calibrationMenuOption = g_state.calibrationMenuOption;
 
@@ -130,6 +223,11 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.limitsDraftCurrentA = limitsDraftCurrentA;
   g_state.limitsDraftPowerW = limitsDraftPowerW;
   g_state.limitsDraftTempC = limitsDraftTempC;
+  g_state.limitsEditActive = limitsEditActive;
+  std::strncpy(g_state.limitsInputText, limitsInputText, sizeof(g_state.limitsInputText) - 1);
+  g_state.limitsInputText[sizeof(g_state.limitsInputText) - 1] = '\0';
+  g_state.limitsInputLength = limitsInputLength;
+  g_state.limitsInputHasDecimal = limitsInputHasDecimal;
   g_state.calibrationMenuActive = calibrationMenuActive;
   g_state.calibrationMenuOption = calibrationMenuOption;
 
@@ -149,16 +247,14 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
-        if (direction < 0) {
-          g_state.pendingConfigSection = ConfigSection::Limits;
-        } else if (direction > 0) {
-          g_state.pendingConfigSection = ConfigSection::Calibration;
-        }
+        menu_root_step_selection(&g_state, direction);
         break;
       }
 
       if (g_state.uiScreen == UiScreen::MenuLimits) {
-        limits_menu_adjust_value(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+        if (!g_state.limitsEditActive) {
+          limits_menu_move_field(&g_state, (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0));
+        }
         break;
       }
 
@@ -173,7 +269,7 @@ void core_dispatch(const UserAction &action) {
     case ActionType::EncoderButtonPress:
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         if (g_state.pendingConfigSection == ConfigSection::Limits) {
-          g_state.openLimitsConfigEvent = true;
+          limits_menu_begin(&g_state);
           g_state.pendingConfigSection = ConfigSection::None;
         } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
           calibration_menu_begin(&g_state);
@@ -183,7 +279,11 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuLimits) {
-        limits_menu_finish(&g_state, true);
+        if (g_state.limitsEditActive) {
+          limits_menu_commit_edit(&g_state);
+        } else {
+          limits_menu_start_edit(&g_state);
+        }
         break;
       }
 
@@ -199,13 +299,17 @@ void core_dispatch(const UserAction &action) {
       g_state.lastKeyPressed = action.key;
 
       if (g_state.uiScreen == UiScreen::MenuRoot) {
-        if (action.key == '1' || action.key == 'U' || action.key == 'L') {
+        if (action.key == '1') {
           g_state.pendingConfigSection = ConfigSection::Limits;
-        } else if (action.key == '2' || action.key == 'D' || action.key == 'R') {
+        } else if (action.key == '2') {
           g_state.pendingConfigSection = ConfigSection::Calibration;
+        } else if (action.key == 'U' || action.key == 'L') {
+          menu_root_step_selection(&g_state, -1);
+        } else if (action.key == 'D' || action.key == 'R') {
+          menu_root_step_selection(&g_state, 1);
         } else if (action.key == 'E') {
           if (g_state.pendingConfigSection == ConfigSection::Limits) {
-            g_state.openLimitsConfigEvent = true;
+            limits_menu_begin(&g_state);
           } else if (g_state.pendingConfigSection == ConfigSection::Calibration) {
             calibration_menu_begin(&g_state);
           }
@@ -217,24 +321,35 @@ void core_dispatch(const UserAction &action) {
       }
 
       if (g_state.uiScreen == UiScreen::MenuLimits) {
+        if (g_state.limitsEditActive) {
+          if (!limits_menu_append_digit(&g_state, action.key) && action.key == '.') {
+            (void)limits_menu_append_decimal(&g_state);
+          } else if (action.key == '<') {
+            if (!limits_menu_backspace(&g_state)) {
+              limits_menu_cancel_edit(&g_state);
+            }
+          } else if (action.key == 'E') {
+            limits_menu_commit_edit(&g_state);
+          } else if (action.key == 'M') {
+            limits_menu_cancel_edit(&g_state);
+          }
+          break;
+        }
+
         if (action.key == '1') {
           g_state.limitsMenuField = 0;
         } else if (action.key == '2') {
           g_state.limitsMenuField = 1;
         } else if (action.key == '3') {
           g_state.limitsMenuField = 2;
-        } else if (action.key == 'U') {
-          limits_menu_adjust_value(&g_state, 1);
-        } else if (action.key == 'D') {
-          limits_menu_adjust_value(&g_state, -1);
-        } else if (action.key == 'L') {
+        } else if (action.key == 'U' || action.key == 'L') {
           limits_menu_move_field(&g_state, -1);
-        } else if (action.key == 'R') {
+        } else if (action.key == 'D' || action.key == 'R') {
           limits_menu_move_field(&g_state, 1);
         } else if (action.key == 'E') {
-          limits_menu_finish(&g_state, true);
+          limits_menu_start_edit(&g_state);
         } else if (action.key == '<' || action.key == 'M') {
-          limits_menu_finish(&g_state, false);
+          limits_menu_finish(&g_state, true, true);
         }
         break;
       }
@@ -284,6 +399,8 @@ void core_dispatch(const UserAction &action) {
       g_state.openCalibrationConfigEvent = false;
       g_state.calibrationValueConfirmEvent = false;
       g_state.limitsMenuActive = false;
+      g_state.limitsEditActive = false;
+      limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
       break;
 
@@ -304,6 +421,8 @@ void core_dispatch(const UserAction &action) {
       g_state.openLimitsConfigEvent = false;
       g_state.openCalibrationConfigEvent = false;
       g_state.limitsMenuActive = false;
+      g_state.limitsEditActive = false;
+      limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
       break;
 
@@ -326,4 +445,5 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
 

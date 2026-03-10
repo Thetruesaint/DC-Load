@@ -1,5 +1,7 @@
 #include "ui_renderer.h"
 
+#include <cstring>
+
 #include "ui_state_cache.h"
 #include "ui_state_machine.h"
 
@@ -21,6 +23,9 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
   view.limitsMenuField = state.limitsMenuField;
+  view.limitsEditActive = state.limitsEditActive;
+  std::strncpy(view.limitsInputText, state.limitsInputText, sizeof(view.limitsInputText) - 1);
+  view.limitsInputText[sizeof(view.limitsInputText) - 1] = '\0';
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;

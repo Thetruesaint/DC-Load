@@ -14,6 +14,8 @@ struct LimitsRenderCache {
   float powerW;
   float tempC;
   uint8_t field;
+  bool editActive;
+  char inputText[8];
   bool valid;
 };
 
@@ -22,10 +24,8 @@ struct CalibrationRenderCache {
   bool valid;
 };
 
-LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false};
+LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
-bool g_limitsIntroActive = false;
-unsigned long g_limitsIntroUntilMs = 0;
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSection == viewState.pendingConfigSection) return;
@@ -33,16 +33,54 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
   g_lastMenuRootSection = viewState.pendingConfigSection;
 }
 
+void draw_limits_value_or_input(const UiViewState &viewState, int col, int row, float value, char unit, int decimals) {
+  Print_Spaces(col, row, 9);
+  if (viewState.limitsEditActive) {
+    printLCD_S(col, row, String(viewState.limitsInputText));
+    return;
+  }
+  ui_show_value_number(col, row, value, unit, decimals);
+}
+
 void draw_limits_menu(const UiViewState &viewState) {
-  ui_draw_limits_config_template();
+  clearLCD();
+  printLCD(4, 0, F("Set Limits"));
+  printLCD(0, 1, (viewState.limitsMenuField == 0) ? F(">") : F(" "));
+  printLCD(1, 1, F("1-Curr"));
+  if (viewState.limitsMenuField == 0) {
+    Print_Spaces(10, 1, 9);
+    if (viewState.limitsEditActive) {
+      printLCD_S(10, 1, String(viewState.limitsInputText));
+    } else {
+      ui_show_current_limit_value(10, 1, viewState.limitsDraftCurrentA);
+    }
+  } else {
+    ui_show_current_limit_value(10, 1, viewState.limitsDraftCurrentA);
+  }
 
-  ui_show_current_limit_value(12, 1, viewState.limitsDraftCurrentA);
-  ui_show_value_number(12, 2, viewState.limitsDraftPowerW, 'W', 1);
-  ui_show_value_number(12, 3, viewState.limitsDraftTempC, ' ', 0);
+  printLCD(0, 2, (viewState.limitsMenuField == 1) ? F(">") : F(" "));
+  printLCD(1, 2, F("2-Power"));
+  if (viewState.limitsMenuField == 1) {
+    Print_Spaces(11, 2, 8);
+    if (viewState.limitsEditActive) {
+      printLCD_S(11, 2, String(viewState.limitsInputText));
+    } else {
+      ui_show_value_number(11, 2, viewState.limitsDraftPowerW, 'W', 1);
+    }
+  } else {
+    ui_show_value_number(11, 2, viewState.limitsDraftPowerW, 'W', 1);
+  }
 
-  printLCD(11, 1, (viewState.limitsMenuField == 0) ? F("<") : F(" "));
-  printLCD(11, 2, (viewState.limitsMenuField == 1) ? F("<") : F(" "));
-  printLCD(11, 3, (viewState.limitsMenuField == 2) ? F("<") : F(" "));
+  printLCD(0, 3, (viewState.limitsMenuField == 2) ? F(">") : F(" "));
+  printLCD(1, 3, F("3-Temp"));
+  Print_Spaces(12, 3, 6);
+  if (viewState.limitsMenuField == 2 && viewState.limitsEditActive) {
+    printLCD_S(12, 3, String(viewState.limitsInputText));
+  } else {
+    ui_show_value_number(12, 3, viewState.limitsDraftTempC, ' ', 0);
+    printLCDRaw(char(0xDF));
+    printLCDRaw(F("C"));
+  }
 }
 
 void draw_limits_if_needed(const UiViewState &viewState) {
@@ -50,16 +88,20 @@ void draw_limits_if_needed(const UiViewState &viewState) {
       g_limitsCache.field == viewState.limitsMenuField &&
       g_limitsCache.currentA == viewState.limitsDraftCurrentA &&
       g_limitsCache.powerW == viewState.limitsDraftPowerW &&
-      g_limitsCache.tempC == viewState.limitsDraftTempC) {
+      g_limitsCache.tempC == viewState.limitsDraftTempC &&
+      g_limitsCache.editActive == viewState.limitsEditActive &&
+      strcmp(g_limitsCache.inputText, viewState.limitsInputText) == 0) {
     return;
   }
 
   draw_limits_menu(viewState);
-
   g_limitsCache.currentA = viewState.limitsDraftCurrentA;
   g_limitsCache.powerW = viewState.limitsDraftPowerW;
   g_limitsCache.tempC = viewState.limitsDraftTempC;
   g_limitsCache.field = viewState.limitsMenuField;
+  g_limitsCache.editActive = viewState.limitsEditActive;
+  strncpy(g_limitsCache.inputText, viewState.limitsInputText, sizeof(g_limitsCache.inputText) - 1);
+  g_limitsCache.inputText[sizeof(g_limitsCache.inputText) - 1] = '\0';
   g_limitsCache.valid = true;
 }
 
@@ -102,22 +144,9 @@ void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_limits(const UiViewState &viewState) {
   g_limitsCache.valid = false;
-  g_limitsIntroActive = true;
-  g_limitsIntroUntilMs = millis() + 1200UL;
-  ui_draw_limits_summary(
-      viewState.limitsDraftCurrentA,
-      viewState.limitsDraftPowerW,
-      viewState.limitsDraftTempC);
+  draw_limits_if_needed(viewState);
 }
 void screen_update_menu_limits(const UiViewState &viewState) {
-  if (g_limitsIntroActive) {
-    if (millis() < g_limitsIntroUntilMs) {
-      return;
-    }
-    g_limitsIntroActive = false;
-    g_limitsCache.valid = false;
-  }
-
   draw_limits_if_needed(viewState);
 }
 void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; }
@@ -167,8 +196,6 @@ void ui_state_machine_reset() {
   g_lastMenuRootSection = 0;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
-  g_limitsIntroActive = false;
-  g_limitsIntroUntilMs = 0;
 }
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
@@ -184,5 +211,3 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
-
-

@@ -34,12 +34,14 @@ struct SystemState {
   float powerCutOffW;
   float tempCutOffC;
 
-  // Draft values for non-blocking limits menu flow.
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
   float limitsDraftTempC;
+  bool limitsEditActive;
+  char limitsInputText[8];
+  uint8_t limitsInputLength;
+  bool limitsInputHasDecimal;
 
-  // Draft selection for non-blocking calibration setup menu.
   uint8_t calibrationMenuOption;
 
   int cursorPosition;
