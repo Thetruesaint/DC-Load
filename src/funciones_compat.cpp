@@ -74,17 +74,17 @@ void DAC_Control(void) {
 
 //----------------------- Select Constant Current LCD set up ------------------------
 void Const_Current_Mode(void) {
-  legacy_const_current_mode();
+  // Managed by app_runtime/core.
 }
 
 //------------------------ Select Constant Power LCD set up -------------------------
 void Const_Power_Mode(void) {
-  legacy_const_power_mode();
+  // Managed by app_runtime/core.
 }
 
 //---------------------- Select Constant Resistance LCD set up ----------------------
 void Const_Resistance_Mode(void) {
-  legacy_const_resistance_mode();
+  // Managed by app_runtime/core.
 }
 
 //-------------------- Select Battery Capacity Testing LCD set up -------------------
@@ -188,3 +188,4 @@ float timer_getTotalSeconds() {
 String timer_getTime() {
   return legacy_timer_get_time();
 }
+

@@ -56,7 +56,7 @@ const float CAL_MAX_POINT_ERROR_RATIO = 0.20f;
 #ifndef WOKWI_SIMULATION
 #define TEMP_CONVERSION_FACTOR 0.02686202686202686f
 #else
-#define TEMP_CONVERSION_FACTOR 0.09765625f
+#define TEMP_CONVERSION_FACTOR 0.0244140625f
 #endif
 
 //--- EEPROM map ----------------------------------------------------------
@@ -73,3 +73,4 @@ const int ADD_FAN_TEMP_ON = 36;
 const int ADD_FAN_HOLD_MS = 40;
 
 #endif
+
