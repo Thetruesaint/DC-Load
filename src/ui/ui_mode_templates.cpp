@@ -1,5 +1,6 @@
 #include "ui_mode_templates.h"
 
+#include "../config/system_constants.h"
 #include "../ui_lcd.h"
 
 void ui_draw_cc_template() {
@@ -88,24 +89,37 @@ void ui_draw_config_root_menu(uint8_t selectedIndex) {
   printLCD(3, 0, F("Configuration"));
   printLCD(1, 1, F("1-Protection"));
   printLCD(1, 2, F("2-Calibration"));
-  printLCD(1, 3, F("<-Exit"));
+  printLCD(1, 3, F("3-Exit"));
 
-  if (selectedIndex == 0) {
-    printLCD(0, 1, F(">"));
-  } else if (selectedIndex == 1) {
-    printLCD(0, 2, F(">"));
+  if (selectedIndex <= 2) {
+    printLCD(0, 1 + selectedIndex, F(">"));
   }
 }
+
 void ui_draw_protection_menu(uint8_t selectedIndex) {
   clearLCD();
   printLCD(4, 0, F("Protection"));
   printLCD(1, 1, F("1-Limits"));
-  printLCD(1, 3, F("<-Back"));
+  printLCD(1, 2, F("2-Fan Setting"));
+  printLCD(1, 3, F("3-Back"));
 
-  if (selectedIndex == 0) {
-    printLCD(0, 1, F(">"));
+  if (selectedIndex <= 2) {
+    printLCD(0, 1 + selectedIndex, F(">"));
   }
 }
+
+void ui_draw_fan_settings_menu(uint8_t selectedIndex) {
+  clearLCD();
+  printLCD(3, 0, F("Fan Setting"));
+  printLCD(0, 1, F("Temp(C): 40"));
+  printLCD(0, 2, F("Time(seg): 60"));
+  printLCD(1, 3, F("1-Back"));
+
+  if (selectedIndex == 0) {
+    printLCD(0, 3, F(">"));
+  }
+}
+
 void ui_draw_calibration_setup_menu() {
   clearLCD();
   printLCD(4, 0, F("CALIBRATION"));
@@ -262,6 +276,7 @@ void ui_update_transient_list_period(unsigned long periodMs) {
   Print_Spaces(8, 3, 5);
   printLCD_S(8, 3, String(periodMs));
 }
+
 void ui_prepare_value_input_prompt(int col, int row, int width) {
   printLCD(col - 1, row, F(">"));
   Print_Spaces(col, row, width);
@@ -283,6 +298,3 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
-
-
-

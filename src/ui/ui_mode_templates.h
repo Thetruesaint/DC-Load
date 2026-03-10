@@ -14,6 +14,7 @@ void ui_draw_limits_config_template();
 void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCutoff);
 void ui_draw_config_root_menu(uint8_t selectedIndex);
 void ui_draw_protection_menu(uint8_t selectedIndex);
+void ui_draw_fan_settings_menu(uint8_t selectedIndex);
 void ui_draw_calibration_setup_menu();
 void ui_draw_calibration_mode_template(bool voltageMode, bool firstPointTaken);
 void ui_draw_calibration_abort(bool pointsTooClose);
@@ -40,5 +41,3 @@ void ui_show_current_limit_value(int col, int row, float current);
 void ui_clear_mode_screen();
 
 #endif
-
-

@@ -7,6 +7,7 @@ enum class UiScreen : uint8_t {
   Home = 0,
   MenuRoot,
   MenuProtection,
+  MenuFanSettings,
   MenuLimits,
   MenuCalibration
 };
@@ -21,6 +22,7 @@ enum class ConfigMenu : uint8_t {
   None = 0,
   Root,
   Protection,
+  FanSettings,
   Limits,
   Calibration
 };
@@ -54,6 +56,7 @@ struct SystemState {
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
+  uint8_t fanSettingsMenuSelection;
 
   int cursorPosition;
   int functionIndex;
@@ -92,6 +95,7 @@ inline SystemState core_state_make_default() {
   state.limitsMenuField = 0;
   state.calibrationMenuOption = 1;
   state.protectionMenuSelection = 0;
+  state.fanSettingsMenuSelection = 0;
   return state;
 }
 
@@ -107,6 +111,3 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
 }
 
 #endif
-
-
-

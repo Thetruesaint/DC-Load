@@ -13,6 +13,10 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuProtection;
   }
 
+  if (state.currentConfigMenu == ConfigMenu::FanSettings) {
+    return UiScreen::MenuFanSettings;
+  }
+
   if (state.currentConfigMenu == ConfigMenu::Limits || state.limitsMenuActive) {
     return UiScreen::MenuLimits;
   }
@@ -29,5 +33,3 @@ UiScreen core_config_target_screen(const SystemState &state) {
 
   return UiScreen::Home;
 }
-
-
