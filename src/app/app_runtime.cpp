@@ -6,7 +6,6 @@
 #include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_mode_ca.h"
 #include "../legacy/legacy_mode_dispatch.h"
-#include "../legacy/legacy_safety_control.h"
 #include "../ui/ui_cycle_render.h"
 #include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
@@ -20,6 +19,7 @@
 #include "app_loop.h"
 #include "app_measurements_context.h"
 #include "app_mode_state_context.h"
+#include "app_protection.h"
 #include "app_runtime_context.h"
 #include "app_setpoint_context.h"
 #include "app_timing_alerts.h"
@@ -286,7 +286,7 @@ void run_core_managed_transient_list_mode() {
 }
 
 void app_run_cycle() {
-  legacy_temp_control();
+  app_update_fan_control();
   legacy_read_encoder();
 
   if (core_get_state().uiScreen != UiScreen::Home) {
@@ -296,7 +296,7 @@ void app_run_cycle() {
   app_read_keypad(1, 3);
   app_read_load_button();
   legacy_read_volts_current();
-  legacy_check_limits();
+  app_check_limits();
   app_load_output_apply();
 
   if (core_get_state().uiScreen == UiScreen::Home) {

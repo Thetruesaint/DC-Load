@@ -1,21 +1,20 @@
-#include "legacy_safety_control.h"
-
-#include "legacy_base_io.h"
+#include "app_protection.h"
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
-#include "../app/app_load_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_limits_context.h"
-#include "../app/app_measurements_context.h"
-#include "../app/app_setpoint_context.h"
-#include "../app/app_fan_context.h"
-#include "../app/app_value_input.h"
+#include "../legacy/legacy_base_io.h"
+#include "app_fan_context.h"
+#include "app_limits_context.h"
+#include "app_load_context.h"
+#include "app_measurements_context.h"
+#include "app_mode_state_context.h"
+#include "app_runtime_context.h"
+#include "app_setpoint_context.h"
+#include "app_value_input.h"
 
-void legacy_temp_control() {
+void app_update_fan_control() {
   static unsigned long fan_on_time = 0;
   static unsigned long last_tmpchk = 0;
   static bool fans_on = false;
@@ -44,7 +43,7 @@ void legacy_temp_control() {
   }
 }
 
-void legacy_check_limits() {
+void app_check_limits() {
   char message[20] = "";
   float power = app_measurements_power_w();
   float maxpwrdis = constrain(249 - 1.4 * app_measurements_temp_c(), 0, 214);

@@ -27,10 +27,9 @@
 - Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
 - Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
 - IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
-- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites y seteos para el Fan.
+- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites. seteos para el Fan y visualización de los factores y offset ajustados
 
 **Posibles Mejoras SW:**
-- Dejar solo TL?.. TC se puede hacer con TL.
 - Control de velocidad de Fans o test de encendido y apagado
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
 - En CC, CP, CR y BC, con BTN encoder habilito cambiar de valor o de unidad para --CuPo, reqiuere reingenieriaa Cursor_Position
