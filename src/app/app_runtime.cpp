@@ -11,6 +11,7 @@
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
 #include "app_inputs.h"
+#include "app_encoder_setup.h"
 #include "app_io_context.h"
 #include "app_keypad.h"
 #include "app_limits_context.h"
@@ -34,15 +35,15 @@ void prepare_core_managed_home_mode() {
 
   switch (app_mode_state_mode()) {
     case CC:
-      legacy_encoder_status(true, app_limits_current_cutoff());
+      app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
     case CP:
-      legacy_encoder_status(true, app_limits_power_cutoff());
+      app_encoder_setup_begin(app_limits_power_cutoff());
       app_mode_state_set_initialized(true);
       break;
     case CR:
-      legacy_encoder_status(true, MAX_RESISTOR);
+      app_encoder_setup_begin(MAX_RESISTOR);
       app_runtime_set_encoder_position(MAX_RESISTOR * 1000.0f);
       app_setpoint_set_reading(MAX_RESISTOR);
       app_mode_state_set_initialized(true);
@@ -52,7 +53,7 @@ void prepare_core_managed_home_mode() {
       app_timer_reset();
       app_battery_life_ref() = 0.0f;
       app_battery_life_previous_ref() = 0.0f;
-      legacy_encoder_status(true, app_limits_current_cutoff());
+      app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
     case CA:
@@ -61,7 +62,7 @@ void prepare_core_managed_home_mode() {
       ui_draw_calibration_mode_template(
           app_calibration_is_voltage_mode(),
           app_calibration_first_point_taken());
-      legacy_encoder_status(true, app_limits_current_cutoff());
+      app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
     default:
@@ -207,7 +208,7 @@ void run_core_managed_transient_cont_mode() {
     ui_draw_transient_cont_mode_template(lowCurrent, highCurrent, transientPeriod);
     app_load_set_set_current_mA(0.0f);
     app_mode_state_set_initialized(true);
-    legacy_encoder_status(false);
+    app_encoder_setup_reset();
   }
 
   if (!app_load_is_enabled()) {
@@ -248,7 +249,7 @@ void run_core_managed_transient_list_mode() {
   if (!app_mode_state_initialized()) {
     ui_draw_transient_list_mode_template(totalSteps);
     app_mode_state_set_initialized(true);
-    legacy_encoder_status(false);
+    app_encoder_setup_reset();
   }
 
   ui_update_transient_list_step(currentStep);
@@ -312,4 +313,5 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
+
 

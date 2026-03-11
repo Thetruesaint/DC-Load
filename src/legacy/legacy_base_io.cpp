@@ -20,22 +20,6 @@
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
-void legacy_encoder_status(bool encOnOff, float limit) {
-  if (encOnOff) {
-    app_runtime_set_cursor_position(8);
-    app_setpoint_set_reading(0);
-    app_runtime_set_encoder_position(0);
-    app_setpoint_set_max_reading(limit);
-    app_runtime_set_encoder_max(static_cast<unsigned long>(app_setpoint_max_reading() * 1000));
-
-    encoder.clearCount();
-    app_reset_encoder_tracking();
-  } else {
-    encoder.clearCount();
-    app_reset_encoder_tracking();
-  }
-}
-
 void legacy_read_encoder() {
   app_read_encoder();
 }
@@ -147,4 +131,5 @@ void legacy_read_volts_current() {
 
 #endif
 }
+
 

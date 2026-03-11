@@ -3,6 +3,7 @@
 #include "legacy_base_io.h"
 
 #include "../app/app_calibration_context.h"
+#include "../app/app_encoder_setup.h"
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_load_output.h"
@@ -27,7 +28,7 @@ void legacy_calibration_mode() {
     ui_draw_calibration_mode_template(
         app_calibration_is_voltage_mode(),
         app_calibration_first_point_taken());
-    legacy_encoder_status(true, app_limits_current_cutoff());
+    app_encoder_setup_begin(app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -104,3 +105,4 @@ void legacy_calibrate(float realValue) {
       app_calibration_pending_output_factor(),
       app_calibration_pending_output_offset());
 }
+

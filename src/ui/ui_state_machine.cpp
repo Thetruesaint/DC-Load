@@ -394,8 +394,8 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
     printLCD_S(11, 2, String(viewState.transientInputText));
     Print_Spaces(10, 3, 6);
   } else {
-    ui_prepare_value_input_prompt(10, 3, 5);
-    printLCD_S(10, 3, String(viewState.transientInputText));
+    ui_prepare_value_input_prompt(11, 3, 5);
+    printLCD_S(11, 3, String(viewState.transientInputText));
   }
 
   g_transientContSetupCache.stage = viewState.transientSetupStage;
