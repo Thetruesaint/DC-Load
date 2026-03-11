@@ -8,7 +8,6 @@
 #include "legacy/legacy_dac_control.h"
 #include "legacy/legacy_mode_ca.h"
 #include "legacy/legacy_mode_limits.h"
-#include "legacy/legacy_mode_transient.h"
 #include "legacy/legacy_safety_control.h"
 #include "legacy/legacy_timing_buzzer.h"
 
@@ -80,30 +79,6 @@ void Reset_Input_Pointers() {
   app_reset_input_pointers();
 }
 
-void Transient_Cont_Mode(void) {
-  legacy_transient_cont_mode();
-}
-
-void Transient_Cont_Setup(void) {
-  legacy_transient_cont_setup();
-}
-
-void Transcient_Cont_Timing() {
-  legacy_transcient_cont_timing();
-}
-
-void Transient_List_Mode(void) {
-  legacy_transient_list_mode();
-}
-
-void Transient_List_Setup() {
-  legacy_transient_list_setup();
-}
-
-void Transient_List_Timing(void) {
-  legacy_transient_list_timing();
-}
-
 void Config_Limits(void) {
   legacy_config_limits();
 }
@@ -127,3 +102,4 @@ void Calibration_Setup(void) {
 void Calibrate(float realValue) {
   legacy_calibrate(realValue);
 }
+

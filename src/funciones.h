@@ -31,13 +31,6 @@ void timer_reset();
 float timer_getTotalSeconds();
 String timer_getTime();
 void Show_Limits();
-void Transient_Cont_Setup();
-void Transient_Mode_Selection();
-void Transient_Cont_Mode();
-void Transient_List_Mode();
-void Transient_List_Setup();
-void Transcient_Cont_Timing();
-void Transient_List_Timing(void);
 void Check_Limits();
 void Temp_Control();
 void Reset_Input_Pointers();
@@ -50,6 +43,7 @@ void Test_Keypad();
 void Update_TFT(void);
 void printTFT_Number(int col, int row, float number, char unit = '\0', int decimals = 2);
 #endif
+
 
 
 
