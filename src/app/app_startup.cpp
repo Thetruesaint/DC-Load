@@ -10,6 +10,7 @@
 #include "../ui_lcd.h"
 #include "app_fan_context.h"
 #include "app_health_context.h"
+#include "app_limits_bootstrap.h"
 #include "app_limits_context.h"
 #include "app_measurements_context.h"
 #include "app_timing_alerts.h"
@@ -113,16 +114,11 @@ void show_startup_splash() {
 
 void load_runtime_configuration() {
 #ifndef WOKWI_SIMULATION
-  app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF));
-  app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));
-  app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));
+  app_limits_load_from_eeprom();
   app_fan_set_temp_on_c(static_cast<int>(Load_EEPROM(ADD_FAN_TEMP_ON)));
   app_fan_set_hold_ms(static_cast<unsigned long>(Load_EEPROM(ADD_FAN_HOLD_MS)));
 
-  const bool invalidLimits =
-      app_limits_current_cutoff() <= 1 || app_limits_current_cutoff() > 10 ||
-      app_limits_power_cutoff() <= 1 || app_limits_power_cutoff() > 300 ||
-      app_limits_temp_cutoff() < 30 || app_limits_temp_cutoff() > 99;
+  const bool invalidLimits = !app_limits_current_values_are_valid();
 
   const bool invalidFan =
       app_fan_temp_on_c() < MIN_FAN_TEMP_ON_C || app_fan_temp_on_c() > MAX_FAN_TEMP_ON_C ||
@@ -159,4 +155,3 @@ void app_startup_run() {
   show_startup_splash();
   load_runtime_configuration();
 }
-

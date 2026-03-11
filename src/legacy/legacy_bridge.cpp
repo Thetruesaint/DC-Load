@@ -8,6 +8,7 @@
 #include "../app/app_battery_context.h"
 #include "../app/app_calibration_context.h"
 #include "../app/app_fan_context.h"
+#include "../app/app_limits_bootstrap.h"
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
 #include "../app/app_measurements_context.h"
@@ -127,10 +128,7 @@ void legacy_apply_state(const SystemState &state) {
     app_limits_set_power_cutoff(state.limitsDraftPowerW);
     app_limits_set_temp_cutoff(state.limitsDraftTempC);
 
-    Save_EEPROM(ADD_CURRENT_CUT_OFF, app_limits_current_cutoff());
-    Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
-    Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
-
+    app_limits_save_to_eeprom();
     apply_limit_runtime_updates(state);
   }
 

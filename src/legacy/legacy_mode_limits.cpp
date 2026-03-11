@@ -7,7 +7,6 @@
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
 #include "../config/system_constants.h"
-#include "../storage_eeprom.h"
 #include "../ui/ui_mode_templates.h"
 
 void legacy_config_limits() {
@@ -42,13 +41,9 @@ void legacy_config_limits() {
   app_limits_set_temp_cutoff(constrain(app_value_result_get(), 30.0f, MAX_TEMP));
   ui_show_value_text(col, row, String(app_limits_temp_cutoff()));
 
-  Save_EEPROM(ADD_CURRENT_CUT_OFF, app_limits_current_cutoff());
-  Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
-  Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
+  app_limits_save_to_eeprom();
 
   app_limits_show_summary();
   delay(2000);
   app_mode_state_set_initialized(false);
 }
-
-
