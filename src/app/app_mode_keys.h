@@ -3,6 +3,7 @@
 
 enum class MscKeyDecision {
   Continue = 0,
+  Consumed,
   ExitMode,
   OpenConfig
 };

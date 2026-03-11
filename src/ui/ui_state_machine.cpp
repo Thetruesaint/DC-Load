@@ -53,12 +53,22 @@ struct BatterySetupRenderCache {
   bool valid;
 };
 
+struct TransientContSetupRenderCache {
+  uint8_t stage;
+  float lowCurrentA;
+  float highCurrentA;
+  float periodMs;
+  char inputText[8];
+  bool valid;
+};
+
 HomeRenderCache g_homeCache = {0, 0.0f, {'\0'}, false};
 ProtectionRenderCache g_protectionCache = {0, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false};
+TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false};
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -328,6 +338,63 @@ void screen_update_battery_setup_cells(const UiViewState &viewState) {
 
 void screen_render_battery_setup_cells(const UiViewState &viewState) { (void)viewState; }
 
+void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
+  if (g_transientContSetupCache.valid &&
+      g_transientContSetupCache.stage == viewState.transientSetupStage &&
+      g_transientContSetupCache.lowCurrentA == viewState.transientLowCurrentA &&
+      g_transientContSetupCache.highCurrentA == viewState.transientHighCurrentA &&
+      g_transientContSetupCache.periodMs == viewState.transientPeriodMs &&
+      std::strcmp(g_transientContSetupCache.inputText, viewState.transientInputText) == 0) {
+    return;
+  }
+
+  ui_draw_transient_cont_setup_template();
+
+  if (viewState.transientSetupStage > 0) {
+    ui_show_value_number(11, 1, viewState.transientLowCurrentA, 'A', 3);
+  } else {
+    Print_Spaces(10, 1, 10);
+  }
+
+  if (viewState.transientSetupStage > 1) {
+    ui_show_value_number(11, 2, viewState.transientHighCurrentA, 'A', 3);
+  } else {
+    Print_Spaces(10, 2, 10);
+  }
+
+  if (viewState.transientSetupStage == 0) {
+    ui_prepare_value_input_prompt(11, 1, 5);
+    printLCD_S(11, 1, String(viewState.transientInputText));
+    Print_Spaces(10, 2, 10);
+    Print_Spaces(10, 3, 6);
+  } else if (viewState.transientSetupStage == 1) {
+    ui_prepare_value_input_prompt(11, 2, 5);
+    printLCD_S(11, 2, String(viewState.transientInputText));
+    Print_Spaces(10, 3, 6);
+  } else {
+    ui_prepare_value_input_prompt(10, 3, 5);
+    printLCD_S(10, 3, String(viewState.transientInputText));
+  }
+
+  g_transientContSetupCache.stage = viewState.transientSetupStage;
+  g_transientContSetupCache.lowCurrentA = viewState.transientLowCurrentA;
+  g_transientContSetupCache.highCurrentA = viewState.transientHighCurrentA;
+  g_transientContSetupCache.periodMs = viewState.transientPeriodMs;
+  std::strncpy(g_transientContSetupCache.inputText, viewState.transientInputText, sizeof(g_transientContSetupCache.inputText) - 1);
+  g_transientContSetupCache.inputText[sizeof(g_transientContSetupCache.inputText) - 1] = '\0';
+  g_transientContSetupCache.valid = true;
+}
+
+void screen_enter_transient_cont_setup(const UiViewState &viewState) {
+  g_transientContSetupCache.valid = false;
+  draw_transient_cont_setup_if_needed(viewState);
+}
+
+void screen_update_transient_cont_setup(const UiViewState &viewState) {
+  draw_transient_cont_setup_if_needed(viewState);
+}
+
+void screen_render_transient_cont_setup(const UiViewState &viewState) { (void)viewState; }
 void screen_enter_menu_root(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   draw_menu_root_if_needed(viewState);
@@ -389,6 +456,9 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::BatterySetupTask: screen_enter_battery_setup_task(viewState); break;
     case UiScreen::BatterySetupCustomCutoff: screen_enter_battery_setup_custom(viewState); break;
     case UiScreen::BatterySetupCellCount: screen_enter_battery_setup_cells(viewState); break;
+    case UiScreen::TransientContSetupLow:
+    case UiScreen::TransientContSetupHigh:
+    case UiScreen::TransientContSetupPeriod: screen_enter_transient_cont_setup(viewState); break;
     case UiScreen::MenuRoot: screen_enter_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_enter_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_enter_menu_fan_settings(viewState); break;
@@ -404,6 +474,9 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::BatterySetupTask: screen_update_battery_setup_task(viewState); break;
     case UiScreen::BatterySetupCustomCutoff: screen_update_battery_setup_custom(viewState); break;
     case UiScreen::BatterySetupCellCount: screen_update_battery_setup_cells(viewState); break;
+    case UiScreen::TransientContSetupLow:
+    case UiScreen::TransientContSetupHigh:
+    case UiScreen::TransientContSetupPeriod: screen_update_transient_cont_setup(viewState); break;
     case UiScreen::MenuRoot: screen_update_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_update_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_update_menu_fan_settings(viewState); break;
@@ -419,6 +492,9 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::BatterySetupTask: screen_render_battery_setup_task(viewState); break;
     case UiScreen::BatterySetupCustomCutoff: screen_render_battery_setup_custom(viewState); break;
     case UiScreen::BatterySetupCellCount: screen_render_battery_setup_cells(viewState); break;
+    case UiScreen::TransientContSetupLow:
+    case UiScreen::TransientContSetupHigh:
+    case UiScreen::TransientContSetupPeriod: screen_render_transient_cont_setup(viewState); break;
     case UiScreen::MenuRoot: screen_render_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_render_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_render_menu_fan_settings(viewState); break;
@@ -453,3 +529,9 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
+
+
+
+
+

@@ -22,6 +22,9 @@ struct UiViewState {
   float batteryCutoffVolts;
   float batteryLife;
   char batteryType[8];
+  float transientLowCurrentA;
+  float transientHighCurrentA;
+  float transientPeriodMs;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
@@ -37,6 +40,8 @@ struct UiViewState {
 
   uint8_t batterySetupStage;
   char batteryInputText[8];
+  uint8_t transientSetupStage;
+  char transientInputText[8];
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
@@ -53,6 +58,7 @@ inline UiViewState ui_view_state_make_default() {
   state.protectionMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
+  state.transientSetupStage = 0;
   return state;
 }
 

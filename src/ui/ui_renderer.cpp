@@ -25,6 +25,9 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.batteryLife = state.batteryLife;
   std::strncpy(view.batteryType, state.batteryType, sizeof(view.batteryType) - 1);
   view.batteryType[sizeof(view.batteryType) - 1] = '\0';
+  view.transientLowCurrentA = state.transientLowCurrentA;
+  view.transientHighCurrentA = state.transientHighCurrentA;
+  view.transientPeriodMs = state.transientPeriodMs;
   view.limitsDraftCurrentA = state.limitsDraftCurrentA;
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
@@ -40,6 +43,9 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.batterySetupStage = state.batterySetupStage;
   std::strncpy(view.batteryInputText, state.batteryInputText, sizeof(view.batteryInputText) - 1);
   view.batteryInputText[sizeof(view.batteryInputText) - 1] = '\0';
+  view.transientSetupStage = state.transientSetupStage;
+  std::strncpy(view.transientInputText, state.transientInputText, sizeof(view.transientInputText) - 1);
+  view.transientInputText[sizeof(view.transientInputText) - 1] = '\0';
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;
@@ -54,4 +60,3 @@ void ui_render(const SystemState &state) {
   ui_state_cache_set(view);
   ui_state_machine_tick(state.uiScreen, view);
 }
-

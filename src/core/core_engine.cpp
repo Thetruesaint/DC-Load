@@ -139,6 +139,7 @@ void config_menu_enter(SystemState *state, ConfigMenu menu, ConfigMenu parent) {
 bool should_reset_mode_init_on_menu_exit(const SystemState &state) {
   if (state.mode == 0 || state.mode == 1 || state.mode == 2) return false;
   if (state.mode == 3 && state.modeConfigured) return false;
+  if (state.mode == 4 && state.modeConfigured) return false;
   return true;
 }
 
@@ -279,6 +280,80 @@ void battery_setup_finish_cells(SystemState *state) {
   battery_input_reset(state);
 }
 
+void transient_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->transientInputText[0] = '\0';
+  state->transientInputLength = 0;
+  state->transientInputHasDecimal = false;
+}
+
+void transient_cont_setup_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->transientSetupStage = 0;
+  state->transientLowCurrentA = state->currentCutOffA;
+  state->transientHighCurrentA = state->currentCutOffA;
+  state->transientPeriodMs = 1000.0f;
+  transient_input_reset(state);
+}
+
+bool transient_input_append(SystemState *state, char key) {
+  if (state == nullptr) return false;
+  if (state->transientSetupStage < 2) {
+    if (key == '.') {
+      if (state->transientInputHasDecimal || state->transientInputLength >= 5) return false;
+      state->transientInputText[state->transientInputLength++] = '.';
+      state->transientInputText[state->transientInputLength] = '\0';
+      state->transientInputHasDecimal = true;
+      return true;
+    }
+    if (key < '0' || key > '9' || state->transientInputLength >= 5) return false;
+    state->transientInputText[state->transientInputLength++] = key;
+    state->transientInputText[state->transientInputLength] = '\0';
+    return true;
+  }
+  if (key < '0' || key > '9' || state->transientInputLength >= 5) return false;
+  state->transientInputText[state->transientInputLength++] = key;
+  state->transientInputText[state->transientInputLength] = '\0';
+  return true;
+}
+
+bool transient_input_backspace(SystemState *state) {
+  if (state == nullptr || state->transientInputLength == 0) return false;
+  state->transientInputLength--;
+  if (state->transientInputText[state->transientInputLength] == '.') {
+    state->transientInputHasDecimal = false;
+  }
+  state->transientInputText[state->transientInputLength] = '\0';
+  return true;
+}
+
+void transient_cont_setup_commit(SystemState *state) {
+  if (state == nullptr || state->transientInputLength == 0) return;
+
+  if (state->transientSetupStage == 0) {
+    const float value = constrain(static_cast<float>(atof(state->transientInputText)), 0.0f, state->currentCutOffA);
+    state->transientLowCurrentA = value;
+    state->transientSetupStage = 1;
+    transient_input_reset(state);
+    return;
+  }
+
+  if (state->transientSetupStage == 1) {
+    const float value = constrain(static_cast<float>(atof(state->transientInputText)), 0.0f, state->currentCutOffA);
+    state->transientHighCurrentA = value;
+    state->transientSetupStage = 2;
+    transient_input_reset(state);
+    return;
+  }
+
+  const float value = static_cast<float>(atoi(state->transientInputText));
+  if (value < 1.0f || value > 99999.0f) return;
+  state->transientPeriodMs = value;
+  state->modeConfigured = true;
+  state->modeInitialized = false;
+  state->transientSetupStage = 0;
+  transient_input_reset(state);
+}
 bool numeric_input_append_digit(char *buffer, uint8_t *length, uint8_t maxDigits, char key) {
   if (buffer == nullptr || length == nullptr || key < '0' || key > '9') return false;
   if (*length >= maxDigits) return false;
@@ -617,6 +692,14 @@ void core_sync_from_legacy(const SystemState &state) {
   std::strncpy(batteryInputText, g_state.batteryInputText, sizeof(batteryInputText) - 1);
   const uint8_t batteryInputLength = g_state.batteryInputLength;
   const bool batteryInputHasDecimal = g_state.batteryInputHasDecimal;
+  const uint8_t transientSetupStage = g_state.transientSetupStage;
+  const float transientLowCurrentA = g_state.transientLowCurrentA;
+  const float transientHighCurrentA = g_state.transientHighCurrentA;
+  const float transientPeriodMs = g_state.transientPeriodMs;
+  char transientInputText[8] = {0};
+  std::strncpy(transientInputText, g_state.transientInputText, sizeof(transientInputText) - 1);
+  const uint8_t transientInputLength = g_state.transientInputLength;
+  const bool transientInputHasDecimal = g_state.transientInputHasDecimal;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -652,6 +735,14 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.batteryInputText[sizeof(g_state.batteryInputText) - 1] = '\0';
   g_state.batteryInputLength = batteryInputLength;
   g_state.batteryInputHasDecimal = batteryInputHasDecimal;
+  g_state.transientSetupStage = transientSetupStage;
+  g_state.transientLowCurrentA = transientLowCurrentA;
+  g_state.transientHighCurrentA = transientHighCurrentA;
+  g_state.transientPeriodMs = transientPeriodMs;
+  std::strncpy(g_state.transientInputText, transientInputText, sizeof(g_state.transientInputText) - 1);
+  g_state.transientInputText[sizeof(g_state.transientInputText) - 1] = '\0';
+  g_state.transientInputLength = transientInputLength;
+  g_state.transientInputHasDecimal = transientInputHasDecimal;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -711,6 +802,13 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::BatterySetupCellCount) {
         battery_setup_finish_cells(&g_state);
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::TransientContSetupLow ||
+          g_state.uiScreen == UiScreen::TransientContSetupHigh ||
+          g_state.uiScreen == UiScreen::TransientContSetupPeriod) {
+        transient_cont_setup_commit(&g_state);
         break;
       }
       if (g_state.uiScreen == UiScreen::MenuRoot) {
@@ -807,6 +905,55 @@ void core_dispatch(const UserAction &action) {
           battery_input_reset(&g_state);
         } else {
           (void)numeric_input_append_digit(g_state.batteryInputText, &g_state.batteryInputLength, 1, action.key);
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::TransientContSetupLow ||
+          g_state.uiScreen == UiScreen::TransientContSetupHigh ||
+          g_state.uiScreen == UiScreen::TransientContSetupPeriod) {
+        if (action.key == '<') {
+          if (!transient_input_backspace(&g_state) && g_state.transientSetupStage > 0) {
+            g_state.transientSetupStage--;
+            transient_input_reset(&g_state);
+          }
+        } else if (action.key == 'E') {
+          transient_cont_setup_commit(&g_state);
+        } else if (action.key == 'M') {
+          if (g_state.transientSetupStage > 0) {
+            g_state.transientSetupStage--;
+            transient_input_reset(&g_state);
+          } else {
+            core_mode_apply_selection(&g_state, false, action.key);
+            g_state.pendingConfigSection = ConfigSection::None;
+            g_state.menuRootSelection = 0;
+            g_state.protectionMenuSelection = 0;
+            g_state.fanSettingsMenuSelection = 0;
+            g_state.currentConfigMenu = ConfigMenu::None;
+            g_state.parentConfigMenu = ConfigMenu::None;
+            g_state.openLimitsConfigEvent = false;
+            g_state.openCalibrationConfigEvent = false;
+            g_state.calibrationValueConfirmEvent = false;
+            g_state.limitsMenuActive = false;
+            g_state.limitsEditActive = false;
+            limits_input_reset(&g_state);
+            g_state.calibrationMenuActive = false;
+            g_state.fanEditActive = false;
+            fan_input_reset(&g_state);
+            battery_setup_begin(&g_state);
+            if (g_state.mode != 3) {
+              battery_type_set(&g_state, "");
+              g_state.batteryCutoffVolts = 0.0f;
+            }
+            if (g_state.mode == 4) {
+              transient_cont_setup_begin(&g_state);
+            } else {
+              transient_input_reset(&g_state);
+              g_state.transientSetupStage = 0;
+            }
+          }
+        } else {
+          (void)transient_input_append(&g_state, action.key);
         }
         break;
       }
@@ -1027,6 +1174,14 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
+
+
+
+
+
+
 
 
 

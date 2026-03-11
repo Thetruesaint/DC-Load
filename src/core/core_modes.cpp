@@ -28,6 +28,14 @@ UiScreen battery_setup_target_screen(const SystemState &state) {
   }
 }
 
+UiScreen transient_cont_setup_target_screen(const SystemState &state) {
+  switch (state.transientSetupStage) {
+    case 1: return UiScreen::TransientContSetupHigh;
+    case 2: return UiScreen::TransientContSetupPeriod;
+    default: return UiScreen::TransientContSetupLow;
+  }
+}
+
 int cursor_min_by_mode(uint8_t mode) {
   return (mode == MODE_CP || mode == MODE_CR) ? 6 : 8;
 }
@@ -153,6 +161,15 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
       case 5: state->mode = MODE_TL; state->modeConfigured = false; break;
       default: break;
     }
+    if (state->mode == MODE_TC) {
+      state->transientSetupStage = 0;
+      state->transientLowCurrentA = state->currentCutOffA;
+      state->transientHighCurrentA = state->currentCutOffA;
+      state->transientPeriodMs = 1000.0f;
+      state->transientInputText[0] = '\0';
+      state->transientInputLength = 0;
+      state->transientInputHasDecimal = false;
+    }
     return;
   }
 
@@ -166,6 +183,16 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
     case 'C': state->mode = MODE_CA; state->modeConfigured = false; break;
     case '<': state->modeConfigured = false; break;
     default: break;
+  }
+
+  if (state->mode == MODE_TC) {
+    state->transientSetupStage = 0;
+    state->transientLowCurrentA = state->currentCutOffA;
+    state->transientHighCurrentA = state->currentCutOffA;
+    state->transientPeriodMs = 1000.0f;
+    state->transientInputText[0] = '\0';
+    state->transientInputLength = 0;
+    state->transientInputHasDecimal = false;
   }
 }
 
@@ -183,5 +210,13 @@ void core_mode_update_ui_screen(SystemState *state) {
     return;
   }
 
+  if (state->mode == MODE_TC && !state->modeConfigured) {
+    state->uiScreen = transient_cont_setup_target_screen(*state);
+    return;
+  }
+
   state->uiScreen = UiScreen::Home;
 }
+
+
+

@@ -8,6 +8,9 @@ enum class UiScreen : uint8_t {
   BatterySetupTask,
   BatterySetupCustomCutoff,
   BatterySetupCellCount,
+  TransientContSetupLow,
+  TransientContSetupHigh,
+  TransientContSetupPeriod,
   MenuRoot,
   MenuProtection,
   MenuFanSettings,
@@ -52,6 +55,9 @@ struct SystemState {
   float batteryCutoffVolts;
   float batteryLife;
   char batteryType[8];
+  float transientLowCurrentA;
+  float transientHighCurrentA;
+  float transientPeriodMs;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
@@ -71,6 +77,11 @@ struct SystemState {
   char batteryInputText[8];
   uint8_t batteryInputLength;
   bool batteryInputHasDecimal;
+
+  uint8_t transientSetupStage;
+  char transientInputText[8];
+  uint8_t transientInputLength;
+  bool transientInputHasDecimal;
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
@@ -117,6 +128,7 @@ inline SystemState core_state_make_default() {
   state.protectionMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
+  state.transientSetupStage = 0;
   return state;
 }
 

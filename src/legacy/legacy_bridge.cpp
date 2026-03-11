@@ -1,25 +1,27 @@
 #include "legacy_bridge.h"
+
 #include <cstring>
 
 #include "legacy_mode_ca.h"
 #include "legacy_mode_limits.h"
 
-#include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
-#include "../app/app_load_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_limits_context.h"
-#include "../app/app_measurements_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_mode_setpoint_context.h"
-#include "../app/app_setpoint_context.h"
-#include "../app/app_value_result_context.h"
+#include "../app/app_battery_context.h"
 #include "../app/app_calibration_context.h"
 #include "../app/app_fan_context.h"
-#include "../app/app_battery_context.h"
+#include "../app/app_limits_context.h"
+#include "../app/app_load_context.h"
+#include "../app/app_measurements_context.h"
+#include "../app/app_mode_setpoint_context.h"
+#include "../app/app_mode_state_context.h"
+#include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_context.h"
+#include "../app/app_transient_context.h"
+#include "../app/app_value_result_context.h"
+#include "../config/system_constants.h"
 #include "../core/core_config_flow.h"
-#include "../ui/ui_mode_templates.h"
 #include "../funciones.h"
+#include "../hw/hw_objects.h"
+#include "../ui/ui_mode_templates.h"
 
 namespace {
 void apply_limit_runtime_updates(const SystemState &state) {
@@ -67,6 +69,9 @@ SystemState legacy_capture_state() {
   state.batteryLife = app_battery_life_ref();
   std::strncpy(state.batteryType, app_battery_type_ref().c_str(), sizeof(state.batteryType) - 1);
   state.batteryType[sizeof(state.batteryType) - 1] = '\0';
+  state.transientLowCurrentA = app_transient_low_current_ref();
+  state.transientHighCurrentA = app_transient_high_current_ref();
+  state.transientPeriodMs = static_cast<float>(app_transient_period_ref());
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 
@@ -98,6 +103,9 @@ void legacy_apply_state(const SystemState &state) {
   app_load_set_enabled(state.loadEnabled);
   app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
   app_battery_type_ref() = String(state.batteryType);
+  app_transient_low_current_ref() = state.transientLowCurrentA;
+  app_transient_high_current_ref() = state.transientHighCurrentA;
+  app_transient_period_ref() = static_cast<unsigned long>(state.transientPeriodMs);
 
   if (state.limitsSaveEvent) {
     app_limits_set_current_cutoff(state.limitsDraftCurrentA);
@@ -158,10 +166,6 @@ void legacy_apply_state(const SystemState &state) {
     app_mode_setpoint_set_resistance_ohm(state.setResistance_Ohm);
   }
 
-  if (!app_load_is_enabled()) {
-    app_load_set_set_current_mA(0.0f);
-  }
-
 #ifndef WOKWI_SIMULATION
   if (initialized && previous != app_load_is_enabled() && !app_load_is_enabled()) {
     dac.setVoltage(0, false);
@@ -171,5 +175,3 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
-
-

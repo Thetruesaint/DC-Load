@@ -147,11 +147,8 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
   const char* currentInput = app_input_text();
 
   if (!visible) {
-    if (rowWasVisible) {
-      Print_Spaces(inputCol, inputRow, 6);
-      rowWasVisible = false;
-      lastInput[0] = '\0';
-    }
+    rowWasVisible = false;
+    lastInput[0] = '\0';
     lastMode = mode;
     return;
   }
@@ -267,6 +264,7 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
+
 
 
 
