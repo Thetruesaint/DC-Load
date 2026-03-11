@@ -3,7 +3,6 @@
 #include "../config/system_constants.h"
 #include "../core/core_engine.h"
 #include "../hw/hw_objects.h"
-#include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_mode_ca.h"
 #include "../legacy/legacy_mode_dispatch.h"
 #include "../ui/ui_cycle_render.h"
@@ -19,6 +18,7 @@
 #include "app_load_output.h"
 #include "app_loop.h"
 #include "app_measurements_context.h"
+#include "app_measurements_poll.h"
 #include "app_mode_state_context.h"
 #include "app_protection.h"
 #include "app_runtime_context.h"
@@ -297,7 +297,7 @@ void app_run_cycle() {
 
   app_read_keypad(1, 3);
   app_read_load_button();
-  legacy_read_volts_current();
+  app_measurements_poll();
   app_check_limits();
   app_load_output_apply();
 
@@ -314,6 +314,7 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
+
 
 
 

@@ -2,7 +2,6 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../legacy/legacy_base_io.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
 #include "app_fan_context.h"

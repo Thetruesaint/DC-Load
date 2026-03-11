@@ -1,6 +1,5 @@
 #include "legacy_mode_ca.h"
 
-#include "legacy_base_io.h"
 
 #include "../app/app_calibration_context.h"
 #include "../app/app_encoder_setup.h"
