@@ -20,10 +20,6 @@
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
-void legacy_read_encoder() {
-  app_read_encoder();
-}
-
 void legacy_cursor_position() {
   static uint32_t lastPressTime = 0;
   constexpr int unitPosition = 8;
@@ -131,5 +127,6 @@ void legacy_read_volts_current() {
 
 #endif
 }
+
 
 

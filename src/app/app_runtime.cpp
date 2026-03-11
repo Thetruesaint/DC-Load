@@ -288,7 +288,7 @@ void run_core_managed_transient_list_mode() {
 
 void app_run_cycle() {
   app_update_fan_control();
-  legacy_read_encoder();
+  app_read_encoder();
 
   if (core_get_state().uiScreen != UiScreen::Home) {
     app_read_encoder_button();
@@ -313,5 +313,6 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
+
 
 
