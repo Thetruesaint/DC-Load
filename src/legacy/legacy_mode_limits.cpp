@@ -1,5 +1,6 @@
 #include "legacy_mode_limits.h"
 
+#include "../app/app_limits_bootstrap.h"
 #include "../app/app_limits_context.h"
 #include "../app/app_load_output.h"
 #include "../app/app_mode_state_context.h"
@@ -11,7 +12,7 @@
 
 void legacy_config_limits() {
   app_load_output_off();
-  legacy_show_limits();
+  app_limits_show_summary();
   delay(2000);
 
   ui_draw_limits_config_template();
@@ -45,20 +46,9 @@ void legacy_config_limits() {
   Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
   Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
 
-  legacy_show_limits();
+  app_limits_show_summary();
   delay(2000);
   app_mode_state_set_initialized(false);
 }
 
-void legacy_show_limits() {
-#ifndef WOKWI_SIMULATION
-  app_limits_set_current_cutoff(Load_EEPROM(ADD_CURRENT_CUT_OFF));
-  app_limits_set_power_cutoff(Load_EEPROM(ADD_POWER_CUT_OFF));
-  app_limits_set_temp_cutoff(Load_EEPROM(ADD_TEMP_CUT_OFF));
-#endif
 
-  ui_draw_limits_summary(
-      app_limits_current_cutoff(),
-      app_limits_power_cutoff(),
-      app_limits_temp_cutoff());
-}

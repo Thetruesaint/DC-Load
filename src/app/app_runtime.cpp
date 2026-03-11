@@ -4,7 +4,6 @@
 #include "../core/core_engine.h"
 #include "../hw/hw_objects.h"
 #include "../legacy/legacy_mode_ca.h"
-#include "../legacy/legacy_mode_dispatch.h"
 #include "../ui/ui_cycle_render.h"
 #include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
@@ -308,12 +307,12 @@ void app_run_cycle() {
     run_core_managed_calibration_mode();
     run_core_managed_transient_cont_mode();
     run_core_managed_transient_list_mode();
-    legacy_run_mode_logic();
   }
 
   app_tick();
   ui_render_cycle();
 }
+
 
 
 
