@@ -11,6 +11,8 @@ enum class UiScreen : uint8_t {
   TransientContSetupLow,
   TransientContSetupHigh,
   TransientContSetupPeriod,
+  TransientListSetupCount,
+  TransientListSetupStep,
   MenuRoot,
   MenuProtection,
   MenuFanSettings,
@@ -82,6 +84,15 @@ struct SystemState {
   char transientInputText[8];
   uint8_t transientInputLength;
   bool transientInputHasDecimal;
+  uint8_t transientListSetupStage;
+  uint8_t transientListDraftStepCount;
+  uint8_t transientListDraftStepIndex;
+  uint8_t transientListDraftField;
+  float transientListDraftCurrentsA[10];
+  float transientListDraftPeriodsMs[10];
+  char transientListInputText[8];
+  uint8_t transientListInputLength;
+  bool transientListInputHasDecimal;
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
@@ -129,6 +140,8 @@ inline SystemState core_state_make_default() {
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;
+  state.transientListSetupStage = 0;
+  state.transientListDraftField = 0;
   return state;
 }
 
@@ -145,3 +158,4 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
 }
 
 #endif
+

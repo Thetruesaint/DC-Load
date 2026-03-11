@@ -42,6 +42,13 @@ struct UiViewState {
   char batteryInputText[8];
   uint8_t transientSetupStage;
   char transientInputText[8];
+  uint8_t transientListSetupStage;
+  uint8_t transientListDraftStepCount;
+  uint8_t transientListDraftStepIndex;
+  uint8_t transientListDraftField;
+  float transientListCurrentA;
+  float transientListCurrentPeriodMs;
+  char transientListInputText[8];
 
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
@@ -59,7 +66,10 @@ inline UiViewState ui_view_state_make_default() {
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;
+  state.transientListSetupStage = 0;
+  state.transientListDraftField = 0;
   return state;
 }
 
 #endif
+

@@ -354,6 +354,91 @@ void transient_cont_setup_commit(SystemState *state) {
   state->transientSetupStage = 0;
   transient_input_reset(state);
 }
+
+void transient_list_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->transientListInputText[0] = '\0';
+  state->transientListInputLength = 0;
+  state->transientListInputHasDecimal = false;
+}
+
+bool transient_list_input_append(SystemState *state, char key) {
+  if (state == nullptr) return false;
+  if (state->transientListSetupStage == 0) {
+    if (key < '0' || key > '9' || state->transientListInputLength >= 2) return false;
+    state->transientListInputText[state->transientListInputLength++] = key;
+    state->transientListInputText[state->transientListInputLength] = '\0';
+    return true;
+  }
+
+  if (state->transientListDraftField == 0) {
+    if (key == '.') {
+      if (state->transientListInputHasDecimal || state->transientListInputLength >= 5) return false;
+      state->transientListInputText[state->transientListInputLength++] = '.';
+      state->transientListInputText[state->transientListInputLength] = '\0';
+      state->transientListInputHasDecimal = true;
+      return true;
+    }
+    if (key < '0' || key > '9' || state->transientListInputLength >= 5) return false;
+    state->transientListInputText[state->transientListInputLength++] = key;
+    state->transientListInputText[state->transientListInputLength] = '\0';
+    return true;
+  }
+
+  if (key < '0' || key > '9' || state->transientListInputLength >= 5) return false;
+  state->transientListInputText[state->transientListInputLength++] = key;
+  state->transientListInputText[state->transientListInputLength] = '\0';
+  return true;
+}
+
+bool transient_list_input_backspace(SystemState *state) {
+  if (state == nullptr || state->transientListInputLength == 0) return false;
+  state->transientListInputLength--;
+  if (state->transientListInputText[state->transientListInputLength] == '.') {
+    state->transientListInputHasDecimal = false;
+  }
+  state->transientListInputText[state->transientListInputLength] = '\0';
+  return true;
+}
+
+void transient_list_setup_commit(SystemState *state) {
+  if (state == nullptr || state->transientListInputLength == 0) return;
+
+  if (state->transientListSetupStage == 0) {
+    const int steps = atoi(state->transientListInputText);
+    if (steps < 2 || steps > 10) return;
+    state->transientListDraftStepCount = static_cast<uint8_t>(steps);
+    state->transientListSetupStage = 1;
+    state->transientListDraftStepIndex = 0;
+    state->transientListDraftField = 0;
+    transient_list_input_reset(state);
+    return;
+  }
+
+  if (state->transientListDraftField == 0) {
+    const float current = constrain(static_cast<float>(atof(state->transientListInputText)), 0.0f, state->currentCutOffA);
+    state->transientListDraftCurrentsA[state->transientListDraftStepIndex] = current;
+    state->transientListDraftField = 1;
+    transient_list_input_reset(state);
+    return;
+  }
+
+  const float period = static_cast<float>(atoi(state->transientListInputText));
+  if (period < 1.0f || period > 99999.0f) return;
+  state->transientListDraftPeriodsMs[state->transientListDraftStepIndex] = period;
+  transient_list_input_reset(state);
+
+  if ((state->transientListDraftStepIndex + 1) < state->transientListDraftStepCount) {
+    state->transientListDraftStepIndex++;
+    state->transientListDraftField = 0;
+    return;
+  }
+
+  state->modeConfigured = true;
+  state->modeInitialized = false;
+  state->transientListSetupStage = 0;
+  state->transientListDraftField = 0;
+}
 bool numeric_input_append_digit(char *buffer, uint8_t *length, uint8_t maxDigits, char key) {
   if (buffer == nullptr || length == nullptr || key < '0' || key > '9') return false;
   if (*length >= maxDigits) return false;
@@ -700,6 +785,20 @@ void core_sync_from_legacy(const SystemState &state) {
   std::strncpy(transientInputText, g_state.transientInputText, sizeof(transientInputText) - 1);
   const uint8_t transientInputLength = g_state.transientInputLength;
   const bool transientInputHasDecimal = g_state.transientInputHasDecimal;
+  const uint8_t transientListSetupStage = g_state.transientListSetupStage;
+  const uint8_t transientListDraftStepCount = g_state.transientListDraftStepCount;
+  const uint8_t transientListDraftStepIndex = g_state.transientListDraftStepIndex;
+  const uint8_t transientListDraftField = g_state.transientListDraftField;
+  float transientListDraftCurrentsA[10] = {0};
+  float transientListDraftPeriodsMs[10] = {0};
+  for (int i = 0; i < 10; ++i) {
+    transientListDraftCurrentsA[i] = g_state.transientListDraftCurrentsA[i];
+    transientListDraftPeriodsMs[i] = g_state.transientListDraftPeriodsMs[i];
+  }
+  char transientListInputText[8] = {0};
+  std::strncpy(transientListInputText, g_state.transientListInputText, sizeof(transientListInputText) - 1);
+  const uint8_t transientListInputLength = g_state.transientListInputLength;
+  const bool transientListInputHasDecimal = g_state.transientListInputHasDecimal;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -743,6 +842,18 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.transientInputText[sizeof(g_state.transientInputText) - 1] = '\0';
   g_state.transientInputLength = transientInputLength;
   g_state.transientInputHasDecimal = transientInputHasDecimal;
+  g_state.transientListSetupStage = transientListSetupStage;
+  g_state.transientListDraftStepCount = transientListDraftStepCount;
+  g_state.transientListDraftStepIndex = transientListDraftStepIndex;
+  g_state.transientListDraftField = transientListDraftField;
+  for (int i = 0; i < 10; ++i) {
+    g_state.transientListDraftCurrentsA[i] = transientListDraftCurrentsA[i];
+    g_state.transientListDraftPeriodsMs[i] = transientListDraftPeriodsMs[i];
+  }
+  std::strncpy(g_state.transientListInputText, transientListInputText, sizeof(g_state.transientListInputText) - 1);
+  g_state.transientListInputText[sizeof(g_state.transientListInputText) - 1] = '\0';
+  g_state.transientListInputLength = transientListInputLength;
+  g_state.transientListInputHasDecimal = transientListInputHasDecimal;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -811,6 +922,13 @@ void core_dispatch(const UserAction &action) {
         transient_cont_setup_commit(&g_state);
         break;
       }
+
+      if (g_state.uiScreen == UiScreen::TransientListSetupCount ||
+          g_state.uiScreen == UiScreen::TransientListSetupStep) {
+        transient_list_setup_commit(&g_state);
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         config_menu_activate_selection(&g_state, ConfigMenu::Root);
         break;
@@ -954,6 +1072,62 @@ void core_dispatch(const UserAction &action) {
           }
         } else {
           (void)transient_input_append(&g_state, action.key);
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::TransientListSetupCount ||
+          g_state.uiScreen == UiScreen::TransientListSetupStep) {
+        if (action.key == '<') {
+          if (!transient_list_input_backspace(&g_state)) {
+            if (g_state.uiScreen == UiScreen::TransientListSetupStep) {
+              if (g_state.transientListDraftField == 1) {
+                g_state.transientListDraftField = 0;
+              } else if (g_state.transientListDraftStepIndex > 0) {
+                g_state.transientListDraftStepIndex--;
+                g_state.transientListDraftField = 1;
+              } else {
+                g_state.transientListSetupStage = 0;
+              }
+            }
+          }
+        } else if (action.key == 'E') {
+          transient_list_setup_commit(&g_state);
+        } else if (action.key == 'M') {
+          if (g_state.uiScreen == UiScreen::TransientListSetupCount) {
+            core_mode_apply_selection(&g_state, false, action.key);
+            g_state.pendingConfigSection = ConfigSection::None;
+            g_state.menuRootSelection = 0;
+            g_state.protectionMenuSelection = 0;
+            g_state.fanSettingsMenuSelection = 0;
+            g_state.currentConfigMenu = ConfigMenu::None;
+            g_state.parentConfigMenu = ConfigMenu::None;
+            g_state.openLimitsConfigEvent = false;
+            g_state.openCalibrationConfigEvent = false;
+            g_state.calibrationValueConfirmEvent = false;
+            g_state.limitsMenuActive = false;
+            g_state.limitsEditActive = false;
+            limits_input_reset(&g_state);
+            g_state.calibrationMenuActive = false;
+            g_state.fanEditActive = false;
+            fan_input_reset(&g_state);
+            battery_setup_begin(&g_state);
+            transient_list_input_reset(&g_state);
+            g_state.transientListSetupStage = 0;
+            g_state.transientListDraftField = 0;
+          } else if (g_state.transientListDraftField == 1) {
+            g_state.transientListDraftField = 0;
+            transient_list_input_reset(&g_state);
+          } else if (g_state.transientListDraftStepIndex > 0) {
+            g_state.transientListDraftStepIndex--;
+            g_state.transientListDraftField = 1;
+            transient_list_input_reset(&g_state);
+          } else {
+            g_state.transientListSetupStage = 0;
+            transient_list_input_reset(&g_state);
+          }
+        } else {
+          (void)transient_list_input_append(&g_state, action.key);
         }
         break;
       }
@@ -1174,6 +1348,12 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
+
+
+
+
 
 
 

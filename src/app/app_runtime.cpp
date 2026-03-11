@@ -22,6 +22,7 @@
 #include "app_runtime_context.h"
 #include "app_setpoint_context.h"
 #include "app_timer_context.h"
+#include "app_transient_context.h"
 
 
 namespace {
@@ -137,6 +138,99 @@ void run_core_managed_battery_mode() {
     ui_show_battery_done();
   }
 }
+void run_core_managed_transient_cont_mode() {
+  if (core_get_state().uiScreen != UiScreen::Home) return;
+  if (app_mode_state_mode() != TC) return;
+  if (!app_mode_state_configured()) return;
+
+  float &lowCurrent = app_transient_low_current_ref();
+  float &highCurrent = app_transient_high_current_ref();
+  unsigned long &transientPeriod = app_transient_period_ref();
+  unsigned long &currentTime = app_transient_current_time_ref();
+
+  static unsigned long lastTime = 0;
+  static bool transientContToggle = false;
+
+  if (!app_mode_state_initialized()) {
+    ui_draw_transient_cont_mode_template(lowCurrent, highCurrent, transientPeriod);
+    app_load_set_set_current_mA(0.0f);
+    app_mode_state_set_initialized(true);
+    legacy_encoder_status(false);
+  }
+
+  if (!app_load_is_enabled()) {
+    lastTime = 0;
+    transientContToggle = false;
+    return;
+  }
+
+  currentTime = micros();
+
+  if ((currentTime - lastTime) >= (transientPeriod * 1000.0f)) {
+    lastTime = currentTime;
+
+    if (!transientContToggle) {
+      app_load_set_set_current_mA(lowCurrent * 1000.0f);
+    } else {
+      app_load_set_set_current_mA(highCurrent * 1000.0f);
+    }
+
+    transientContToggle = !transientContToggle;
+  }
+}
+
+void run_core_managed_transient_list_mode() {
+  if (core_get_state().uiScreen != UiScreen::Home) return;
+  if (app_mode_state_mode() != TL) return;
+  if (!app_mode_state_configured()) return;
+
+  unsigned long &transientPeriod = app_transient_period_ref();
+  unsigned long &currentTime = app_transient_current_time_ref();
+  unsigned long (*transientList)[2] = app_transient_list_ref();
+  int &totalSteps = app_transient_total_steps_ref();
+  int &currentStep = app_transient_current_step_ref();
+
+  static unsigned long lastTime = 0;
+  static unsigned int lastTransientPeriod = static_cast<unsigned int>(-1);
+
+  if (!app_mode_state_initialized()) {
+    ui_draw_transient_list_mode_template(totalSteps);
+    app_mode_state_set_initialized(true);
+    legacy_encoder_status(false);
+  }
+
+  ui_update_transient_list_step(currentStep);
+  if (transientPeriod != lastTransientPeriod) {
+    ui_update_transient_list_period(transientPeriod);
+    lastTransientPeriod = transientPeriod;
+  }
+
+  if (!app_load_is_enabled()) {
+    currentStep = 0;
+    lastTime = 0;
+    transientPeriod = transientList[currentStep][1];
+    return;
+  }
+
+  currentTime = micros();
+
+  if (lastTime == 0) {
+    app_load_set_set_current_mA(static_cast<float>(transientList[currentStep][0]));
+    transientPeriod = transientList[currentStep][1];
+    lastTime = currentTime;
+    return;
+  }
+
+  if ((currentTime - lastTime) >= transientPeriod * 1000UL) {
+    currentStep++;
+    if (currentStep > totalSteps) {
+      currentStep = 0;
+    }
+    app_load_set_set_current_mA(static_cast<float>(transientList[currentStep][0]));
+    transientPeriod = transientList[currentStep][1];
+    lastTime = currentTime;
+  }
+}
 }
 
 void app_run_cycle() {
@@ -157,10 +251,14 @@ void app_run_cycle() {
     prepare_core_managed_home_mode();
     update_core_managed_home_cursor();
     run_core_managed_battery_mode();
+    run_core_managed_transient_cont_mode();
+    run_core_managed_transient_list_mode();
     legacy_run_mode_logic();
   }
 
   app_tick();
   ui_render_cycle();
 }
+
+
 

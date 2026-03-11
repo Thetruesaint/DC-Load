@@ -36,6 +36,10 @@ UiScreen transient_cont_setup_target_screen(const SystemState &state) {
   }
 }
 
+UiScreen transient_list_setup_target_screen(const SystemState &state) {
+  return (state.transientListSetupStage == 0) ? UiScreen::TransientListSetupCount : UiScreen::TransientListSetupStep;
+}
+
 int cursor_min_by_mode(uint8_t mode) {
   return (mode == MODE_CP || mode == MODE_CR) ? 6 : 8;
 }
@@ -143,6 +147,23 @@ void core_mode_update_setpoints(SystemState *state) {
   }
 }
 
+namespace {
+void transient_list_setup_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->transientListSetupStage = 0;
+  state->transientListDraftStepCount = 0;
+  state->transientListDraftStepIndex = 0;
+  state->transientListDraftField = 0;
+  for (int i = 0; i < 10; ++i) {
+    state->transientListDraftCurrentsA[i] = 0.0f;
+    state->transientListDraftPeriodsMs[i] = 0.0f;
+  }
+  state->transientListInputText[0] = '\0';
+  state->transientListInputLength = 0;
+  state->transientListInputHasDecimal = false;
+}
+}
+
 void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) {
   if (state == nullptr) return;
 
@@ -170,6 +191,9 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
       state->transientInputLength = 0;
       state->transientInputHasDecimal = false;
     }
+    if (state->mode == MODE_TL) {
+      transient_list_setup_begin(state);
+    }
     return;
   }
 
@@ -194,6 +218,10 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
     state->transientInputLength = 0;
     state->transientInputHasDecimal = false;
   }
+
+  if (state->mode == MODE_TL) {
+    transient_list_setup_begin(state);
+  }
 }
 
 void core_mode_update_ui_screen(SystemState *state) {
@@ -215,8 +243,14 @@ void core_mode_update_ui_screen(SystemState *state) {
     return;
   }
 
+  if (state->mode == MODE_TL && !state->modeConfigured) {
+    state->uiScreen = transient_list_setup_target_screen(*state);
+    return;
+  }
+
   state->uiScreen = UiScreen::Home;
 }
+
 
 
 

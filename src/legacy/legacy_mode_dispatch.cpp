@@ -12,12 +12,13 @@ void legacy_run_mode_logic() {
     case CR:
       break;
     case BC: break;
-    case TC: legacy_transient_cont_mode(); break;
-    case TL: legacy_transient_list_mode(); break;
+    case TC: break;
+    case TL: break;
     case CA: legacy_calibration_mode(); break;
     case UNKNOWN:
     default: break;
   }
 }
+
 
 

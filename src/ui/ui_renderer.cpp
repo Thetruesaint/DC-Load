@@ -46,6 +46,14 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.transientSetupStage = state.transientSetupStage;
   std::strncpy(view.transientInputText, state.transientInputText, sizeof(view.transientInputText) - 1);
   view.transientInputText[sizeof(view.transientInputText) - 1] = '\0';
+  view.transientListSetupStage = state.transientListSetupStage;
+  view.transientListDraftStepCount = state.transientListDraftStepCount;
+  view.transientListDraftStepIndex = state.transientListDraftStepIndex;
+  view.transientListDraftField = state.transientListDraftField;
+  view.transientListCurrentA = state.transientListDraftCurrentsA[state.transientListDraftStepIndex];
+  view.transientListCurrentPeriodMs = state.transientListDraftPeriodsMs[state.transientListDraftStepIndex];
+  std::strncpy(view.transientListInputText, state.transientListInputText, sizeof(view.transientListInputText) - 1);
+  view.transientListInputText[sizeof(view.transientListInputText) - 1] = '\0';
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;
@@ -60,3 +68,4 @@ void ui_render(const SystemState &state) {
   ui_state_cache_set(view);
   ui_state_machine_tick(state.uiScreen, view);
 }
+

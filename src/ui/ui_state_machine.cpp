@@ -62,6 +62,17 @@ struct TransientContSetupRenderCache {
   bool valid;
 };
 
+struct TransientListSetupRenderCache {
+  uint8_t stage;
+  uint8_t stepCount;
+  uint8_t stepIndex;
+  uint8_t field;
+  float currentA;
+  float periodMs;
+  char inputText[8];
+  bool valid;
+};
+
 HomeRenderCache g_homeCache = {0, 0.0f, {'\0'}, false};
 ProtectionRenderCache g_protectionCache = {0, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, {'\0'}, false};
@@ -69,6 +80,7 @@ LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false};
 TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false};
+TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false};
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -292,6 +304,8 @@ void screen_enter_home(const UiViewState &viewState) {
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_batterySetupCache.valid = false;
+  g_transientContSetupCache.valid = false;
+  g_transientListSetupCache.valid = false;
   g_homeCache.valid = false;
   draw_home_if_needed(viewState);
 }
@@ -395,6 +409,63 @@ void screen_update_transient_cont_setup(const UiViewState &viewState) {
 }
 
 void screen_render_transient_cont_setup(const UiViewState &viewState) { (void)viewState; }
+
+void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
+  if (g_transientListSetupCache.valid &&
+      g_transientListSetupCache.stage == viewState.transientListSetupStage &&
+      g_transientListSetupCache.stepCount == viewState.transientListDraftStepCount &&
+      g_transientListSetupCache.stepIndex == viewState.transientListDraftStepIndex &&
+      g_transientListSetupCache.field == viewState.transientListDraftField &&
+      g_transientListSetupCache.currentA == viewState.transientListCurrentA &&
+      g_transientListSetupCache.periodMs == viewState.transientListCurrentPeriodMs &&
+      std::strcmp(g_transientListSetupCache.inputText, viewState.transientListInputText) == 0) {
+    return;
+  }
+
+  if (viewState.transientListSetupStage == 0) {
+    ui_draw_transient_list_setup_template();
+    ui_prepare_value_input_prompt(9, 2, 2);
+    printLCD_S(9, 2, String(viewState.transientListInputText));
+  } else {
+    ui_draw_transient_list_step_template(viewState.transientListDraftStepIndex);
+    if (viewState.transientListDraftField == 0) {
+      ui_prepare_value_input_prompt(13, 2, 5);
+      printLCD_S(13, 2, String(viewState.transientListInputText));
+      if (viewState.transientListCurrentPeriodMs > 0.0f) {
+        Print_Spaces(12, 3, 6);
+        printLCD_S(13, 3, String(static_cast<unsigned long>(viewState.transientListCurrentPeriodMs)));
+      } else {
+        Print_Spaces(12, 3, 6);
+      }
+    } else {
+      ui_show_value_number(13, 2, viewState.transientListCurrentA, 'A', 3);
+      ui_prepare_value_input_prompt(13, 3, 5);
+      printLCD_S(13, 3, String(viewState.transientListInputText));
+    }
+  }
+
+  g_transientListSetupCache.stage = viewState.transientListSetupStage;
+  g_transientListSetupCache.stepCount = viewState.transientListDraftStepCount;
+  g_transientListSetupCache.stepIndex = viewState.transientListDraftStepIndex;
+  g_transientListSetupCache.field = viewState.transientListDraftField;
+  g_transientListSetupCache.currentA = viewState.transientListCurrentA;
+  g_transientListSetupCache.periodMs = viewState.transientListCurrentPeriodMs;
+  std::strncpy(g_transientListSetupCache.inputText, viewState.transientListInputText, sizeof(g_transientListSetupCache.inputText) - 1);
+  g_transientListSetupCache.inputText[sizeof(g_transientListSetupCache.inputText) - 1] = '\0';
+  g_transientListSetupCache.valid = true;
+}
+
+void screen_enter_transient_list_setup(const UiViewState &viewState) {
+  g_transientListSetupCache.valid = false;
+  draw_transient_list_setup_if_needed(viewState);
+}
+
+void screen_update_transient_list_setup(const UiViewState &viewState) {
+  draw_transient_list_setup_if_needed(viewState);
+}
+
+void screen_render_transient_list_setup(const UiViewState &viewState) { (void)viewState; }
+
 void screen_enter_menu_root(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   draw_menu_root_if_needed(viewState);
@@ -459,6 +530,8 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientContSetupLow:
     case UiScreen::TransientContSetupHigh:
     case UiScreen::TransientContSetupPeriod: screen_enter_transient_cont_setup(viewState); break;
+    case UiScreen::TransientListSetupCount:
+    case UiScreen::TransientListSetupStep: screen_enter_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_enter_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_enter_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_enter_menu_fan_settings(viewState); break;
@@ -477,6 +550,8 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientContSetupLow:
     case UiScreen::TransientContSetupHigh:
     case UiScreen::TransientContSetupPeriod: screen_update_transient_cont_setup(viewState); break;
+    case UiScreen::TransientListSetupCount:
+    case UiScreen::TransientListSetupStep: screen_update_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_update_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_update_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_update_menu_fan_settings(viewState); break;
@@ -495,6 +570,8 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientContSetupLow:
     case UiScreen::TransientContSetupHigh:
     case UiScreen::TransientContSetupPeriod: screen_render_transient_cont_setup(viewState); break;
+    case UiScreen::TransientListSetupCount:
+    case UiScreen::TransientListSetupStep: screen_render_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_render_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_render_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_render_menu_fan_settings(viewState); break;
@@ -513,6 +590,8 @@ void ui_state_machine_reset() {
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
   g_batterySetupCache.valid = false;
+  g_transientContSetupCache.valid = false;
+  g_transientListSetupCache.valid = false;
   g_homeCache.valid = false;
 }
 
@@ -529,6 +608,11 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
+
+
+
+
+
 
 
 
