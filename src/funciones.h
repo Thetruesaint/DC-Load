@@ -23,12 +23,6 @@ void Read_Load_Button();
 void Cursor_Position(void);
 void Read_Volts_Current(void);
 void DAC_Control(void);
-void Const_Current_Mode(void);
-void Const_Power_Mode(void);
-void Const_Resistance_Mode(void);
-bool Battery_Capacity(void);
-void Battery_Mode(void);
-void Battery_Type_Selec(void);
 void Config_Limits(void);
 bool Value_Input(int col, int row, int maxDigits = 5, bool decimal = true);
 void timer_start();
@@ -56,5 +50,6 @@ void Test_Keypad();
 void Update_TFT(void);
 void printTFT_Number(int col, int row, float number, char unit = '\0', int decimals = 2);
 #endif
+
 
 
