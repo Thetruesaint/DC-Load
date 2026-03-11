@@ -148,7 +148,7 @@ void legacy_apply_state(const SystemState &state) {
       app_mode_state_set_mode(CA);
       app_mode_state_set_configured(true);
       app_mode_state_set_initialized(false);
-      app_calibration_set_first_point_taken(false);
+      app_calibration_reset_session();
       app_value_result_set(static_cast<float>(option));
     } else if (option == 3) {
       Load_Calibration();
