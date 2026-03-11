@@ -7,6 +7,9 @@
 namespace {
 bool calibrationVoltageMode = false;
 bool calibrationFirstPointTaken = false;
+bool calibrationMenuReturnRequested = false;
+uint8_t calibrationReturnMode = 0;
+int calibrationReturnFunctionIndex = 0;
 
 float snsVoltCalibFactor = 1.0f;
 float snsVoltCalibOffset = 0.0f;
@@ -103,6 +106,29 @@ bool app_calibration_capture_or_compute(
   }
 
   return true;
+}
+
+void app_calibration_store_return_mode(uint8_t mode, int functionIndex) {
+  calibrationReturnMode = mode;
+  calibrationReturnFunctionIndex = functionIndex;
+}
+
+uint8_t app_calibration_return_mode() {
+  return calibrationReturnMode;
+}
+
+int app_calibration_return_function_index() {
+  return calibrationReturnFunctionIndex;
+}
+
+void app_calibration_request_menu_return() {
+  calibrationMenuReturnRequested = true;
+}
+
+bool app_calibration_consume_menu_return_request() {
+  const bool requested = calibrationMenuReturnRequested;
+  calibrationMenuReturnRequested = false;
+  return requested;
 }
 
 float& app_calibration_sns_volt_factor_ref() {

@@ -145,6 +145,7 @@ void legacy_apply_state(const SystemState &state) {
     const uint8_t option = state.calibrationMenuOption;
 
     if (option == 1 || option == 2) {
+      app_calibration_store_return_mode(app_mode_state_mode(), app_mode_state_function_index());
       app_mode_state_set_mode(CA);
       app_mode_state_set_configured(true);
       app_mode_state_set_initialized(false);
@@ -190,5 +191,3 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
-
-

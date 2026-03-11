@@ -1,4 +1,4 @@
-## v2.11 ## BY LCD HELLOW TFT & AI
+## v2.11 ## BY LCD HELLO TFT & AI
 
 ## Hardware Versions
 

@@ -4,7 +4,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "../app/app_calibration_context.h"
 #include "../config/system_constants.h"
+#include "../ui/ui_state_machine.h"
 #include "core_modes.h"
 
 namespace {
@@ -854,6 +856,18 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.transientListInputText[sizeof(g_state.transientListInputText) - 1] = '\0';
   g_state.transientListInputLength = transientListInputLength;
   g_state.transientListInputHasDecimal = transientListInputHasDecimal;
+  const bool calibrationMenuReturnRequested = app_calibration_consume_menu_return_request();
+  if (calibrationMenuReturnRequested) {
+    g_state.currentConfigMenu = ConfigMenu::Calibration;
+    g_state.parentConfigMenu = ConfigMenu::Root;
+    g_state.pendingConfigSection = ConfigSection::Calibration;
+    g_state.calibrationMenuActive = true;
+    if (g_state.calibrationMenuOption < 1 || g_state.calibrationMenuOption > 5) {
+      g_state.calibrationMenuOption = 1;
+    }
+    ui_state_machine_reset();
+  }
+
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -1348,36 +1362,3 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

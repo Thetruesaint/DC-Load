@@ -22,6 +22,17 @@
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
+namespace {
+void finish_calibration_mode() {
+  app_mode_state_set_mode(app_calibration_return_mode());
+  app_mode_state_set_function_index(app_calibration_return_function_index());
+  app_mode_state_set_initialized(false);
+  app_mode_state_set_configured(false);
+  app_calibration_reset_session();
+  app_calibration_request_menu_return();
+}
+}
+
 void legacy_calibration_mode() {
   if (!app_mode_state_configured()) {
     legacy_calibration_setup();
@@ -89,7 +100,9 @@ void legacy_calibrate(float realValue) {
 
   AppCalibrationComputationResult result{};
   if (!app_calibration_capture_or_compute(measuredValue, realValue, setCurrentA, result)) {
-    app_mode_state_set_initialized(false);
+    ui_draw_calibration_mode_template(
+        app_calibration_is_voltage_mode(),
+        app_calibration_first_point_taken());
     return;
   }
 
@@ -97,7 +110,7 @@ void legacy_calibrate(float realValue) {
 
   if (result.pointsTooClose || result.pointMismatch) {
     ui_draw_calibration_abort(result.pointsTooClose);
-    app_mode_state_set_initialized(false);
+    finish_calibration_mode();
     delay(2000);
     return;
   }
@@ -113,7 +126,6 @@ void legacy_calibrate(float realValue) {
   }
 
   ui_draw_calibration_success();
-  app_mode_state_set_configured(false);
-  app_calibration_reset_session();
+  finish_calibration_mode();
   delay(2000);
 }
