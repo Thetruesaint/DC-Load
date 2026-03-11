@@ -103,9 +103,11 @@ void legacy_apply_state(const SystemState &state) {
   app_load_set_enabled(state.loadEnabled);
   app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
   app_battery_type_ref() = String(state.batteryType);
-  app_transient_low_current_ref() = state.transientLowCurrentA;
-  app_transient_high_current_ref() = state.transientHighCurrentA;
-  app_transient_period_ref() = static_cast<unsigned long>(state.transientPeriodMs);
+  if (state.mode == TC) {
+    app_transient_low_current_ref() = state.transientLowCurrentA;
+    app_transient_high_current_ref() = state.transientHighCurrentA;
+    app_transient_period_ref() = static_cast<unsigned long>(state.transientPeriodMs);
+  }
 
   if (state.limitsSaveEvent) {
     app_limits_set_current_cutoff(state.limitsDraftCurrentA);
@@ -175,3 +177,4 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+
