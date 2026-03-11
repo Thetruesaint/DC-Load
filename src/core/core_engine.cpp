@@ -978,6 +978,17 @@ void core_dispatch(const UserAction &action) {
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
 
+      if (g_state.uiScreen == UiScreen::Home && g_state.mode == CA && app_calibration_confirmation_active()) {
+        if (action.key == 'E') {
+          app_calibration_accept_pending_result();
+          app_calibration_finish_mode();
+        } else if (action.key == '<') {
+          app_calibration_reject_pending_result();
+          app_calibration_finish_mode();
+        }
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::BatterySetupTask) {
         if (action.key >= '1' && action.key <= '5') {
           battery_setup_select_task(&g_state, action.key);
@@ -1283,6 +1294,9 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::LoadToggle:
+      if (g_state.uiScreen == UiScreen::Home && g_state.mode == CA && app_calibration_confirmation_active()) {
+        break;
+      }
       g_state.loadEnabled = !g_state.loadEnabled;
       g_state.loadToggleEvent = true;
       break;

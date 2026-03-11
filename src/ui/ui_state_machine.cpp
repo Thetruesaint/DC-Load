@@ -4,6 +4,8 @@
 #include <cstring>
 
 #include "../ui_lcd.h"
+#include "../app/app_calibration_context.h"
+#include "../config/system_constants.h"
 #include "ui_mode_templates.h"
 
 namespace {
@@ -307,10 +309,16 @@ void screen_enter_home(const UiViewState &viewState) {
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
   g_homeCache.valid = false;
+  if (viewState.mode == CA && app_calibration_confirmation_active()) {
+    return;
+  }
   draw_home_if_needed(viewState);
 }
 
 void screen_update_home(const UiViewState &viewState) {
+  if (viewState.mode == CA && app_calibration_confirmation_active()) {
+    return;
+  }
   draw_home_if_needed(viewState);
   Update_LCD();
 }
@@ -608,14 +616,3 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
-
-
-
-
-
-
-
-
-
-
-

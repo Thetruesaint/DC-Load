@@ -95,8 +95,11 @@ void legacy_calibrate(float realValue) {
     return;
   }
 
-  app_calibration_apply_result(result);
-  ui_draw_calibration_success();
-  app_calibration_finish_mode();
-  delay(2000);
+  app_calibration_prepare_pending_result(result);
+  ui_draw_calibration_result(
+      app_calibration_pending_is_voltage_mode(),
+      app_calibration_pending_sensor_factor(),
+      app_calibration_pending_sensor_offset(),
+      app_calibration_pending_output_factor(),
+      app_calibration_pending_output_offset());
 }

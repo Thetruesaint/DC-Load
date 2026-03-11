@@ -19,6 +19,7 @@ void ui_draw_calibration_setup_menu();
 void ui_draw_calibration_mode_template(bool voltageMode, bool firstPointTaken);
 void ui_draw_calibration_abort(bool pointsTooClose);
 void ui_draw_calibration_success();
+void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
 void ui_draw_calibration_loaded_message();
 void ui_draw_calibration_saved_message();
 void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, unsigned long periodMs);

@@ -4,11 +4,14 @@
 
 #include "../app/app_mode_state_context.h"
 #include "../config/system_constants.h"
+#include "../storage_eeprom.h"
 
 namespace {
 bool calibrationVoltageMode = false;
 bool calibrationFirstPointTaken = false;
 bool calibrationMenuReturnRequested = false;
+bool calibrationConfirmationActive = false;
+bool calibrationPendingVoltageMode = false;
 uint8_t calibrationReturnMode = 0;
 int calibrationReturnFunctionIndex = 0;
 
@@ -18,6 +21,11 @@ float snsCurrCalibFactor = 1.0f;
 float snsCurrCalibOffset = 0.0f;
 float outCurrCalibFactor = 1.0f;
 float outCurrCalibOffset = 0.0f;
+
+float pendingSensorFactor = 1.0f;
+float pendingSensorOffset = 0.0f;
+float pendingOutputFactor = 1.0f;
+float pendingOutputOffset = 0.0f;
 
 float firstMeasuredValue = 0.0f;
 float firstRealValue = 0.0f;
@@ -42,6 +50,7 @@ void app_calibration_set_first_point_taken(bool taken) {
 
 void app_calibration_reset_session() {
   calibrationFirstPointTaken = false;
+  calibrationConfirmationActive = false;
   firstMeasuredValue = 0.0f;
   firstRealValue = 0.0f;
   firstSetCurrentA = 0.0f;
@@ -124,6 +133,63 @@ void app_calibration_apply_result(const AppCalibrationComputationResult &result)
   snsCurrCalibOffset = result.sensorOffset;
   outCurrCalibFactor = result.outputFactor;
   outCurrCalibOffset = result.outputOffset;
+}
+
+void app_calibration_prepare_pending_result(const AppCalibrationComputationResult &result) {
+  calibrationPendingVoltageMode = calibrationVoltageMode;
+  pendingSensorFactor = result.sensorFactor;
+  pendingSensorOffset = result.sensorOffset;
+  pendingOutputFactor = result.outputFactor;
+  pendingOutputOffset = result.outputOffset;
+  calibrationConfirmationActive = true;
+}
+
+bool app_calibration_confirmation_active() {
+  return calibrationConfirmationActive;
+}
+
+bool app_calibration_pending_is_voltage_mode() {
+  return calibrationPendingVoltageMode;
+}
+
+float app_calibration_pending_sensor_factor() {
+  return pendingSensorFactor;
+}
+
+float app_calibration_pending_sensor_offset() {
+  return pendingSensorOffset;
+}
+
+float app_calibration_pending_output_factor() {
+  return pendingOutputFactor;
+}
+
+float app_calibration_pending_output_offset() {
+  return pendingOutputOffset;
+}
+
+void app_calibration_accept_pending_result() {
+  if (!calibrationConfirmationActive) return;
+
+  AppCalibrationComputationResult result = {
+    true,
+    false,
+    false,
+    pendingSensorFactor,
+    pendingSensorOffset,
+    pendingOutputFactor,
+    pendingOutputOffset
+  };
+
+  calibrationVoltageMode = calibrationPendingVoltageMode;
+  app_calibration_apply_result(result);
+  calibrationConfirmationActive = false;
+}
+
+void app_calibration_reject_pending_result() {
+  if (!calibrationConfirmationActive) return;
+  Load_Calibration();
+  calibrationConfirmationActive = false;
 }
 
 void app_calibration_finish_mode() {

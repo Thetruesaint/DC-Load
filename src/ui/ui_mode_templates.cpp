@@ -165,6 +165,34 @@ void ui_draw_calibration_success() {
   printLCD(4, 1, F("Calibrated!"));
 }
 
+void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset) {
+  clearLCD();
+  printLCD(0, 0, voltageMode ? F("V Calibrated:") : F("I Calibrated:"));
+
+  if (voltageMode) {
+    printLCD(0, 1, F("SF:"));
+    Print_Spaces(3, 1, 8);
+    printLCD_S(3, 1, String(sensorFactor, 6));
+    printLCD(0, 2, F("SO:"));
+    Print_Spaces(3, 2, 8);
+    printLCD_S(3, 2, String(sensorOffset, 6));
+  } else {
+    printLCD(0, 1, F("SF:"));
+    Print_Spaces(3, 1, 7);
+    printLCD_S(3, 1, String(sensorFactor, 4));
+    printLCD(10, 1, F("SO:"));
+    Print_Spaces(13, 1, 7);
+    printLCD_S(13, 1, String(sensorOffset, 3));
+    printLCD(0, 2, F("OF:"));
+    Print_Spaces(3, 2, 7);
+    printLCD_S(3, 2, String(outputFactor, 4));
+    printLCD(10, 2, F("OO:"));
+    Print_Spaces(13, 2, 7);
+    printLCD_S(13, 2, String(outputOffset, 0));
+  }
+
+  printLCD(2, 3, F("E-OK  CLR-Cancel"));
+}
 void ui_draw_calibration_loaded_message() {
   printLCD(12, 3, F("Loaded!"));
 }
@@ -311,5 +339,3 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
-
-

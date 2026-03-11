@@ -28,6 +28,15 @@ bool app_calibration_capture_or_compute(
     float setCurrentA,
     AppCalibrationComputationResult &result);
 void app_calibration_apply_result(const AppCalibrationComputationResult &result);
+void app_calibration_prepare_pending_result(const AppCalibrationComputationResult &result);
+bool app_calibration_confirmation_active();
+bool app_calibration_pending_is_voltage_mode();
+float app_calibration_pending_sensor_factor();
+float app_calibration_pending_sensor_offset();
+float app_calibration_pending_output_factor();
+float app_calibration_pending_output_offset();
+void app_calibration_accept_pending_result();
+void app_calibration_reject_pending_result();
 void app_calibration_finish_mode();
 
 void app_calibration_store_return_mode(uint8_t mode, int functionIndex);

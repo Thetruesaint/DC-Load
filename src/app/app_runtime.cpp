@@ -5,12 +5,14 @@
 #include "../hw/hw_objects.h"
 #include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_dac_control.h"
+#include "../legacy/legacy_mode_ca.h"
 #include "../legacy/legacy_mode_dispatch.h"
 #include "../legacy/legacy_safety_control.h"
 #include "../legacy/legacy_timing_buzzer.h"
 #include "../ui/ui_cycle_render.h"
 #include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
+#include "app_calibration_context.h"
 #include "app_inputs.h"
 #include "app_io_context.h"
 #include "app_keypad.h"
@@ -23,7 +25,7 @@
 #include "app_setpoint_context.h"
 #include "app_timer_context.h"
 #include "app_transient_context.h"
-
+#include "app_value_result_context.h"
 
 namespace {
 void prepare_core_managed_home_mode() {
@@ -53,6 +55,15 @@ void prepare_core_managed_home_mode() {
       legacy_encoder_status(true, app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
+    case CA:
+      if (!app_mode_state_configured()) break;
+      app_calibration_begin_mode_from_selection(app_value_result_get());
+      ui_draw_calibration_mode_template(
+          app_calibration_is_voltage_mode(),
+          app_calibration_first_point_taken());
+      legacy_encoder_status(true, app_limits_current_cutoff());
+      app_mode_state_set_initialized(true);
+      break;
     default:
       break;
   }
@@ -66,6 +77,7 @@ void update_core_managed_home_cursor() {
     case CP:
     case CR:
     case BC:
+    case CA:
       legacy_cursor_position();
       break;
     default:
@@ -138,6 +150,46 @@ void run_core_managed_battery_mode() {
     ui_show_battery_done();
   }
 }
+
+void run_core_managed_calibration_mode() {
+  static bool confirmationDrawn = false;
+
+  if (core_get_state().uiScreen != UiScreen::Home) return;
+  if (app_mode_state_mode() != CA) return;
+
+  if (!app_mode_state_configured()) {
+    confirmationDrawn = false;
+    legacy_calibration_setup();
+    return;
+  }
+
+  if (app_calibration_confirmation_active()) {
+    if (!confirmationDrawn) {
+      ui_draw_calibration_result(
+          app_calibration_pending_is_voltage_mode(),
+          app_calibration_pending_sensor_factor(),
+          app_calibration_pending_sensor_offset(),
+          app_calibration_pending_output_factor(),
+          app_calibration_pending_output_offset());
+      confirmationDrawn = true;
+    }
+    return;
+  }
+
+  confirmationDrawn = false;
+
+  float readingValue = app_runtime_encoder_position() / 1000.0f;
+  readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
+  app_setpoint_set_reading(readingValue);
+  app_runtime_set_encoder_position(readingValue * 1000.0f);
+
+  if (!app_load_is_enabled()) {
+    return;
+  }
+
+  app_load_set_set_current_mA(readingValue * 1000.0f);
+}
+
 void run_core_managed_transient_cont_mode() {
   if (core_get_state().uiScreen != UiScreen::Home) return;
   if (app_mode_state_mode() != TC) return;
@@ -251,6 +303,7 @@ void app_run_cycle() {
     prepare_core_managed_home_mode();
     update_core_managed_home_cursor();
     run_core_managed_battery_mode();
+    run_core_managed_calibration_mode();
     run_core_managed_transient_cont_mode();
     run_core_managed_transient_list_mode();
     legacy_run_mode_logic();
@@ -259,6 +312,3 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
-
-
-

@@ -1,23 +1,4 @@
 #include "legacy_mode_dispatch.h"
 
-#include "../app/app_mode_state_context.h"
-#include "../config/system_constants.h"
-#include "legacy_mode_ca.h"
-
 void legacy_run_mode_logic() {
-  switch (app_mode_state_mode()) {
-    case CC:
-    case CP:
-    case CR:
-      break;
-    case BC: break;
-    case TC: break;
-    case TL: break;
-    case CA: legacy_calibration_mode(); break;
-    case UNKNOWN:
-    default: break;
-  }
 }
-
-
-
