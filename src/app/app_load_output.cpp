@@ -1,17 +1,14 @@
-#include "legacy_dac_control.h"
+#include "app_load_output.h"
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../app/app_load_context.h"
-#include "../app/app_calibration_context.h"
-#define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
-#define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
-#define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
-#define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
+#include "app_calibration_context.h"
+#include "app_load_context.h"
+
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
-void legacy_dac_control() {
+void app_load_output_apply() {
 #ifndef WOKWI_SIMULATION
   if (app_load_is_enabled()) {
     const float targetCurrent = app_load_set_current_mA();

@@ -4,7 +4,6 @@
 #include "../core/core_engine.h"
 #include "../hw/hw_objects.h"
 #include "../legacy/legacy_base_io.h"
-#include "../legacy/legacy_dac_control.h"
 #include "../legacy/legacy_mode_ca.h"
 #include "../legacy/legacy_mode_dispatch.h"
 #include "../legacy/legacy_safety_control.h"
@@ -17,6 +16,7 @@
 #include "app_keypad.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
+#include "app_load_output.h"
 #include "app_loop.h"
 #include "app_measurements_context.h"
 #include "app_mode_state_context.h"
@@ -297,7 +297,7 @@ void app_run_cycle() {
   app_read_load_button();
   legacy_read_volts_current();
   legacy_check_limits();
-  legacy_dac_control();
+  app_load_output_apply();
 
   if (core_get_state().uiScreen == UiScreen::Home) {
     prepare_core_managed_home_mode();
