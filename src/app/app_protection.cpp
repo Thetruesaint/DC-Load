@@ -2,12 +2,13 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
+#include "../legacy/legacy_base_io.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
-#include "../legacy/legacy_base_io.h"
 #include "app_fan_context.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
+#include "app_load_output.h"
 #include "app_measurements_context.h"
 #include "app_mode_state_context.h"
 #include "app_runtime_context.h"
@@ -70,11 +71,10 @@ void app_check_limits() {
   }
 
   if (strlen(message) > 0) {
-    legacy_load_off();
+    app_load_output_off();
     app_setpoint_set_reading(0.0f);
     app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
-    app_load_set_set_current_mA(0.0f);
 
     ui_blink_limit_alarm(message, vlimit, ilimit, plimit, climit);
 

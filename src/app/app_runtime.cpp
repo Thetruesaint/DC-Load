@@ -144,7 +144,7 @@ void run_core_managed_battery_mode() {
     app_runtime_set_encoder_position(0.0f);
     app_load_set_set_current_mA(0.0f);
     encoder.clearCount();
-    legacy_load_off();
+    app_load_output_off();
     app_timer_stop();
     app_beep_buzzer();
     ui_show_battery_done();

@@ -5,6 +5,7 @@
 #include "../app/app_calibration_context.h"
 #include "../app/app_limits_context.h"
 #include "../app/app_load_context.h"
+#include "../app/app_load_output.h"
 #include "../app/app_measurements_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
@@ -86,7 +87,7 @@ void legacy_calibrate(float realValue) {
     return;
   }
 
-  legacy_load_off();
+  app_load_output_off();
 
   if (result.pointsTooClose || result.pointMismatch) {
     ui_draw_calibration_abort(result.pointsTooClose);

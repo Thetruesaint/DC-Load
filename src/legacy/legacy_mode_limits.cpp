@@ -1,8 +1,7 @@
 #include "legacy_mode_limits.h"
 
-#include "legacy_base_io.h"
-
 #include "../app/app_limits_context.h"
+#include "../app/app_load_output.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
@@ -11,7 +10,7 @@
 #include "../ui/ui_mode_templates.h"
 
 void legacy_config_limits() {
-  legacy_load_off();
+  app_load_output_off();
   legacy_show_limits();
   delay(2000);
 

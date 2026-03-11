@@ -20,18 +20,6 @@
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
-
-void legacy_load_off() {
-#ifndef WOKWI_SIMULATION
-  dac.setVoltage(0, false);
-  app_load_set_enabled(false);
-  app_load_set_set_current_mA(0);
-#else
-  app_load_set_enabled(false);
-  app_load_set_set_current_mA(0);
-#endif
-}
-
 void legacy_encoder_status(bool encOnOff, float limit) {
   if (encOnOff) {
     app_runtime_set_cursor_position(8);
@@ -128,7 +116,6 @@ void legacy_read_volts_current() {
   const unsigned long currentMillis = app_io_millis();
   const bool loadEnabled = app_load_is_enabled();
 
-  // ESP32 ADC in Wokwi is 12-bit. Keep simulated source linear in 0..40V.
   constexpr float SIM_VOLTAGE_MAX = 40.0f;
   constexpr float ESP32_ADC_MAX = 4095.0f;
   const float simulatedPotVoltage = constrain((static_cast<float>(potValue) / ESP32_ADC_MAX) * SIM_VOLTAGE_MAX, 0.0f, SIM_VOLTAGE_MAX);

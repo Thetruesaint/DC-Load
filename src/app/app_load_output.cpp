@@ -21,3 +21,11 @@ void app_load_output_apply() {
   (void)app_load_is_enabled();
 #endif
 }
+void app_load_output_off() {
+#ifndef WOKWI_SIMULATION
+  dac.setVoltage(0, false);
+#endif
+  app_load_set_enabled(false);
+  app_load_set_set_current_mA(0.0f);
+}
+
