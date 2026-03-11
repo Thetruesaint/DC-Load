@@ -22,6 +22,7 @@
 #include "app_mode_state_context.h"
 #include "app_protection.h"
 #include "app_runtime_context.h"
+#include "app_setpoint_cursor.h"
 #include "app_setpoint_context.h"
 #include "app_timing_alerts.h"
 #include "app_timer_context.h"
@@ -79,7 +80,7 @@ void update_core_managed_home_cursor() {
     case CR:
     case BC:
     case CA:
-      legacy_cursor_position();
+      app_setpoint_cursor_update();
       break;
     default:
       break;
@@ -313,6 +314,7 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
+
 
 
 

@@ -12,7 +12,9 @@
 - Continuar migracion de arquitectura para luego introducir mejoras en TFT
     
 **En Cola:**
-- 
+- Test de encendido de Fans en Fan Settings
+- Entrar en modo update de firmware
+- En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 
 **Bugs**
 - Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR

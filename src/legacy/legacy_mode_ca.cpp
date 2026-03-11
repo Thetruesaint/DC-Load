@@ -10,6 +10,7 @@
 #include "../app/app_measurements_context.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_runtime_context.h"
+#include "../app/app_setpoint_cursor.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
@@ -36,7 +37,7 @@ void legacy_calibration_mode() {
   readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
   app_setpoint_set_reading(readingValue);
   app_runtime_set_encoder_position(readingValue * 1000.0f);
-  legacy_cursor_position();
+  app_setpoint_cursor_update();
 
   if (!app_load_is_enabled()) {
     return;
@@ -105,4 +106,5 @@ void legacy_calibrate(float realValue) {
       app_calibration_pending_output_factor(),
       app_calibration_pending_output_offset());
 }
+
 
