@@ -1,8 +1,10 @@
 #include "legacy_mode_ca.h"
 
+#include "legacy_base_io.h"
+
 #include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
 #include "../funciones.h"
+#include "../hw/hw_objects.h"
 #include "../ui/ui_mode_templates.h"
 #include "../app/app_load_context.h"
 #include "../app/app_runtime_context.h"
@@ -43,7 +45,7 @@ void legacy_calibration_mode() {
     ui_draw_calibration_mode_template(
         app_calibration_is_voltage_mode(),
         app_calibration_first_point_taken());
-    Encoder_Status(true, app_limits_current_cutoff());
+    legacy_encoder_status(true, app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
 
@@ -51,7 +53,7 @@ void legacy_calibration_mode() {
   readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
   app_setpoint_set_reading(readingValue);
   app_runtime_set_encoder_position(readingValue * 1000.0f);
-  Cursor_Position();
+  legacy_cursor_position();
 
   if (!app_load_is_enabled()) {
     return;
@@ -111,7 +113,7 @@ void legacy_calibrate(float realValue) {
   measuredValue2 = measuredValue;
   realValue2 = realValue;
   setCurrent2 = app_load_set_current_mA() / 1000.0f;
-  Load_OFF();
+  legacy_load_off();
   app_calibration_set_first_point_taken(false);
 
   float measuredDelta = fabsf(measuredValue2 - measuredValue1);

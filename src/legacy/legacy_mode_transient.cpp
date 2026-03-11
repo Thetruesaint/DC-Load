@@ -1,8 +1,10 @@
 #include "legacy_mode_transient.h"
 
+#include "legacy_base_io.h"
+
 #include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
 #include "../funciones.h"
+#include "../hw/hw_objects.h"
 #include "../ui/ui_mode_templates.h"
 #include "../app/app_mode_state_context.h"
 #include "../app/app_limits_context.h"
@@ -28,7 +30,7 @@ void legacy_transient_cont_mode() {
     ui_draw_transient_cont_mode_template(LowCurrent, HighCurrent, transientPeriod);
     app_load_set_set_current_mA(0.0f);
     app_mode_state_set_initialized(true);
-    Encoder_Status(false);
+    legacy_encoder_status(false);
   }
 
   legacy_transcient_cont_timing();
@@ -99,7 +101,7 @@ void legacy_transient_list_mode() {
   if (!app_mode_state_initialized()) {
     ui_draw_transient_list_mode_template(total_steps);
     app_mode_state_set_initialized(true);
-    Encoder_Status(false);
+    legacy_encoder_status(false);
   }
 
   if (app_mode_state_configured()) {
@@ -185,4 +187,3 @@ void legacy_transient_list_timing() {
     last_time = current_time;
   }
 }
-

@@ -1,8 +1,9 @@
 #include "legacy_safety_control.h"
 
+#include "legacy_base_io.h"
+
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../funciones.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
 #include "../app/app_load_context.h"
@@ -12,6 +13,7 @@
 #include "../app/app_measurements_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_fan_context.h"
+#include "../app/app_value_input.h"
 
 void legacy_temp_control() {
   static unsigned long fan_on_time = 0;
@@ -69,7 +71,7 @@ void legacy_check_limits() {
   }
 
   if (strlen(message) > 0) {
-    Load_OFF();
+    legacy_load_off();
     app_setpoint_set_reading(0.0f);
     app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
@@ -77,7 +79,7 @@ void legacy_check_limits() {
 
     ui_blink_limit_alarm(message, vlimit, ilimit, plimit, climit);
 
-    Reset_Input_Pointers();
+    app_reset_input_pointers();
     app_mode_state_set_initialized(false);
   }
 }

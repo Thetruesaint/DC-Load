@@ -2,12 +2,12 @@
 
 #include "../config/system_constants.h"
 #include "../core/core_engine.h"
-#include "../funciones.h"
 #include "../hw/hw_objects.h"
 #include "../legacy/legacy_base_io.h"
 #include "../legacy/legacy_dac_control.h"
 #include "../legacy/legacy_mode_dispatch.h"
 #include "../legacy/legacy_safety_control.h"
+#include "../legacy/legacy_timing_buzzer.h"
 #include "../ui/ui_cycle_render.h"
 #include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
@@ -22,6 +22,7 @@
 #include "app_runtime_context.h"
 #include "app_setpoint_context.h"
 #include "app_timer_context.h"
+
 
 namespace {
 void prepare_core_managed_home_mode() {
@@ -45,7 +46,7 @@ void prepare_core_managed_home_mode() {
       break;
     case BC:
       if (!app_mode_state_configured()) break;
-      timer_reset();
+      legacy_timer_reset();
       app_battery_life_ref() = 0.0f;
       app_battery_life_previous_ref() = 0.0f;
       legacy_encoder_status(true, app_limits_current_cutoff());
@@ -86,15 +87,15 @@ void run_core_managed_battery_mode() {
   const unsigned long currentMillis = app_io_millis();
 
   if (app_load_is_enabled() && app_measurements_voltage_v() >= batteryCutoffVolts && !timerRunning) {
-    timer_start();
+    legacy_timer_start();
   }
   if (!app_load_is_enabled() && app_measurements_voltage_v() >= batteryCutoffVolts && timerRunning) {
-    timer_stop();
+    legacy_timer_stop();
   }
 
   if (currentMillis - lastUpdate >= 500) {
     lastUpdate = currentMillis;
-    ui_update_battery_timer(timer_getTime());
+    ui_update_battery_timer(legacy_timer_get_time());
 
     const float loadCurrent = (!timerRunning) ? 0.0f : app_measurements_current_a();
     batteryLife += (loadCurrent * 1000.0f) / 7200.0f;
@@ -130,9 +131,9 @@ void run_core_managed_battery_mode() {
     app_runtime_set_encoder_position(0.0f);
     app_load_set_set_current_mA(0.0f);
     encoder.clearCount();
-    Load_OFF();
-    timer_stop();
-    beepBuzzer();
+    legacy_load_off();
+    legacy_timer_stop();
+    legacy_beep_buzzer();
     ui_show_battery_done();
   }
 }
@@ -162,3 +163,4 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
+
