@@ -11,7 +11,6 @@
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
 
-
 void legacy_dac_control() {
 #ifndef WOKWI_SIMULATION
   if (app_load_is_enabled()) {
@@ -20,12 +19,8 @@ void legacy_dac_control() {
     dac.setVoltage(setDAC, false);
   } else {
     dac.setVoltage(0, false);
-    app_load_set_set_current_mA(0.0f);
   }
 #else
-  if (!app_load_is_enabled()) {
-    app_load_set_set_current_mA(0.0f);
-  }
+  (void)app_load_is_enabled();
 #endif
 }
-

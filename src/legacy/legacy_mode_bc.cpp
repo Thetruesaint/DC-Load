@@ -26,7 +26,7 @@
 
 void legacy_battery_mode() {
   if (!app_mode_state_configured()) {
-    legacy_battery_type_selec();
+    app_mode_state_set_initialized(false);
     return;
   }
 
@@ -179,6 +179,7 @@ bool legacy_battery_capacity() {
 
   return false;
 }
+
 
 
 

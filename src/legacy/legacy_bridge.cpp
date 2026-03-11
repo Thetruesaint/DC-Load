@@ -21,6 +21,27 @@
 #include "../ui/ui_mode_templates.h"
 #include "../funciones.h"
 
+namespace {
+void apply_limit_runtime_updates(const SystemState &state) {
+  if (state.mode == CC || state.mode == BC) {
+    app_setpoint_set_max_reading(app_limits_current_cutoff());
+    app_runtime_set_encoder_max(static_cast<unsigned long>(app_setpoint_max_reading() * 1000.0f));
+    if (app_runtime_encoder_position() > static_cast<float>(app_runtime_encoder_max())) {
+      app_runtime_set_encoder_position(static_cast<float>(app_runtime_encoder_max()));
+    }
+    return;
+  }
+
+  if (state.mode == CP) {
+    app_setpoint_set_max_reading(app_limits_power_cutoff());
+    app_runtime_set_encoder_max(static_cast<unsigned long>(app_setpoint_max_reading() * 1000.0f));
+    if (app_runtime_encoder_position() > static_cast<float>(app_runtime_encoder_max())) {
+      app_runtime_set_encoder_position(static_cast<float>(app_runtime_encoder_max()));
+    }
+  }
+}
+}
+
 SystemState legacy_capture_state() {
   SystemState state = core_state_make_default();
 
@@ -75,6 +96,8 @@ void legacy_apply_state(const SystemState &state) {
   app_mode_state_set_configured(state.modeConfigured);
   app_setpoint_set_reading(state.readingValue);
   app_load_set_enabled(state.loadEnabled);
+  app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
+  app_battery_type_ref() = String(state.batteryType);
 
   if (state.limitsSaveEvent) {
     app_limits_set_current_cutoff(state.limitsDraftCurrentA);
@@ -85,7 +108,7 @@ void legacy_apply_state(const SystemState &state) {
     Save_EEPROM(ADD_POWER_CUT_OFF, app_limits_power_cutoff());
     Save_EEPROM(ADD_TEMP_CUT_OFF, app_limits_temp_cutoff());
 
-    app_mode_state_set_initialized(false);
+    apply_limit_runtime_updates(state);
   }
 
   if (state.fanSaveEvent) {
@@ -93,7 +116,6 @@ void legacy_apply_state(const SystemState &state) {
     app_fan_set_hold_seconds(static_cast<uint8_t>(state.fanDraftHoldSeconds));
     Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
     Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
-    app_mode_state_set_initialized(false);
   }
 
   if (state.calibrationMenuApplyEvent) {
@@ -149,3 +171,5 @@ void legacy_apply_state(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+
+

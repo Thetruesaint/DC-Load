@@ -5,6 +5,9 @@
 
 enum class UiScreen : uint8_t {
   Home = 0,
+  BatterySetupTask,
+  BatterySetupCustomCutoff,
+  BatterySetupCellCount,
   MenuRoot,
   MenuProtection,
   MenuFanSettings,
@@ -64,6 +67,11 @@ struct SystemState {
   char fanInputText[8];
   uint8_t fanInputLength;
 
+  uint8_t batterySetupStage;
+  char batteryInputText[8];
+  uint8_t batteryInputLength;
+  bool batteryInputHasDecimal;
+
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
@@ -108,6 +116,7 @@ inline SystemState core_state_make_default() {
   state.calibrationMenuOption = 1;
   state.protectionMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
+  state.batterySetupStage = 0;
   return state;
 }
 

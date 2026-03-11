@@ -136,12 +136,18 @@ void config_menu_enter(SystemState *state, ConfigMenu menu, ConfigMenu parent) {
   config_menu_sync_pending_section(state, menu);
 }
 
+bool should_reset_mode_init_on_menu_exit(const SystemState &state) {
+  if (state.mode == 0 || state.mode == 1 || state.mode == 2) return false;
+  if (state.mode == 3 && state.modeConfigured) return false;
+  return true;
+}
+
 void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent, ConfigMenu child) {
   if (state == nullptr) return;
 
   state->currentConfigMenu = parent;
   state->parentConfigMenu = (parent == ConfigMenu::Protection) ? ConfigMenu::Root : ConfigMenu::None;
-  state->modeInitialized = false;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
 
   if (parent == ConfigMenu::Root) {
     state->menuRootSelection = menu_root_index_for_menu(child);
@@ -157,7 +163,7 @@ void config_menu_close(SystemState *state) {
   state->pendingConfigSection = ConfigSection::None;
   state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
-  state->modeInitialized = false;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
 }
 
 void limits_input_reset(SystemState *state) {
@@ -171,6 +177,106 @@ void fan_input_reset(SystemState *state) {
   if (state == nullptr) return;
   state->fanInputText[0] = '\0';
   state->fanInputLength = 0;
+}
+void battery_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->batteryInputText[0] = '\0';
+  state->batteryInputLength = 0;
+  state->batteryInputHasDecimal = false;
+}
+
+void battery_type_set(SystemState *state, const char *type) {
+  if (state == nullptr || type == nullptr) return;
+  std::strncpy(state->batteryType, type, sizeof(state->batteryType) - 1);
+  state->batteryType[sizeof(state->batteryType) - 1] = '\0';
+}
+
+void battery_setup_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->batterySetupStage = 0;
+  battery_input_reset(state);
+}
+
+void battery_setup_select_task(SystemState *state, char key) {
+  if (state == nullptr) return;
+
+  switch (key) {
+    case '1':
+      state->batteryCutoffVolts = LIPO_STOR_CELL_VLTG;
+      battery_type_set(state, "Li-Po");
+      state->batterySetupStage = 2;
+      break;
+    case '2':
+      state->batteryCutoffVolts = LION_STOR_CELL_VLTG;
+      battery_type_set(state, "Li-Ion");
+      state->batterySetupStage = 2;
+      break;
+    case '3':
+      state->batteryCutoffVolts = LIPO_DISC_CELL_VLTG;
+      battery_type_set(state, "Li-Po");
+      state->batterySetupStage = 2;
+      break;
+    case '4':
+      state->batteryCutoffVolts = LION_DISC_CELL_VLTG;
+      battery_type_set(state, "Li-Ion");
+      state->batterySetupStage = 2;
+      break;
+    case '5':
+      battery_type_set(state, "Custom");
+      state->batterySetupStage = 1;
+      break;
+    default:
+      return;
+  }
+
+  battery_input_reset(state);
+}
+
+bool battery_custom_append(SystemState *state, char key) {
+  if (state == nullptr) return false;
+  if (key == '.') {
+    if (state->batteryInputHasDecimal || state->batteryInputLength >= 5) return false;
+    state->batteryInputText[state->batteryInputLength++] = '.';
+    state->batteryInputText[state->batteryInputLength] = '\0';
+    state->batteryInputHasDecimal = true;
+    return true;
+  }
+  if (key < '0' || key > '9' || state->batteryInputLength >= 5) return false;
+  state->batteryInputText[state->batteryInputLength++] = key;
+  state->batteryInputText[state->batteryInputLength] = '\0';
+  return true;
+}
+
+bool battery_input_backspace(SystemState *state) {
+  if (state == nullptr || state->batteryInputLength == 0) return false;
+  state->batteryInputLength--;
+  if (state->batteryInputText[state->batteryInputLength] == '.') {
+    state->batteryInputHasDecimal = false;
+  }
+  state->batteryInputText[state->batteryInputLength] = '\0';
+  return true;
+}
+
+void battery_setup_finish_custom(SystemState *state) {
+  if (state == nullptr || state->batteryInputLength == 0) return;
+  const float value = static_cast<float>(atof(state->batteryInputText));
+  if (value < 0.1f || value > 25.0f) return;
+  state->batteryCutoffVolts = value;
+  state->modeConfigured = true;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
+  state->batterySetupStage = 0;
+  battery_input_reset(state);
+}
+
+void battery_setup_finish_cells(SystemState *state) {
+  if (state == nullptr || state->batteryInputLength == 0) return;
+  const int cells = atoi(state->batteryInputText);
+  if (cells < 1 || cells > 6) return;
+  state->batteryCutoffVolts *= static_cast<float>(cells);
+  state->modeConfigured = true;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
+  state->batterySetupStage = 0;
+  battery_input_reset(state);
 }
 
 bool numeric_input_append_digit(char *buffer, uint8_t *length, uint8_t maxDigits, char key) {
@@ -235,7 +341,7 @@ void limits_menu_finish(SystemState *state, bool save, bool returnToParent = fal
   state->pendingConfigSection = ConfigSection::None;
   state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
-  state->modeInitialized = false;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
 }
 
 void limits_menu_start_edit(SystemState *state) {
@@ -320,7 +426,7 @@ void fan_menu_finish(SystemState *state, bool save, bool returnToParent = false)
   state->pendingConfigSection = ConfigSection::None;
   state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
-  state->modeInitialized = false;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
 }
 
 void fan_menu_start_edit(SystemState *state) {
@@ -383,7 +489,7 @@ void calibration_menu_finish(SystemState *state, bool apply, bool returnToParent
   state->pendingConfigSection = ConfigSection::None;
   state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
-  state->modeInitialized = false;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
 }
 
 void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
@@ -506,6 +612,11 @@ void core_sync_from_legacy(const SystemState &state) {
   char fanInputText[8] = {0};
   std::strncpy(fanInputText, g_state.fanInputText, sizeof(fanInputText) - 1);
   const uint8_t fanInputLength = g_state.fanInputLength;
+  const uint8_t batterySetupStage = g_state.batterySetupStage;
+  char batteryInputText[8] = {0};
+  std::strncpy(batteryInputText, g_state.batteryInputText, sizeof(batteryInputText) - 1);
+  const uint8_t batteryInputLength = g_state.batteryInputLength;
+  const bool batteryInputHasDecimal = g_state.batteryInputHasDecimal;
 
   g_state = state;
   g_state.actionCounter = actionCounter;
@@ -536,6 +647,11 @@ void core_sync_from_legacy(const SystemState &state) {
   std::strncpy(g_state.fanInputText, fanInputText, sizeof(g_state.fanInputText) - 1);
   g_state.fanInputText[sizeof(g_state.fanInputText) - 1] = '\0';
   g_state.fanInputLength = fanInputLength;
+  g_state.batterySetupStage = batterySetupStage;
+  std::strncpy(g_state.batteryInputText, batteryInputText, sizeof(g_state.batteryInputText) - 1);
+  g_state.batteryInputText[sizeof(g_state.batteryInputText) - 1] = '\0';
+  g_state.batteryInputLength = batteryInputLength;
+  g_state.batteryInputHasDecimal = batteryInputHasDecimal;
 
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
@@ -588,6 +704,15 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::EncoderButtonPress:
+      if (g_state.uiScreen == UiScreen::BatterySetupCustomCutoff) {
+        battery_setup_finish_custom(&g_state);
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::BatterySetupCellCount) {
+        battery_setup_finish_cells(&g_state);
+        break;
+      }
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         config_menu_activate_selection(&g_state, ConfigMenu::Root);
         break;
@@ -622,6 +747,69 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::KeyPressed:
       g_state.lastKeyPressed = action.key;
+
+      if (g_state.uiScreen == UiScreen::BatterySetupTask) {
+        if (action.key >= '1' && action.key <= '5') {
+          battery_setup_select_task(&g_state, action.key);
+        } else if (action.key == 'M') {
+          core_mode_apply_selection(&g_state, false, action.key);
+          g_state.pendingConfigSection = ConfigSection::None;
+          g_state.menuRootSelection = 0;
+          g_state.protectionMenuSelection = 0;
+          g_state.fanSettingsMenuSelection = 0;
+          g_state.currentConfigMenu = ConfigMenu::None;
+          g_state.parentConfigMenu = ConfigMenu::None;
+          g_state.openLimitsConfigEvent = false;
+          g_state.openCalibrationConfigEvent = false;
+          g_state.calibrationValueConfirmEvent = false;
+          g_state.limitsMenuActive = false;
+          g_state.limitsEditActive = false;
+          limits_input_reset(&g_state);
+          g_state.calibrationMenuActive = false;
+          g_state.fanEditActive = false;
+          fan_input_reset(&g_state);
+          battery_setup_begin(&g_state);
+          if (g_state.mode != 3) {
+            battery_type_set(&g_state, "");
+            g_state.batteryCutoffVolts = 0.0f;
+          }
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::BatterySetupCustomCutoff) {
+        if (action.key == '<') {
+          if (!battery_input_backspace(&g_state)) {
+            g_state.batterySetupStage = 0;
+            battery_input_reset(&g_state);
+          }
+        } else if (action.key == 'E') {
+          battery_setup_finish_custom(&g_state);
+        } else if (action.key == 'M') {
+          g_state.batterySetupStage = 0;
+          battery_input_reset(&g_state);
+        } else {
+          (void)battery_custom_append(&g_state, action.key);
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::BatterySetupCellCount) {
+        if (action.key == '<') {
+          if (!numeric_input_backspace(g_state.batteryInputText, &g_state.batteryInputLength)) {
+            g_state.batterySetupStage = 0;
+            battery_input_reset(&g_state);
+          }
+        } else if (action.key == 'E') {
+          battery_setup_finish_cells(&g_state);
+        } else if (action.key == 'M') {
+          g_state.batterySetupStage = 0;
+          battery_input_reset(&g_state);
+        } else {
+          (void)numeric_input_append_digit(g_state.batteryInputText, &g_state.batteryInputLength, 1, action.key);
+        }
+        break;
+      }
 
       if (g_state.uiScreen == UiScreen::MenuRoot) {
         if (action.key == '1') {
@@ -762,11 +950,7 @@ void core_dispatch(const UserAction &action) {
     case ActionType::LoadToggle:
       g_state.loadEnabled = !g_state.loadEnabled;
       g_state.loadToggleEvent = true;
-      if (!g_state.loadEnabled) {
-        g_state.setCurrent_mA = 0.0f;
-      }
       break;
-
     case ActionType::ModeSelect:
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       g_state.pendingConfigSection = ConfigSection::None;
@@ -784,6 +968,11 @@ void core_dispatch(const UserAction &action) {
       g_state.calibrationMenuActive = false;
       g_state.fanEditActive = false;
       fan_input_reset(&g_state);
+      battery_setup_begin(&g_state);
+      if (g_state.mode != 3) {
+        battery_type_set(&g_state, "");
+        g_state.batteryCutoffVolts = 0.0f;
+      }
       break;
 
     case ActionType::ValueConfirm:
@@ -799,6 +988,7 @@ void core_dispatch(const UserAction &action) {
       if (g_state.uiScreen != UiScreen::Home) {
         break;
       }
+      g_state.loadEnabled = false;
       g_state.pendingConfigSection = default_config_selection(decode_config_section(action.value));
       g_state.menuRootSelection = menu_root_index_for_menu(
           (decode_config_section(action.value) == ConfigSection::Calibration)
@@ -816,8 +1006,8 @@ void core_dispatch(const UserAction &action) {
       g_state.calibrationMenuActive = false;
       g_state.fanEditActive = false;
       fan_input_reset(&g_state);
+      battery_input_reset(&g_state);
       break;
-
     case ActionType::None:
     default:
       return;
@@ -837,3 +1027,22 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

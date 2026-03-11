@@ -12,7 +12,7 @@ void legacy_run_mode_logic() {
     case CP:
     case CR:
       break;
-    case BC: legacy_battery_mode(); break;
+    case BC: break;
     case TC: legacy_transient_cont_mode(); break;
     case TL: legacy_transient_list_mode(); break;
     case CA: legacy_calibration_mode(); break;
@@ -20,3 +20,4 @@ void legacy_run_mode_logic() {
     default: break;
   }
 }
+

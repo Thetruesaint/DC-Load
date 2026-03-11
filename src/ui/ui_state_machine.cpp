@@ -46,11 +46,19 @@ struct CalibrationRenderCache {
   bool valid;
 };
 
+struct BatterySetupRenderCache {
+  uint8_t stage;
+  char batteryType[8];
+  char inputText[8];
+  bool valid;
+};
+
 HomeRenderCache g_homeCache = {0, 0.0f, {'\0'}, false};
 ProtectionRenderCache g_protectionCache = {0, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
+BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false};
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -84,15 +92,65 @@ void draw_home_if_needed(const UiViewState &viewState) {
 
   if (g_homeCache.valid &&
       g_homeCache.mode == viewState.mode &&
-      g_homeCache.batteryCutoffVolts == viewState.batteryCutoffVolts &&      std::strcmp(g_homeCache.batteryType, viewState.batteryType) == 0) {
+      g_homeCache.batteryCutoffVolts == viewState.batteryCutoffVolts &&
+      std::strcmp(g_homeCache.batteryType, viewState.batteryType) == 0) {
     return;
   }
 
   draw_home_template_for_mode(viewState);
   g_homeCache.mode = viewState.mode;
-  g_homeCache.batteryCutoffVolts = viewState.batteryCutoffVolts;  std::strncpy(g_homeCache.batteryType, viewState.batteryType, sizeof(g_homeCache.batteryType) - 1);
+  g_homeCache.batteryCutoffVolts = viewState.batteryCutoffVolts;
+  std::strncpy(g_homeCache.batteryType, viewState.batteryType, sizeof(g_homeCache.batteryType) - 1);
   g_homeCache.batteryType[sizeof(g_homeCache.batteryType) - 1] = '\0';
   g_homeCache.valid = true;
+}
+
+void draw_battery_setup_task_if_needed() {
+  if (g_batterySetupCache.valid && g_batterySetupCache.stage == 0) {
+    return;
+  }
+
+  ui_draw_battery_task_menu();
+  g_batterySetupCache.stage = 0;
+  g_batterySetupCache.valid = true;
+}
+
+void draw_battery_setup_custom_if_needed(const UiViewState &viewState) {
+  if (g_batterySetupCache.valid &&
+      g_batterySetupCache.stage == 1 &&
+      std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0 &&
+      std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0) {
+    return;
+  }
+
+  ui_draw_battery_custom_cutoff_prompt(String(viewState.batteryType));
+  ui_prepare_value_input_prompt(7, 3, 5);
+  printLCD_S(7, 3, String(viewState.batteryInputText));
+  std::strncpy(g_batterySetupCache.batteryType, viewState.batteryType, sizeof(g_batterySetupCache.batteryType) - 1);
+  g_batterySetupCache.batteryType[sizeof(g_batterySetupCache.batteryType) - 1] = '\0';
+  std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
+  g_batterySetupCache.inputText[sizeof(g_batterySetupCache.inputText) - 1] = '\0';
+  g_batterySetupCache.stage = 1;
+  g_batterySetupCache.valid = true;
+}
+
+void draw_battery_setup_cells_if_needed(const UiViewState &viewState) {
+  if (g_batterySetupCache.valid &&
+      g_batterySetupCache.stage == 2 &&
+      std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0 &&
+      std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0) {
+    return;
+  }
+
+  ui_draw_battery_cell_count_prompt(String(viewState.batteryType));
+  ui_prepare_value_input_prompt(9, 2, 1);
+  printLCD_S(9, 2, String(viewState.batteryInputText));
+  std::strncpy(g_batterySetupCache.batteryType, viewState.batteryType, sizeof(g_batterySetupCache.batteryType) - 1);
+  g_batterySetupCache.batteryType[sizeof(g_batterySetupCache.batteryType) - 1] = '\0';
+  std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
+  g_batterySetupCache.inputText[sizeof(g_batterySetupCache.inputText) - 1] = '\0';
+  g_batterySetupCache.stage = 2;
+  g_batterySetupCache.valid = true;
 }
 
 void draw_protection_if_needed(const UiViewState &viewState) {
@@ -223,6 +281,7 @@ void screen_enter_home(const UiViewState &viewState) {
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_batterySetupCache.valid = false;
   g_homeCache.valid = false;
   draw_home_if_needed(viewState);
 }
@@ -233,6 +292,41 @@ void screen_update_home(const UiViewState &viewState) {
 }
 
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
+
+void screen_enter_battery_setup_task(const UiViewState &viewState) {
+  (void)viewState;
+  g_batterySetupCache.valid = false;
+  draw_battery_setup_task_if_needed();
+}
+
+void screen_update_battery_setup_task(const UiViewState &viewState) {
+  (void)viewState;
+  draw_battery_setup_task_if_needed();
+}
+
+void screen_render_battery_setup_task(const UiViewState &viewState) { (void)viewState; }
+
+void screen_enter_battery_setup_custom(const UiViewState &viewState) {
+  g_batterySetupCache.valid = false;
+  draw_battery_setup_custom_if_needed(viewState);
+}
+
+void screen_update_battery_setup_custom(const UiViewState &viewState) {
+  draw_battery_setup_custom_if_needed(viewState);
+}
+
+void screen_render_battery_setup_custom(const UiViewState &viewState) { (void)viewState; }
+
+void screen_enter_battery_setup_cells(const UiViewState &viewState) {
+  g_batterySetupCache.valid = false;
+  draw_battery_setup_cells_if_needed(viewState);
+}
+
+void screen_update_battery_setup_cells(const UiViewState &viewState) {
+  draw_battery_setup_cells_if_needed(viewState);
+}
+
+void screen_render_battery_setup_cells(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_root(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
@@ -292,6 +386,9 @@ void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewSt
 void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_enter_home(viewState); break;
+    case UiScreen::BatterySetupTask: screen_enter_battery_setup_task(viewState); break;
+    case UiScreen::BatterySetupCustomCutoff: screen_enter_battery_setup_custom(viewState); break;
+    case UiScreen::BatterySetupCellCount: screen_enter_battery_setup_cells(viewState); break;
     case UiScreen::MenuRoot: screen_enter_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_enter_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_enter_menu_fan_settings(viewState); break;
@@ -304,6 +401,9 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
 void run_screen_update(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_update_home(viewState); break;
+    case UiScreen::BatterySetupTask: screen_update_battery_setup_task(viewState); break;
+    case UiScreen::BatterySetupCustomCutoff: screen_update_battery_setup_custom(viewState); break;
+    case UiScreen::BatterySetupCellCount: screen_update_battery_setup_cells(viewState); break;
     case UiScreen::MenuRoot: screen_update_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_update_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_update_menu_fan_settings(viewState); break;
@@ -316,6 +416,9 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
 void run_screen_render(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_render_home(viewState); break;
+    case UiScreen::BatterySetupTask: screen_render_battery_setup_task(viewState); break;
+    case UiScreen::BatterySetupCustomCutoff: screen_render_battery_setup_custom(viewState); break;
+    case UiScreen::BatterySetupCellCount: screen_render_battery_setup_cells(viewState); break;
     case UiScreen::MenuRoot: screen_render_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_render_menu_protection(viewState); break;
     case UiScreen::MenuFanSettings: screen_render_menu_fan_settings(viewState); break;
@@ -333,6 +436,7 @@ void ui_state_machine_reset() {
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_batterySetupCache.valid = false;
   g_homeCache.valid = false;
 }
 
@@ -349,4 +453,3 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
 }
-

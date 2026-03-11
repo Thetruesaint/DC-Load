@@ -20,6 +20,14 @@ bool mode_uses_managed_setpoints(uint8_t mode) {
   return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_CA;
 }
 
+UiScreen battery_setup_target_screen(const SystemState &state) {
+  switch (state.batterySetupStage) {
+    case 1: return UiScreen::BatterySetupCustomCutoff;
+    case 2: return UiScreen::BatterySetupCellCount;
+    default: return UiScreen::BatterySetupTask;
+  }
+}
+
 int cursor_min_by_mode(uint8_t mode) {
   return (mode == MODE_CP || mode == MODE_CR) ? 6 : 8;
 }
@@ -104,11 +112,6 @@ void core_mode_update_setpoints(SystemState *state) {
   state->readingValue = reading;
   state->encoderPositionRaw = reading * 1000.0f;
 
-  if (!state->loadEnabled) {
-    state->setCurrent_mA = 0.0f;
-    return;
-  }
-
   if (state->mode == MODE_CC || state->mode == MODE_CA) {
     state->setCurrent_mA = reading * 1000.0f;
     return;
@@ -135,7 +138,6 @@ void core_mode_update_setpoints(SystemState *state) {
 void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) {
   if (state == nullptr) return;
 
-  // Shared behavior: leaving current mode always turns load off and re-inits template.
   state->loadEnabled = false;
   state->setCurrent_mA = 0.0f;
   state->modeInitialized = false;
@@ -169,5 +171,17 @@ void core_mode_apply_selection(SystemState *state, bool shiftPressed, char key) 
 
 void core_mode_update_ui_screen(SystemState *state) {
   if (state == nullptr) return;
-  state->uiScreen = core_config_target_screen(*state);
+
+  const UiScreen configScreen = core_config_target_screen(*state);
+  if (configScreen != UiScreen::Home) {
+    state->uiScreen = configScreen;
+    return;
+  }
+
+  if (state->mode == MODE_BC && !state->modeConfigured) {
+    state->uiScreen = battery_setup_target_screen(*state);
+    return;
+  }
+
+  state->uiScreen = UiScreen::Home;
 }
