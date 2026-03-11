@@ -7,7 +7,7 @@
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
 #include "../config/system_constants.h"
-#include "../funciones.h"
+#include "../storage_eeprom.h"
 #include "../ui/ui_mode_templates.h"
 
 void legacy_config_limits() {
@@ -19,7 +19,7 @@ void legacy_config_limits() {
 
   const int col = 12;
   int row = 1;
-  if (!Value_Input(col, row)) {
+  if (!app_value_input(col, row, 5, true)) {
     app_mode_state_set_initialized(false);
     return;
   }
@@ -27,7 +27,7 @@ void legacy_config_limits() {
   ui_show_current_limit_value(col, row, app_limits_current_cutoff());
 
   row = 2;
-  if (!Value_Input(col, row)) {
+  if (!app_value_input(col, row, 5, true)) {
     app_mode_state_set_initialized(false);
     return;
   }
@@ -35,7 +35,7 @@ void legacy_config_limits() {
   ui_show_value_number(col, row, app_limits_power_cutoff(), 'W', 1);
 
   row = 3;
-  if (!Value_Input(col, row, 2)) {
+  if (!app_value_input(col, row, 2, true)) {
     app_mode_state_set_initialized(false);
     return;
   }

@@ -3,7 +3,6 @@
 #include "legacy_base_io.h"
 
 #include "../config/system_constants.h"
-#include "../funciones.h"
 #include "../hw/hw_objects.h"
 #include "../ui/ui_mode_templates.h"
 #include "../app/app_load_context.h"
@@ -15,6 +14,7 @@
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
+#include "../storage_eeprom.h"
 #define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
 #define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
 #define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
@@ -69,7 +69,7 @@ void legacy_calibration_setup() {
     const int col = 1;
     const int row = 3;
     ui_prepare_value_input_prompt(col, row, 1);
-    if (!Value_Input(col, row, 1, false)) {
+    if (!app_value_input(col, row, 1, false)) {
       return;
     }
     selection = app_value_result_get();

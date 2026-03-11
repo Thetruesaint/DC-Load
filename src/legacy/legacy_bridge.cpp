@@ -19,8 +19,8 @@
 #include "../app/app_value_result_context.h"
 #include "../config/system_constants.h"
 #include "../core/core_config_flow.h"
-#include "../funciones.h"
 #include "../hw/hw_objects.h"
+#include "../storage_eeprom.h"
 #include "../ui/ui_mode_templates.h"
 
 namespace {

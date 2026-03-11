@@ -4,8 +4,9 @@
 #include <Wire.h>
 
 #include "../config/system_constants.h"
-#include "../funciones.h"
 #include "../hw/hw_objects.h"
+#include "../legacy/legacy_mode_limits.h"
+#include "../legacy/legacy_timing_buzzer.h"
 #include "../storage_eeprom.h"
 #include "../ui_lcd.h"
 #include "app_fan_context.h"
@@ -37,7 +38,7 @@ void init_peripherals() {
   Serial.begin(115200);
   Wire.begin(21, 22);
   initLCD();
-  beepBuzzer();
+  legacy_beep_buzzer();
 }
 
 void run_peripheral_health_check() {
@@ -128,7 +129,7 @@ void load_runtime_configuration() {
       app_fan_hold_ms() < MIN_FAN_HOLD_MS || app_fan_hold_ms() > MAX_FAN_HOLD_MS;
 
   if (invalidLimits) {
-    Config_Limits();
+    legacy_config_limits();
   }
 
   if (invalidFan) {

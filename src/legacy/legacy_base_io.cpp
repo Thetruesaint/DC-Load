@@ -2,7 +2,6 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../funciones.h"
 #include "../app/app_inputs.h"
 #include "../app/app_io_context.h"
 #include "../app/app_load_context.h"
