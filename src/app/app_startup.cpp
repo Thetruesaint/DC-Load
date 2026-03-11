@@ -6,13 +6,13 @@
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
 #include "../legacy/legacy_mode_limits.h"
-#include "../legacy/legacy_timing_buzzer.h"
 #include "../storage_eeprom.h"
 #include "../ui_lcd.h"
 #include "app_fan_context.h"
 #include "app_health_context.h"
 #include "app_limits_context.h"
 #include "app_measurements_context.h"
+#include "app_timing_alerts.h"
 
 namespace {
 void init_io() {
@@ -38,7 +38,7 @@ void init_peripherals() {
   Serial.begin(115200);
   Wire.begin(21, 22);
   initLCD();
-  legacy_beep_buzzer();
+  app_beep_buzzer();
 }
 
 void run_peripheral_health_check() {
@@ -159,3 +159,4 @@ void app_startup_run() {
   show_startup_splash();
   load_runtime_configuration();
 }
+

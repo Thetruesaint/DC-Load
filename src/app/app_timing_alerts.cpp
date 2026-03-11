@@ -1,15 +1,15 @@
-#include "legacy_timing_buzzer.h"
+#include "app_timing_alerts.h"
 
-#include "../app/app_timer_context.h"
 #include "../hal/hal_alerts.h"
 #include "../hal/hal_inputs.h"
 #include "../hw/hw_objects.h"
+#include "app_timer_context.h"
 
 #define mytimerStarted (app_timer_running_ref())
 #define startTime (app_timer_start_time_ref())
 #define elapsedSeconds (app_timer_elapsed_seconds_ref())
 
-void legacy_beep_buzzer() {
+void app_beep_buzzer() {
   for (int i = 0; i < 2; i++) {
     hal_buzzer_set(true);
     hal_delay_ms(150);
@@ -18,14 +18,14 @@ void legacy_beep_buzzer() {
   }
 }
 
-void legacy_timer_start() {
+void app_timer_start() {
   if (!mytimerStarted) {
     startTime = rtc.now();
     mytimerStarted = true;
   }
 }
 
-void legacy_timer_stop() {
+void app_timer_stop() {
   if (mytimerStarted) {
     DateTime now = rtc.now();
     TimeSpan elapsedTime = now - startTime;
@@ -34,12 +34,12 @@ void legacy_timer_stop() {
   }
 }
 
-void legacy_timer_reset() {
+void app_timer_reset() {
   elapsedSeconds = 0.0;
   mytimerStarted = false;
 }
 
-float legacy_timer_get_total_seconds() {
+float app_timer_get_total_seconds() {
   if (mytimerStarted) {
     DateTime now = rtc.now();
     TimeSpan elapsedTime = now - startTime;
@@ -48,8 +48,8 @@ float legacy_timer_get_total_seconds() {
   return elapsedSeconds;
 }
 
-String legacy_timer_get_time() {
-  int totalSeconds = static_cast<int>(legacy_timer_get_total_seconds());
+String app_timer_get_time() {
+  int totalSeconds = static_cast<int>(app_timer_get_total_seconds());
 
   int minutes = (totalSeconds / 60);
   int seconds = (totalSeconds % 60);
