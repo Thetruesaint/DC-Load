@@ -2,36 +2,18 @@
 
 #include "legacy_base_io.h"
 
-#include "../config/system_constants.h"
-#include "../hw/hw_objects.h"
-#include "../ui/ui_mode_templates.h"
-#include "../app/app_load_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_limits_context.h"
-#include "../app/app_measurements_context.h"
 #include "../app/app_calibration_context.h"
+#include "../app/app_limits_context.h"
+#include "../app/app_load_context.h"
+#include "../app/app_measurements_context.h"
+#include "../app/app_mode_state_context.h"
+#include "../app/app_runtime_context.h"
 #include "../app/app_setpoint_context.h"
 #include "../app/app_value_input.h"
 #include "../app/app_value_result_context.h"
+#include "../config/system_constants.h"
 #include "../storage_eeprom.h"
-#define Sns_Volt_Calib_Fact (app_calibration_sns_volt_factor_ref())
-#define Sns_Volt_Calib_Offs (app_calibration_sns_volt_offset_ref())
-#define Sns_Curr_Calib_Fact (app_calibration_sns_curr_factor_ref())
-#define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
-#define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
-#define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
-
-namespace {
-void finish_calibration_mode() {
-  app_mode_state_set_mode(app_calibration_return_mode());
-  app_mode_state_set_function_index(app_calibration_return_function_index());
-  app_mode_state_set_initialized(false);
-  app_mode_state_set_configured(false);
-  app_calibration_reset_session();
-  app_calibration_request_menu_return();
-}
-}
+#include "../ui/ui_mode_templates.h"
 
 void legacy_calibration_mode() {
   if (!app_mode_state_configured()) {
@@ -40,9 +22,7 @@ void legacy_calibration_mode() {
   }
 
   if (!app_mode_state_initialized()) {
-    const float selection = app_value_result_get();
-    app_calibration_begin_mode(selection == 1.0f);
-
+    app_calibration_begin_mode_from_selection(app_value_result_get());
     ui_draw_calibration_mode_template(
         app_calibration_is_voltage_mode(),
         app_calibration_first_point_taken());
@@ -110,22 +90,13 @@ void legacy_calibrate(float realValue) {
 
   if (result.pointsTooClose || result.pointMismatch) {
     ui_draw_calibration_abort(result.pointsTooClose);
-    finish_calibration_mode();
+    app_calibration_finish_mode();
     delay(2000);
     return;
   }
 
-  if (app_calibration_is_voltage_mode()) {
-    Sns_Volt_Calib_Fact = result.sensorFactor;
-    Sns_Volt_Calib_Offs = result.sensorOffset;
-  } else {
-    Sns_Curr_Calib_Fact = result.sensorFactor;
-    Sns_Curr_Calib_Offs = result.sensorOffset;
-    Out_Curr_Calib_Fact = result.outputFactor;
-    Out_Curr_Calib_Offs = result.outputOffset;
-  }
-
+  app_calibration_apply_result(result);
   ui_draw_calibration_success();
-  finish_calibration_mode();
+  app_calibration_finish_mode();
   delay(2000);
 }

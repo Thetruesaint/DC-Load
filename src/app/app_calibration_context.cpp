@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include "../app/app_mode_state_context.h"
 #include "../config/system_constants.h"
 
 namespace {
@@ -62,6 +63,10 @@ void app_calibration_begin_mode(bool voltageMode) {
   outCurrCalibOffset = 0.0f;
 }
 
+void app_calibration_begin_mode_from_selection(float selection) {
+  app_calibration_begin_mode(selection == 1.0f);
+}
+
 bool app_calibration_capture_or_compute(
     float measuredValue,
     float realValue,
@@ -106,6 +111,28 @@ bool app_calibration_capture_or_compute(
   }
 
   return true;
+}
+
+void app_calibration_apply_result(const AppCalibrationComputationResult &result) {
+  if (calibrationVoltageMode) {
+    snsVoltCalibFactor = result.sensorFactor;
+    snsVoltCalibOffset = result.sensorOffset;
+    return;
+  }
+
+  snsCurrCalibFactor = result.sensorFactor;
+  snsCurrCalibOffset = result.sensorOffset;
+  outCurrCalibFactor = result.outputFactor;
+  outCurrCalibOffset = result.outputOffset;
+}
+
+void app_calibration_finish_mode() {
+  app_mode_state_set_mode(calibrationReturnMode);
+  app_mode_state_set_function_index(calibrationReturnFunctionIndex);
+  app_mode_state_set_initialized(false);
+  app_mode_state_set_configured(false);
+  app_calibration_reset_session();
+  app_calibration_request_menu_return();
 }
 
 void app_calibration_store_return_mode(uint8_t mode, int functionIndex) {

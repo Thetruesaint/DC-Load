@@ -21,11 +21,14 @@ void app_calibration_set_first_point_taken(bool taken);
 
 void app_calibration_reset_session();
 void app_calibration_begin_mode(bool voltageMode);
+void app_calibration_begin_mode_from_selection(float selection);
 bool app_calibration_capture_or_compute(
     float measuredValue,
     float realValue,
     float setCurrentA,
     AppCalibrationComputationResult &result);
+void app_calibration_apply_result(const AppCalibrationComputationResult &result);
+void app_calibration_finish_mode();
 
 void app_calibration_store_return_mode(uint8_t mode, int functionIndex);
 uint8_t app_calibration_return_mode();
