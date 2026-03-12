@@ -3,7 +3,7 @@
 #include "../config/system_constants.h"
 #include "../core/core_engine.h"
 #include "../hw/hw_objects.h"
-#include "../legacy/legacy_mode_ca.h"
+#include "app_calibration_flow.h"
 #include "../ui/ui_cycle_render.h"
 #include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
@@ -153,42 +153,10 @@ void run_core_managed_battery_mode() {
 }
 
 void run_core_managed_calibration_mode() {
-  static bool confirmationDrawn = false;
-
   if (core_get_state().uiScreen != UiScreen::Home) return;
   if (app_mode_state_mode() != CA) return;
 
-  if (!app_mode_state_configured()) {
-    confirmationDrawn = false;
-    legacy_calibration_setup();
-    return;
-  }
-
-  if (app_calibration_confirmation_active()) {
-    if (!confirmationDrawn) {
-      ui_draw_calibration_result(
-          app_calibration_pending_is_voltage_mode(),
-          app_calibration_pending_sensor_factor(),
-          app_calibration_pending_sensor_offset(),
-          app_calibration_pending_output_factor(),
-          app_calibration_pending_output_offset());
-      confirmationDrawn = true;
-    }
-    return;
-  }
-
-  confirmationDrawn = false;
-
-  float readingValue = app_runtime_encoder_position() / 1000.0f;
-  readingValue = min(app_setpoint_max_reading(), max(0.0f, readingValue));
-  app_setpoint_set_reading(readingValue);
-  app_runtime_set_encoder_position(readingValue * 1000.0f);
-
-  if (!app_load_is_enabled()) {
-    return;
-  }
-
-  app_load_set_set_current_mA(readingValue * 1000.0f);
+  app_calibration_mode_update();
 }
 
 void run_core_managed_transient_cont_mode() {
@@ -312,9 +280,3 @@ void app_run_cycle() {
   app_tick();
   ui_render_cycle();
 }
-
-
-
-
-
-

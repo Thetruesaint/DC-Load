@@ -1,27 +1,44 @@
-#include "legacy_mode_ca.h"
+#include "app_calibration_flow.h"
 
-
-#include "../app/app_calibration_context.h"
-#include "../app/app_encoder_setup.h"
-#include "../app/app_limits_context.h"
-#include "../app/app_load_context.h"
-#include "../app/app_load_output.h"
-#include "../app/app_measurements_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_setpoint_cursor.h"
-#include "../app/app_setpoint_context.h"
-#include "../app/app_value_input.h"
-#include "../app/app_value_result_context.h"
+#include "app_calibration_context.h"
+#include "app_encoder_setup.h"
+#include "app_limits_context.h"
+#include "app_load_context.h"
+#include "app_load_output.h"
+#include "app_measurements_context.h"
+#include "app_mode_state_context.h"
+#include "app_runtime_context.h"
+#include "app_setpoint_cursor.h"
+#include "app_setpoint_context.h"
+#include "app_value_input.h"
+#include "app_value_result_context.h"
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
 #include "../ui/ui_mode_templates.h"
 
-void legacy_calibration_mode() {
+void app_calibration_mode_update() {
+  static bool confirmationDrawn = false;
+
   if (!app_mode_state_configured()) {
-    legacy_calibration_setup();
+    confirmationDrawn = false;
+    app_calibration_run_setup();
     return;
   }
+
+  if (app_calibration_confirmation_active()) {
+    if (!confirmationDrawn) {
+      ui_draw_calibration_result(
+          app_calibration_pending_is_voltage_mode(),
+          app_calibration_pending_sensor_factor(),
+          app_calibration_pending_sensor_offset(),
+          app_calibration_pending_output_factor(),
+          app_calibration_pending_output_offset());
+      confirmationDrawn = true;
+    }
+    return;
+  }
+
+  confirmationDrawn = false;
 
   if (!app_mode_state_initialized()) {
     app_calibration_begin_mode_from_selection(app_value_result_get());
@@ -44,7 +61,7 @@ void legacy_calibration_mode() {
   app_load_set_set_current_mA(readingValue * 1000.0f);
 }
 
-void legacy_calibration_setup() {
+void app_calibration_run_setup() {
   ui_draw_calibration_setup_menu();
 
   float selection = 0.0f;
@@ -76,7 +93,7 @@ void legacy_calibration_setup() {
   app_mode_state_set_initialized(false);
 }
 
-void legacy_calibrate(float realValue) {
+void app_calibration_confirm_value(float realValue) {
   const float measuredValue = app_calibration_is_voltage_mode() ? app_measurements_voltage_v() : app_measurements_current_a();
   const float setCurrentA = app_load_set_current_mA() / 1000.0f;
 
@@ -105,5 +122,4 @@ void legacy_calibrate(float realValue) {
       app_calibration_pending_output_factor(),
       app_calibration_pending_output_offset());
 }
-
 

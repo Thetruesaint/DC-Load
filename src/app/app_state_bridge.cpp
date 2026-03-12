@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "../legacy/legacy_mode_ca.h"
+#include "app_calibration_flow.h"
 
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
@@ -164,11 +164,11 @@ void app_state_bridge_apply(const SystemState &state) {
   }
 
   if (state.calibrationValueConfirmEvent && state.mode == CA) {
-    legacy_calibrate(state.calibrationRealValue);
+    app_calibration_confirm_value(state.calibrationRealValue);
   }
 
   if (core_config_wants_calibration(state)) {
-    legacy_calibration_setup();
+    app_calibration_run_setup();
   }
 
   if (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == CA) {
