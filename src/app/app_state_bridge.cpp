@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "app_calibration_flow.h"
-
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
 #include "app_fan_context.h"
@@ -20,8 +19,6 @@
 #include "../config/system_constants.h"
 #include "../core/core_config_flow.h"
 #include "../hw/hw_objects.h"
-#include "../storage_eeprom.h"
-#include "../ui/ui_mode_templates.h"
 
 namespace {
 void apply_limit_runtime_updates(const SystemState &state) {
@@ -123,44 +120,16 @@ void app_state_bridge_apply(const SystemState &state) {
   }
 
   if (state.limitsSaveEvent) {
-    app_limits_set_current_cutoff(state.limitsDraftCurrentA);
-    app_limits_set_power_cutoff(state.limitsDraftPowerW);
-    app_limits_set_temp_cutoff(state.limitsDraftTempC);
-
-    app_limits_save_to_eeprom();
+    app_limits_apply_and_save(state.limitsDraftCurrentA, state.limitsDraftPowerW, state.limitsDraftTempC);
     apply_limit_runtime_updates(state);
   }
 
   if (state.fanSaveEvent) {
-    app_fan_set_temp_on_c(static_cast<int>(state.fanDraftTempC));
-    app_fan_set_hold_seconds(static_cast<uint8_t>(state.fanDraftHoldSeconds));
-    Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
-    Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
+    app_fan_save_settings(static_cast<int>(state.fanDraftTempC), static_cast<uint8_t>(state.fanDraftHoldSeconds));
   }
 
   if (state.calibrationMenuApplyEvent) {
-    const uint8_t option = state.calibrationMenuOption;
-
-    if (option == 1 || option == 2) {
-      app_calibration_store_return_mode(app_mode_state_mode(), app_mode_state_function_index());
-      app_mode_state_set_mode(CA);
-      app_mode_state_set_configured(true);
-      app_mode_state_set_initialized(false);
-      app_calibration_reset_session();
-      app_value_result_set(static_cast<float>(option));
-    } else if (option == 3) {
-      Load_Calibration();
-      ui_draw_calibration_loaded_message();
-      delay(1500);
-      app_mode_state_set_configured(false);
-      app_mode_state_set_initialized(false);
-    } else if (option == 4) {
-      Save_Calibration();
-      ui_draw_calibration_saved_message();
-      delay(1500);
-      app_mode_state_set_configured(false);
-      app_mode_state_set_initialized(false);
-    }
+    app_calibration_apply_menu_option(state.calibrationMenuOption);
   }
 
   if (state.calibrationValueConfirmEvent && state.mode == CA) {
@@ -186,3 +155,4 @@ void app_state_bridge_apply(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+

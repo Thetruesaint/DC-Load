@@ -1,6 +1,7 @@
 #include "app_fan_context.h"
 
 #include "../config/system_constants.h"
+#include "../storage_eeprom.h"
 
 namespace {
 int fanTempOnC = DEFAULT_FAN_TEMP_ON_C;
@@ -31,3 +32,9 @@ void app_fan_set_hold_seconds(uint8_t seconds) {
   app_fan_set_hold_ms(static_cast<unsigned long>(seconds) * 1000UL);
 }
 
+void app_fan_save_settings(int tempOnC, uint8_t holdSeconds) {
+  app_fan_set_temp_on_c(tempOnC);
+  app_fan_set_hold_seconds(holdSeconds);
+  Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
+  Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
+}

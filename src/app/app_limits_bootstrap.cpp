@@ -41,3 +41,10 @@ void app_limits_show_summary() {
       app_limits_power_cutoff(),
       app_limits_temp_cutoff());
 }
+
+void app_limits_apply_and_save(float currentCutoffA, float powerCutoffW, float tempCutoffC) {
+  app_limits_set_current_cutoff(currentCutoffA);
+  app_limits_set_power_cutoff(powerCutoffW);
+  app_limits_set_temp_cutoff(tempCutoffC);
+  app_limits_save_to_eeprom();
+}

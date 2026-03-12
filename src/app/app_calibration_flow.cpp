@@ -123,3 +123,25 @@ void app_calibration_confirm_value(float realValue) {
       app_calibration_pending_output_offset());
 }
 
+void app_calibration_apply_menu_option(uint8_t option) {
+  if (option == 1 || option == 2) {
+    app_calibration_store_return_mode(app_mode_state_mode(), app_mode_state_function_index());
+    app_mode_state_set_mode(CA);
+    app_mode_state_set_configured(true);
+    app_mode_state_set_initialized(false);
+    app_calibration_reset_session();
+    app_value_result_set(static_cast<float>(option));
+  } else if (option == 3) {
+    Load_Calibration();
+    ui_draw_calibration_loaded_message();
+    delay(1500);
+    app_mode_state_set_configured(false);
+    app_mode_state_set_initialized(false);
+  } else if (option == 4) {
+    Save_Calibration();
+    ui_draw_calibration_saved_message();
+    delay(1500);
+    app_mode_state_set_configured(false);
+    app_mode_state_set_initialized(false);
+  }
+}

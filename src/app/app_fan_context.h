@@ -11,5 +11,6 @@ void app_fan_set_hold_ms(unsigned long value);
 
 uint8_t app_fan_hold_seconds();
 void app_fan_set_hold_seconds(uint8_t seconds);
+void app_fan_save_settings(int tempOnC, uint8_t holdSeconds);
 
 #endif
