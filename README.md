@@ -9,7 +9,7 @@
 - Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
 
 **A Trabajar:**
-- Continuar migracion de arquitectura para luego introducir mejoras en TFT
+- Introducir mejoras en TFT
     
 **En Cola:**
 - Test de encendido de Fans en Fan Settings
@@ -18,6 +18,8 @@
 
 **Bugs**
 - Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR
+- Las advertencias de Limites maximos superados pisan el temmplate en el quee se encuentre en ese momento.
+- CRITICO: No poner carga cuando el USB esta conectado porque el DAC no puede controlar los MOSFET y quedan en corto.
 
 **Fixes**
 - Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
