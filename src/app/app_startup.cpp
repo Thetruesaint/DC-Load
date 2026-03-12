@@ -5,7 +5,6 @@
 
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
-#include "../legacy/legacy_mode_limits.h"
 #include "../storage_eeprom.h"
 #include "../ui_lcd.h"
 #include "app_fan_context.h"
@@ -16,6 +15,8 @@
 #include "app_timing_alerts.h"
 
 namespace {
+bool g_startupNeedsLimitsSetup = false;
+
 void init_io() {
   encoder.attachFullQuad(ENC_B, ENC_A);
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
@@ -125,7 +126,7 @@ void load_runtime_configuration() {
       app_fan_hold_ms() < MIN_FAN_HOLD_MS || app_fan_hold_ms() > MAX_FAN_HOLD_MS;
 
   if (invalidLimits) {
-    legacy_config_limits();
+    g_startupNeedsLimitsSetup = true;
   }
 
   if (invalidFan) {
@@ -148,10 +149,17 @@ void load_runtime_configuration() {
 }
 
 void app_startup_run() {
+  g_startupNeedsLimitsSetup = false;
   init_io();
   init_peripherals();
   run_peripheral_health_check();
   ensure_rtc_running();
   show_startup_splash();
   load_runtime_configuration();
+}
+
+bool app_startup_consume_limits_setup_request() {
+  const bool requested = g_startupNeedsLimitsSetup;
+  g_startupNeedsLimitsSetup = false;
+  return requested;
 }

@@ -3,7 +3,6 @@
 #include <cstring>
 
 #include "legacy_mode_ca.h"
-#include "legacy_mode_limits.h"
 
 #include "../app/app_battery_context.h"
 #include "../app/app_calibration_context.h"
@@ -168,9 +167,7 @@ void legacy_apply_state(const SystemState &state) {
     legacy_calibrate(state.calibrationRealValue);
   }
 
-  if (core_config_wants_limits(state)) {
-    legacy_config_limits();
-  } else if (core_config_wants_calibration(state)) {
+  if (core_config_wants_calibration(state)) {
     legacy_calibration_setup();
   }
 

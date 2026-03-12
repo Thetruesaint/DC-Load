@@ -13,7 +13,8 @@ enum class ActionType : uint8_t {
   LoadToggle,
   ModeSelect,
   ValueConfirm,
-  OpenConfigSection
+  OpenConfigSection,
+  OpenLimitsSetup
 };
 
 struct UserAction {
@@ -60,6 +61,10 @@ constexpr UserAction make_open_limits_config_action() {
 
 constexpr UserAction make_open_calibration_config_action() {
   return make_open_config_section_action(ConfigSection::Calibration);
+}
+
+constexpr UserAction make_open_limits_setup_action() {
+  return {ActionType::OpenLimitsSetup, 0, '\0'};
 }
 
 #endif

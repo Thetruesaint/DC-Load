@@ -4,6 +4,7 @@
 #include "../core/core_engine.h"
 #include "../legacy/legacy_bridge.h"
 #include "../ui/ui_renderer.h"
+#include "app_startup.h"
 
 namespace {
 constexpr size_t ACTION_QUEUE_CAPACITY = 16;
@@ -58,6 +59,10 @@ void app_push_action(const UserAction &action) {
 void app_tick() {
   core_sync_from_legacy(legacy_capture_state());
   core_begin_cycle();
+
+  if (app_startup_consume_limits_setup_request()) {
+    app_push_action(make_open_limits_setup_action());
+  }
 
   (void)drain_action_queue();
 

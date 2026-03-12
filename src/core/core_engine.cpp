@@ -1376,3 +1376,4 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
