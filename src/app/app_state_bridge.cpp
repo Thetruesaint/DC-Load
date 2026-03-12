@@ -1,22 +1,22 @@
-#include "legacy_bridge.h"
+#include "app_state_bridge.h"
 
 #include <cstring>
 
-#include "legacy_mode_ca.h"
+#include "../legacy/legacy_mode_ca.h"
 
-#include "../app/app_battery_context.h"
-#include "../app/app_calibration_context.h"
-#include "../app/app_fan_context.h"
-#include "../app/app_limits_bootstrap.h"
-#include "../app/app_limits_context.h"
-#include "../app/app_load_context.h"
-#include "../app/app_measurements_context.h"
-#include "../app/app_mode_setpoint_context.h"
-#include "../app/app_mode_state_context.h"
-#include "../app/app_runtime_context.h"
-#include "../app/app_setpoint_context.h"
-#include "../app/app_transient_context.h"
-#include "../app/app_value_result_context.h"
+#include "app_battery_context.h"
+#include "app_calibration_context.h"
+#include "app_fan_context.h"
+#include "app_limits_bootstrap.h"
+#include "app_limits_context.h"
+#include "app_load_context.h"
+#include "app_measurements_context.h"
+#include "app_mode_setpoint_context.h"
+#include "app_mode_state_context.h"
+#include "app_runtime_context.h"
+#include "app_setpoint_context.h"
+#include "app_transient_context.h"
+#include "app_value_result_context.h"
 #include "../config/system_constants.h"
 #include "../core/core_config_flow.h"
 #include "../hw/hw_objects.h"
@@ -44,7 +44,7 @@ void apply_limit_runtime_updates(const SystemState &state) {
 }
 }
 
-SystemState legacy_capture_state() {
+SystemState app_state_bridge_capture() {
   SystemState state = core_state_make_default();
 
   state.setCurrent_mA = app_load_set_current_mA();
@@ -86,7 +86,7 @@ SystemState legacy_capture_state() {
   return state;
 }
 
-void legacy_apply_state(const SystemState &state) {
+void app_state_bridge_apply(const SystemState &state) {
   static bool lastAppliedLoadEnabled = false;
   static bool initialized = false;
 
