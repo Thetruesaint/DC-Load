@@ -100,24 +100,7 @@ void app_state_bridge_apply(const SystemState &state) {
   app_load_set_enabled(state.loadEnabled);
   app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
   app_battery_type_ref() = String(state.batteryType);
-  if (state.mode == TC) {
-    app_transient_low_current_ref() = state.transientLowCurrentA;
-    app_transient_high_current_ref() = state.transientHighCurrentA;
-    app_transient_period_ref() = static_cast<unsigned long>(state.transientPeriodMs);
-  }
-
-  if (state.mode == TL && state.modeConfigured) {
-    for (int i = 0; i < state.transientListDraftStepCount && i < 10; ++i) {
-      app_transient_list_ref()[i][0] = static_cast<unsigned long>(state.transientListDraftCurrentsA[i] * 1000.0f);
-      app_transient_list_ref()[i][1] = static_cast<unsigned long>(state.transientListDraftPeriodsMs[i]);
-    }
-    app_transient_total_steps_ref() = (state.transientListDraftStepCount > 0) ? static_cast<int>(state.transientListDraftStepCount) - 1 : 0;
-    if (!app_mode_state_initialized()) {
-      app_load_set_set_current_mA(0.0f);
-      app_transient_current_step_ref() = 0;
-      app_transient_period_ref() = app_transient_list_ref()[0][1];
-    }
-  }
+  app_transient_apply_from_state(state);
 
   if (state.limitsSaveEvent) {
     app_limits_apply_and_save(state.limitsDraftCurrentA, state.limitsDraftPowerW, state.limitsDraftTempC);
@@ -155,4 +138,5 @@ void app_state_bridge_apply(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+
 
