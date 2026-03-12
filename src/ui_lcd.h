@@ -1,7 +1,7 @@
 #ifndef UI_LCD_H
 #define UI_LCD_H
 
-#include "variables.h"
+#include <Arduino.h>
 
 void initLCD(void);
 void clearLCD(void);
