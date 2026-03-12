@@ -1,4 +1,4 @@
-#include "app_state_bridge.h"
+#include "app_runtime_sync.h"
 
 #include <cstring>
 
@@ -41,7 +41,7 @@ void apply_limit_runtime_updates(const SystemState &state) {
 }
 }
 
-SystemState app_state_bridge_capture() {
+SystemState app_runtime_sync_capture() {
   SystemState state = core_state_make_default();
 
   state.setCurrent_mA = app_load_set_current_mA();
@@ -83,7 +83,7 @@ SystemState app_state_bridge_capture() {
   return state;
 }
 
-void app_state_bridge_apply(const SystemState &state) {
+void app_runtime_sync_apply(const SystemState &state) {
   static bool lastAppliedLoadEnabled = false;
   static bool initialized = false;
 
@@ -138,5 +138,6 @@ void app_state_bridge_apply(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
+
 
 

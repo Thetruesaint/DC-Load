@@ -4,7 +4,7 @@
 #include "../core/core_engine.h"
 #include "../ui/ui_renderer.h"
 #include "app_startup.h"
-#include "app_state_bridge.h"
+#include "app_runtime_sync.h"
 
 namespace {
 constexpr size_t ACTION_QUEUE_CAPACITY = 16;
@@ -57,7 +57,7 @@ void app_push_action(const UserAction &action) {
 }
 
 void app_tick() {
-  core_sync_from_legacy(app_state_bridge_capture());
+  core_sync_from_legacy(app_runtime_sync_capture());
   core_begin_cycle();
 
   if (app_startup_consume_limits_setup_request()) {
@@ -67,11 +67,11 @@ void app_tick() {
   (void)drain_action_queue();
 
   core_tick_10ms();
-  app_state_bridge_apply(core_get_state());
+  app_runtime_sync_apply(core_get_state());
 
   // Re-sync after possible blocking legacy flows so core keeps
   // side effects done in legacy context (e.g. modeInitialized reset).
-  core_sync_from_legacy(app_state_bridge_capture());
+  core_sync_from_legacy(app_runtime_sync_capture());
 
   // Process actions queued from blocking legacy flows in the same cycle
   // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
@@ -80,8 +80,9 @@ void app_tick() {
   core_begin_cycle();
   if (drain_action_queue()) {
     core_tick_10ms();
-    app_state_bridge_apply(core_get_state());
+    app_runtime_sync_apply(core_get_state());
   }
 
   ui_render(core_get_state());
 }
+
