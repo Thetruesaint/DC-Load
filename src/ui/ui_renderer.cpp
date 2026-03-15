@@ -40,6 +40,8 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanEditActive = state.fanEditActive;
   std::strncpy(view.fanInputText, state.fanInputText, sizeof(view.fanInputText) - 1);
   view.fanInputText[sizeof(view.fanInputText) - 1] = '\0';
+  view.fanManualOverrideActive = state.fanManualOverrideActive;
+  view.fanManualStateOn = state.fanManualStateOn;
   view.batterySetupStage = state.batterySetupStage;
   std::strncpy(view.batteryInputText, state.batteryInputText, sizeof(view.batteryInputText) - 1);
   view.batteryInputText[sizeof(view.batteryInputText) - 1] = '\0';
@@ -57,6 +59,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;
+  view.testsMenuSelection = state.testsMenuSelection;
   view.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
   view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
@@ -68,4 +71,3 @@ void ui_render(const SystemState &state) {
   ui_state_cache_set(view);
   ui_state_machine_tick(state.uiScreen, view);
 }
-

@@ -62,6 +62,10 @@ SystemState app_runtime_sync_capture() {
   state.tempCutOffC = app_limits_temp_cutoff();
   state.fanTempOnC = static_cast<float>(app_fan_temp_on_c());
   state.fanHoldSeconds = static_cast<float>(app_fan_hold_seconds());
+  state.fanManualOverrideActive = app_fan_manual_override_active();
+  state.fanManualStateOn = state.fanManualOverrideActive
+                              ? app_fan_manual_state_on()
+                              : app_fan_output_is_on();
   state.batteryCutoffVolts = app_battery_cutoff_volts_ref();
   state.batteryLife = app_battery_life_ref();
   std::strncpy(state.batteryType, app_battery_type_ref().c_str(), sizeof(state.batteryType) - 1);
@@ -101,6 +105,7 @@ void app_runtime_sync_apply(const SystemState &state) {
   app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
   app_battery_type_ref() = String(state.batteryType);
   app_transient_apply_from_state(state);
+  app_fan_set_manual_override(state.fanManualOverrideActive, state.fanManualStateOn);
 
   if (state.limitsSaveEvent) {
     app_limits_apply_and_save(state.limitsDraftCurrentA, state.limitsDraftPowerW, state.limitsDraftTempC);
@@ -138,6 +143,5 @@ void app_runtime_sync_apply(const SystemState &state) {
   lastAppliedLoadEnabled = app_load_is_enabled();
   initialized = true;
 }
-
 
 

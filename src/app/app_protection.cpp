@@ -14,29 +14,54 @@
 #include "app_setpoint_context.h"
 #include "app_value_input.h"
 
+namespace {
+void set_fan_output(bool on) {
+  digitalWrite(FAN_CTRL, on ? HIGH : LOW);
+  app_fan_set_output_state(on);
+}
+}
+
 void app_update_fan_control() {
   static unsigned long fan_on_time = 0;
   static unsigned long last_tmpchk = 0;
   static bool fans_on = false;
+  static bool was_manual_override_active = false;
 
-  unsigned long currentMillis = millis();
+  const unsigned long currentMillis = millis();
+  const bool manualOverrideActive = app_fan_manual_override_active();
+
+  if (was_manual_override_active && !manualOverrideActive) {
+    set_fan_output(false);
+    fans_on = false;
+    fan_on_time = currentMillis;
+  }
+
   if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) {
+    was_manual_override_active = manualOverrideActive;
     return;
   }
 
   last_tmpchk = currentMillis;
   app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
 
-  if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
+  if (manualOverrideActive) {
+    set_fan_output(app_fan_manual_state_on());
+    fans_on = app_fan_manual_state_on();
+    if (fans_on) {
+      fan_on_time = currentMillis;
+    }
+  } else if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
     if (!fans_on) {
-      digitalWrite(FAN_CTRL, HIGH);
+      set_fan_output(true);
       fans_on = true;
     }
     fan_on_time = currentMillis;
   } else if (fans_on && (currentMillis - fan_on_time) >= app_fan_hold_ms()) {
-    digitalWrite(FAN_CTRL, LOW);
+    set_fan_output(false);
     fans_on = false;
   }
+
+  was_manual_override_active = manualOverrideActive;
 
   if (ui_state_machine_current_screen() == UiScreen::Home) {
     ui_draw_header_temperature(app_measurements_temp_c());
@@ -81,3 +106,4 @@ void app_check_limits() {
     app_mode_state_set_initialized(false);
   }
 }
+

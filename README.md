@@ -3,16 +3,14 @@
 ## Hardware Versions
 
 - v2.x → ESP32 (Plataforma actual)
-- v1.x → Arduino Nano (legacy - ver rama nano-legacy)
 
 **Trabajando:**
-- Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
+- Test en HW de nueva placa de control de Fans y menu de Fans
 
 **A Trabajar:**
 - Introducir mejoras en TFT
-    
-**En Cola:**
-- Test de encendido de Fans en Fan Settings
+- Si ISNS es mayor que ISET no se debería apagar la carga e indicar error?
+- Evaluando cambio de pines para poder controlar apagado de MOSFETs
 - Entrar en modo update de firmware
 - En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 
@@ -22,15 +20,11 @@
 - CRITICO: No poner carga cuando el USB esta conectado porque el DAC no puede controlar los MOSFET y quedan en corto.
 
 **Fixes**
-- Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
-- Se agregaron protecciónes para los puntos de calibración. 
+- 
 
 **Mejoras**
-- En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
-- Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
-- Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
-- IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
-- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites. seteos para el Fan y visualización de los factores y offset ajustados
+- Agregue una placa aparte para el control de FANs
+- Se agrega Menu para Test, y la 1era opción para ON/OFF de Fans.
 
 **Posibles Mejoras SW:**
 - Control de velocidad de Fans o test de encendido y apagado

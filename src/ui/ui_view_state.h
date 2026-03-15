@@ -37,6 +37,8 @@ struct UiViewState {
   float fanDraftHoldSeconds;
   bool fanEditActive;
   char fanInputText[8];
+  bool fanManualOverrideActive;
+  bool fanManualStateOn;
 
   uint8_t batterySetupStage;
   char batteryInputText[8];
@@ -53,6 +55,7 @@ struct UiViewState {
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
+  uint8_t testsMenuSelection;
   uint8_t fanSettingsMenuSelection;
 
   uint8_t pendingConfigSection;
@@ -63,6 +66,7 @@ inline UiViewState ui_view_state_make_default() {
   state.calibrationMenuOption = 1;
   state.menuRootSelection = 0;
   state.protectionMenuSelection = 0;
+  state.testsMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;
@@ -72,4 +76,3 @@ inline UiViewState ui_view_state_make_default() {
 }
 
 #endif
-

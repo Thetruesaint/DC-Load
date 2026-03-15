@@ -88,11 +88,12 @@ void ui_draw_config_root_menu(uint8_t selectedIndex) {
   printLCD(3, 0, F("Configuration"));
   printLCD(1, 1, F("1-Protection"));
   printLCD(1, 2, F("2-Calibration"));
-  printLCD(1, 3, F("3-Exit"));
+  printLCD(1, 3, F("3-Tests 4-Exit"));
 
-  if (selectedIndex <= 2) {
-    printLCD(0, 1 + selectedIndex, F(">"));
-  }
+  if (selectedIndex == 0) printLCD(0, 1, F(">"));
+  if (selectedIndex == 1) printLCD(0, 2, F(">"));
+  if (selectedIndex == 2) printLCD(0, 3, F(">"));
+  if (selectedIndex == 3) printLCD(10, 3, F(">"));
 }
 
 void ui_draw_protection_menu(uint8_t selectedIndex) {
@@ -103,6 +104,18 @@ void ui_draw_protection_menu(uint8_t selectedIndex) {
   printLCD(1, 3, F("3-Back"));
 
   if (selectedIndex <= 2) {
+    printLCD(0, 1 + selectedIndex, F(">"));
+  }
+}
+
+void ui_draw_tests_menu(uint8_t selectedIndex, bool fanOn) {
+  clearLCD();
+  printLCD(7, 0, F("Tests"));
+  printLCD(1, 1, F("1-Fan: "));
+  printLCD(8, 1, fanOn ? F("ON ") : F("OFF"));
+  printLCD(1, 2, F("2-Back"));
+
+  if (selectedIndex <= 1) {
     printLCD(0, 1 + selectedIndex, F(">"));
   }
 }
@@ -191,7 +204,7 @@ void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sens
     printLCD_S(13, 2, String(outputOffset, 0));
   }
 
-  printLCD(2, 3, F("E-OK  CLR-Cancel"));
+  printLCD(2, 3, F("E-OK  <=Cancel"));
 }
 void ui_draw_calibration_loaded_message() {
   printLCD(12, 3, F("Loaded!"));
@@ -339,3 +352,9 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
+
+
+
+
+
+

@@ -29,12 +29,16 @@ ConfigMenu menu_root_menu_for_index(uint8_t index) {
   switch (index) {
     case 0: return ConfigMenu::Protection;
     case 1: return ConfigMenu::Calibration;
+    case 2: return ConfigMenu::Tests;
     default: return ConfigMenu::None;
   }
 }
 
 uint8_t menu_root_index_for_menu(ConfigMenu menu) {
-  return (menu == ConfigMenu::Calibration) ? 1 : (menu == ConfigMenu::None) ? 2 : 0;
+  if (menu == ConfigMenu::Calibration) return 1;
+  if (menu == ConfigMenu::Tests) return 2;
+  if (menu == ConfigMenu::None) return 3;
+  return 0;
 }
 
 ConfigMenu protection_menu_for_index(uint8_t index) {
@@ -47,8 +51,9 @@ ConfigMenu protection_menu_for_index(uint8_t index) {
 
 uint8_t config_menu_item_count(ConfigMenu menu) {
   switch (menu) {
-    case ConfigMenu::Root: return 3;
+    case ConfigMenu::Root: return 4;
     case ConfigMenu::Protection: return 3;
+    case ConfigMenu::Tests: return 2;
     case ConfigMenu::FanSettings: return 3;
     case ConfigMenu::Calibration: return 5;
     default: return 0;
@@ -58,6 +63,7 @@ uint8_t config_menu_item_count(ConfigMenu menu) {
 uint8_t config_menu_selection_index(const SystemState &state, ConfigMenu menu) {
   if (menu == ConfigMenu::Root) return state.menuRootSelection;
   if (menu == ConfigMenu::Protection) return state.protectionMenuSelection;
+  if (menu == ConfigMenu::Tests) return state.testsMenuSelection;
   if (menu == ConfigMenu::FanSettings) return state.fanSettingsMenuSelection;
   if (menu == ConfigMenu::Calibration) return (state.calibrationMenuOption > 0) ? static_cast<uint8_t>(state.calibrationMenuOption - 1) : 0;
   return 0;
@@ -70,6 +76,8 @@ void config_menu_set_selection_index(SystemState *state, ConfigMenu menu, uint8_
     state->menuRootSelection = index;
   } else if (menu == ConfigMenu::Protection) {
     state->protectionMenuSelection = index;
+  } else if (menu == ConfigMenu::Tests) {
+    state->testsMenuSelection = index;
   } else if (menu == ConfigMenu::FanSettings) {
     state->fanSettingsMenuSelection = index;
   } else if (menu == ConfigMenu::Calibration) {
@@ -83,6 +91,9 @@ ConfigMenu config_menu_selected_target(const SystemState &state, ConfigMenu menu
   }
   if (menu == ConfigMenu::Protection) {
     return protection_menu_for_index(state.protectionMenuSelection);
+  }
+  if (menu == ConfigMenu::Tests) {
+    return (state.testsMenuSelection == 1) ? ConfigMenu::Protection : ConfigMenu::Tests;
   }
   return ConfigMenu::None;
 }
@@ -155,7 +166,7 @@ void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent, ConfigMe
   if (parent == ConfigMenu::Root) {
     state->menuRootSelection = menu_root_index_for_menu(child);
   } else if (parent == ConfigMenu::Protection) {
-    state->protectionMenuSelection = (child == ConfigMenu::FanSettings) ? 1 : 0;
+    state->protectionMenuSelection = (child == ConfigMenu::FanSettings) ? 1 : (child == ConfigMenu::Tests) ? 2 : 0;
   }
 
   config_menu_sync_pending_section(state, parent);
@@ -627,6 +638,37 @@ void fan_menu_commit_edit(SystemState *state) {
   fan_menu_cancel_edit(state);
 }
 
+void tests_menu_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->currentConfigMenu = ConfigMenu::Tests;
+  state->parentConfigMenu = ConfigMenu::Root;
+  state->testsMenuSelection = 0;
+  state->fanManualOverrideActive = true;
+}
+
+void tests_menu_finish(SystemState *state, bool returnToParent = false) {
+  if (state == nullptr) return;
+  const ConfigMenu parent = state->parentConfigMenu;
+  state->fanManualOverrideActive = false;
+  state->fanManualStateOn = false;
+
+  if (returnToParent && parent != ConfigMenu::None) {
+    config_menu_leave_to_parent(state, parent, ConfigMenu::Tests);
+    return;
+  }
+
+  state->pendingConfigSection = ConfigSection::None;
+  state->currentConfigMenu = ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
+  if (should_reset_mode_init_on_menu_exit(*state)) state->modeInitialized = false;
+}
+
+void tests_menu_toggle_fan(SystemState *state) {
+  if (state == nullptr) return;
+  state->fanManualOverrideActive = true;
+  state->fanManualStateOn = !state->fanManualStateOn;
+}
+
 void calibration_menu_begin(SystemState *state) {
   if (state == nullptr) return;
   state->calibrationMenuActive = true;
@@ -679,6 +721,16 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
     return;
   }
 
+  if (menu == ConfigMenu::Tests) {
+    const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::Tests);
+    if (selection == 1) {
+      tests_menu_finish(state, true);
+    } else {
+      tests_menu_toggle_fan(state);
+    }
+    return;
+  }
+
   const ConfigMenu target = config_menu_selected_target(*state, menu);
   if (menu == ConfigMenu::Root && target == ConfigMenu::None) {
     config_menu_close(state);
@@ -693,6 +745,11 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
   if (target == ConfigMenu::Protection) {
     config_menu_set_selection_index(state, ConfigMenu::Protection, 0);
     config_menu_enter(state, ConfigMenu::Protection, ConfigMenu::Root);
+    return;
+  }
+
+  if (target == ConfigMenu::Tests) {
+    tests_menu_begin(state);
     return;
   }
 
@@ -735,6 +792,11 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
     return;
   }
 
+  if (menu == ConfigMenu::Tests) {
+    tests_menu_finish(state, true);
+    return;
+  }
+
   if (menu == ConfigMenu::Calibration) {
     calibration_menu_finish(state, false, true);
   }
@@ -751,6 +813,7 @@ void core_sync_from_legacy(const SystemState &state) {
   const ConfigSection pendingConfigSection = g_state.pendingConfigSection;
   const uint8_t menuRootSelection = g_state.menuRootSelection;
   const uint8_t protectionMenuSelection = g_state.protectionMenuSelection;
+  const uint8_t testsMenuSelection = g_state.testsMenuSelection;
   const uint8_t fanSettingsMenuSelection = g_state.fanSettingsMenuSelection;
   const ConfigMenu currentConfigMenu = g_state.currentConfigMenu;
   const ConfigMenu parentConfigMenu = g_state.parentConfigMenu;
@@ -808,6 +871,7 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.pendingConfigSection = pendingConfigSection;
   g_state.menuRootSelection = menuRootSelection;
   g_state.protectionMenuSelection = protectionMenuSelection;
+  g_state.testsMenuSelection = testsMenuSelection;
   g_state.fanSettingsMenuSelection = fanSettingsMenuSelection;
   g_state.currentConfigMenu = currentConfigMenu;
   g_state.parentConfigMenu = parentConfigMenu;
@@ -895,6 +959,12 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuTests) {
+        const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
+        config_menu_step_selection(&g_state, ConfigMenu::Tests, direction);
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
         if (!g_state.fanEditActive) {
           const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
@@ -953,6 +1023,11 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuTests) {
+        config_menu_activate_selection(&g_state, ConfigMenu::Tests);
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
         config_menu_activate_selection(&g_state, ConfigMenu::FanSettings);
         break;
@@ -997,6 +1072,7 @@ void core_dispatch(const UserAction &action) {
           g_state.pendingConfigSection = ConfigSection::None;
           g_state.menuRootSelection = 0;
           g_state.protectionMenuSelection = 0;
+          g_state.testsMenuSelection = 0;
           g_state.fanSettingsMenuSelection = 0;
           g_state.currentConfigMenu = ConfigMenu::None;
           g_state.parentConfigMenu = ConfigMenu::None;
@@ -1008,6 +1084,8 @@ void core_dispatch(const UserAction &action) {
           limits_input_reset(&g_state);
           g_state.calibrationMenuActive = false;
           g_state.fanEditActive = false;
+          g_state.fanManualOverrideActive = false;
+          g_state.fanManualStateOn = false;
           fan_input_reset(&g_state);
           battery_setup_begin(&g_state);
           if (g_state.mode != 3) {
@@ -1164,6 +1242,8 @@ void core_dispatch(const UserAction &action) {
           config_menu_select_index(&g_state, ConfigMenu::Root, 1);
         } else if (action.key == '3') {
           config_menu_select_index(&g_state, ConfigMenu::Root, 2);
+        } else if (action.key == '4') {
+          config_menu_select_index(&g_state, ConfigMenu::Root, 3);
         } else if (action.key == 'U' || action.key == 'L') {
           config_menu_step_selection(&g_state, ConfigMenu::Root, -1);
         } else if (action.key == 'D' || action.key == 'R') {
@@ -1191,6 +1271,23 @@ void core_dispatch(const UserAction &action) {
           config_menu_activate_selection(&g_state, ConfigMenu::Protection);
         } else if (action.key == '<' || action.key == 'M') {
           config_menu_back(&g_state, ConfigMenu::Protection);
+        }
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuTests) {
+        if (action.key == '1') {
+          config_menu_select_index(&g_state, ConfigMenu::Tests, 0);
+        } else if (action.key == '2') {
+          config_menu_select_index(&g_state, ConfigMenu::Tests, 1);
+        } else if (action.key == 'U' || action.key == 'L') {
+          config_menu_step_selection(&g_state, ConfigMenu::Tests, -1);
+        } else if (action.key == 'D' || action.key == 'R') {
+          config_menu_step_selection(&g_state, ConfigMenu::Tests, 1);
+        } else if (action.key == 'E') {
+          config_menu_activate_selection(&g_state, ConfigMenu::Tests);
+        } else if (action.key == '<' || action.key == 'M') {
+          config_menu_back(&g_state, ConfigMenu::Tests);
         }
         break;
       }
@@ -1294,7 +1391,10 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::LoadToggle:
-      if (g_state.uiScreen == UiScreen::Home && g_state.mode == CA && app_calibration_confirmation_active()) {
+      if (g_state.uiScreen != UiScreen::Home) {
+        break;
+      }
+      if (g_state.mode == CA && app_calibration_confirmation_active()) {
         break;
       }
       g_state.loadEnabled = !g_state.loadEnabled;
@@ -1305,6 +1405,7 @@ void core_dispatch(const UserAction &action) {
       g_state.pendingConfigSection = ConfigSection::None;
       g_state.menuRootSelection = 0;
       g_state.protectionMenuSelection = 0;
+      g_state.testsMenuSelection = 0;
       g_state.fanSettingsMenuSelection = 0;
       g_state.currentConfigMenu = ConfigMenu::None;
       g_state.parentConfigMenu = ConfigMenu::None;
@@ -1316,6 +1417,8 @@ void core_dispatch(const UserAction &action) {
       limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
       g_state.fanEditActive = false;
+      g_state.fanManualOverrideActive = false;
+      g_state.fanManualStateOn = false;
       fan_input_reset(&g_state);
       battery_setup_begin(&g_state);
       if (g_state.mode != 3) {
@@ -1344,6 +1447,7 @@ void core_dispatch(const UserAction &action) {
               ? ConfigMenu::Calibration
               : ConfigMenu::Protection);
       g_state.protectionMenuSelection = 0;
+      g_state.testsMenuSelection = 0;
       g_state.fanSettingsMenuSelection = 0;
       g_state.currentConfigMenu = ConfigMenu::Root;
       g_state.parentConfigMenu = ConfigMenu::None;
@@ -1354,6 +1458,8 @@ void core_dispatch(const UserAction &action) {
       limits_input_reset(&g_state);
       g_state.calibrationMenuActive = false;
       g_state.fanEditActive = false;
+      g_state.fanManualOverrideActive = false;
+      g_state.fanManualStateOn = false;
       fan_input_reset(&g_state);
       battery_input_reset(&g_state);
       break;
@@ -1376,4 +1482,13 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
+
+
+
+
+
+
+
 
