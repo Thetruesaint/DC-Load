@@ -1,4 +1,4 @@
-## v2.11 ## BY LCD HELLO TFT & AI
+## v2.12 ## NICE TIO SEE
 
 ## Hardware Versions
 

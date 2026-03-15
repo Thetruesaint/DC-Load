@@ -1,5 +1,25 @@
 **DC LOAD based in a desing from Mr Louis Scully**
 
+
+## v2.11 ## BY LCD HELLO TFT & AI
+
+**Bugs**
+- Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR
+- Las advertencias de Limites maximos superados pisan el template en el quee se encuentre en ese momento.
+- CRITICO: No poner carga cuando el USB esta conectado porque el DAC no puede controlar los MOSFET y quedan en corto.
+
+**Fixes**
+- Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
+- Se agregaron protecciónes para los puntos de calibración. 
+
+**Mejoras**
+- En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
+- Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
+- Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
+- IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
+- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites. seteos para el Fan y visualización de los factores y offset ajustados
+
+
 ## v2.01 ## CALIBRATION BUG FIX
 
 **Fixes**
