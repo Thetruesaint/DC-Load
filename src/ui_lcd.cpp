@@ -13,6 +13,34 @@
 namespace {
 constexpr uint16_t TFT_CELL_W = 18;  // Grid column width for 20x4 layout on TFT
 constexpr uint16_t TFT_CELL_H = 24;  // Grid row height for 20x4 layout on TFT
+constexpr uint16_t TFT_TEXT_COLOR = TFT_CYAN;
+constexpr uint16_t TFT_BG_COLOR = TFT_BLACK;
+constexpr int TFT_STATUS_X = 8 * TFT_CELL_W;
+constexpr int TFT_STATUS_Y = 0;
+constexpr int TFT_STATUS_W = 4 * TFT_CELL_W;
+constexpr int TFT_STATUS_H = TFT_CELL_H - 2;
+
+void restore_tft_text_style() {
+  tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
+  tft.setTextFont(1);
+  tft.setTextSize(3);
+}
+
+void draw_tft_load_status(bool enabled) {
+  const uint16_t bg = enabled ? TFT_RED : TFT_GREEN;
+
+  tft.fillRect(TFT_STATUS_X, TFT_STATUS_Y, TFT_STATUS_W, TFT_STATUS_H, bg);
+  tft.setTextColor(TFT_WHITE, bg);
+  tft.setCursor(TFT_STATUS_X, TFT_STATUS_Y);
+  tft.print(enabled ? "ON  " : "OFF ");
+  restore_tft_text_style();
+}
+
+void clear_tft_cursor_cell(int col, int row) {
+  const int x = col * TFT_CELL_W;
+  const int y = row * TFT_CELL_H;
+  tft.fillRect(x, y, TFT_CELL_W, TFT_CELL_H - 2, TFT_BG_COLOR);
+}
 }
 #endif
 
@@ -24,10 +52,8 @@ void initLCD(void) {
 #else
   tft.init();
   tft.setRotation(1);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextFont(1);
-  tft.setTextSize(3);
+  tft.fillScreen(TFT_BG_COLOR);
+  restore_tft_text_style();
   tft.setTextWrap(false);
 #endif
 }
@@ -36,8 +62,9 @@ void clearLCD(void) {
 #ifdef WOKWI_SIMULATION
   lcd.clear();
 #else
-  tft.fillScreen(TFT_BLACK);
+  tft.fillScreen(TFT_BG_COLOR);
   tft.setCursor(0, 0);
+  restore_tft_text_style();
 #endif
 }
 
@@ -144,7 +171,7 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
   const int inputRow = 3;
   const bool visible = (mode != TC && mode != TL && mode != BC);
   const byte maxDigits = calibrationMode ? 6 : 5;
-  const char* currentInput = app_input_text();
+  const char *currentInput = app_input_text();
 
   if (!visible) {
     rowWasVisible = false;
@@ -167,7 +194,6 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
   lastMode = mode;
 }
 
-//------------ Calculate and Display Actual Voltage, Current, and Power ------------
 void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
   static int blink_cntr = 0;
@@ -181,20 +207,21 @@ void Update_LCD(void) {
   if (ui_state_machine_current_screen() != UiScreen::Home) return;
   if (!state.modeInitialized) return;
 
-  // Esperar 100ms antes de actualizar el resto del codigo en el LCD
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
   lastUpdateTime = millis();
 
-  // Evitar valores negativos por errores de medicion
   float measuredVoltage = state.measuredVoltage_V;
   float measuredCurrent = state.measuredCurrent_A;
   if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
   if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
   const float power = state.measuredPower_W;
 
-  printLCD(8, 0, state.loadEnabled ? F("ON ") : F("OFF"));
+#ifdef WOKWI_SIMULATION
+  printLCD(8, 0, state.loadEnabled ? F("ON  ") : F("OFF "));
+#else
+  draw_tft_load_status(state.loadEnabled);
+#endif
 
-  // Imprimir los valores actualizados, ojo con W que si se corre puede afectar a col 0, row 3
   printLCDNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
   printLCDNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
   const uint8_t mode = state.mode;
@@ -229,14 +256,17 @@ void Update_LCD(void) {
     blink_cntr = (blink_cntr + 1) % 5;
     setCursorLCD(state.cursorPosition, 2);
     if (blink_cntr == 4) {
+#ifdef WOKWI_SIMULATION
       Print_Spaces(state.cursorPosition, 2);
+#else
+      clear_tft_cursor_cell(state.cursorPosition, 2);
+#endif
     }
   }
 
   render_keypad_input(mode, state.mode == CA);
 }
 
-//--------------------------- Funciones para el LCD -----------------------------------
 void printLCD_S(int col, int row, const String &message) {
   setCursorLCD(col, row);
   printLCDRaw(message);
@@ -264,7 +294,3 @@ void Print_Spaces(int col, int row, byte count) {
     printLCDRaw(F(" "));
   }
 }
-
-
-
-
