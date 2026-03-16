@@ -1057,9 +1057,17 @@ void core_dispatch(const UserAction &action) {
         if (action.key == 'E') {
           app_calibration_accept_pending_result();
           app_calibration_finish_mode();
+          g_state.mode = app_calibration_return_mode();
+          g_state.functionIndex = app_calibration_return_function_index();
+          g_state.modeConfigured = false;
+          g_state.modeInitialized = false;
         } else if (action.key == '<') {
           app_calibration_reject_pending_result();
           app_calibration_finish_mode();
+          g_state.mode = app_calibration_return_mode();
+          g_state.functionIndex = app_calibration_return_function_index();
+          g_state.modeConfigured = false;
+          g_state.modeInitialized = false;
         }
         break;
       }
@@ -1482,6 +1490,8 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
 
 
 
