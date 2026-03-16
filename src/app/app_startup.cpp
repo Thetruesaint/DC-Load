@@ -111,10 +111,10 @@ void show_startup_splash() {
   printLCD(0, 2, F("By Guy & Codex"));
 
 #ifndef WOKWI_SIMULATION
-  printLCD(0, 3, F("v2.11"));
+  printLCD(0, 3, F("v2.12b"));
   delay(2000);
 #else
-  printLCD(0, 3, F("v2.11 sim"));
+  printLCD(0, 3, F("v2.12b sim"));
   delay(1000);
 #endif
 }

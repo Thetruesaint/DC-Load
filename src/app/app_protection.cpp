@@ -15,6 +15,8 @@
 #include "app_value_input.h"
 
 namespace {
+constexpr unsigned long RUNOUT_SETTLE_MS = 200UL;
+
 void set_fan_output(bool on) {
   digitalWrite(FAN_CTRL, on ? HIGH : LOW);
   app_fan_set_output_state(on);
@@ -36,21 +38,28 @@ void app_update_fan_control() {
     fan_on_time = currentMillis;
   }
 
-  if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) {
-    was_manual_override_active = manualOverrideActive;
-    return;
-  }
-
-  last_tmpchk = currentMillis;
-  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
-
   if (manualOverrideActive) {
     set_fan_output(app_fan_manual_state_on());
     fans_on = app_fan_manual_state_on();
     if (fans_on) {
       fan_on_time = currentMillis;
     }
-  } else if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
+    was_manual_override_active = true;
+    if (ui_state_machine_current_screen() == UiScreen::Home) {
+      ui_draw_header_temperature(app_measurements_temp_c());
+    }
+    return;
+  }
+
+  if ((currentMillis - last_tmpchk) < TMP_CHK_TIME) {
+    was_manual_override_active = false;
+    return;
+  }
+
+  last_tmpchk = currentMillis;
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+
+  if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
     if (!fans_on) {
       set_fan_output(true);
       fans_on = true;
@@ -61,7 +70,7 @@ void app_update_fan_control() {
     fans_on = false;
   }
 
-  was_manual_override_active = manualOverrideActive;
+  was_manual_override_active = false;
 
   if (ui_state_machine_current_screen() == UiScreen::Home) {
     ui_draw_header_temperature(app_measurements_temp_c());
@@ -69,20 +78,36 @@ void app_update_fan_control() {
 }
 
 void app_check_limits() {
+  static float lastSetCurrentA = 0.0f;
+  static unsigned long lastSetCurrentChangeMs = 0;
+
   char message[20] = "";
+  const unsigned long currentMillis = millis();
   float power = app_measurements_power_w();
   float maxpwrdis = constrain(249 - 1.4 * app_measurements_temp_c(), 0, 214);
   float actpwrdis = max(0.0f, power / 4);
+  const float measuredCurrent = app_measurements_current_a();
+  const float setCurrentA = app_load_set_current_mA() / 1000.0f;
   bool vlimit = false;
   bool ilimit = false;
   bool plimit = false;
   bool climit = false;
 
+  if (setCurrentA != lastSetCurrentA) {
+    lastSetCurrentA = setCurrentA;
+    lastSetCurrentChangeMs = currentMillis;
+  }
+
+  const bool runoutSettled = (currentMillis - lastSetCurrentChangeMs) >= RUNOUT_SETTLE_MS;
+
   if (app_measurements_voltage_v() > MAX_VOLTAGE) {
     strcpy(message, "Max Voltage!      ");
     vlimit = true;
-  } else if (app_measurements_current_a() > app_limits_current_cutoff() * 1.01) {
+  } else if (measuredCurrent > app_limits_current_cutoff() * 1.01f) {
     strcpy(message, "Current Cut Off!  ");
+    ilimit = true;
+  } else if (app_load_is_enabled() && setCurrentA > 0.0f && runoutSettled && measuredCurrent > setCurrentA * 1.11f) {
+    strcpy(message, "Runout Cut Off!   ");
     ilimit = true;
   } else if (power > app_limits_power_cutoff()) {
     strcpy(message, "Power Cut Off!    ");
