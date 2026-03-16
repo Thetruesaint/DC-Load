@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "../app/app_ota.h"
 #include "../app/app_calibration_context.h"
 #include "../config/system_constants.h"
 #include "../ui/ui_state_machine.h"
@@ -54,7 +55,7 @@ uint8_t config_menu_item_count(ConfigMenu menu) {
     case ConfigMenu::Root: return 4;
     case ConfigMenu::Protection: return 3;
     case ConfigMenu::Tests: return 2;
-    case ConfigMenu::FanSettings: return 3;
+    case ConfigMenu::FanSettings: return 4;
     case ConfigMenu::Calibration: return 5;
     default: return 0;
   }
@@ -93,7 +94,8 @@ ConfigMenu config_menu_selected_target(const SystemState &state, ConfigMenu menu
     return protection_menu_for_index(state.protectionMenuSelection);
   }
   if (menu == ConfigMenu::Tests) {
-    return (state.testsMenuSelection == 1) ? ConfigMenu::Protection : ConfigMenu::Tests;
+    if (state.testsMenuSelection == 0) return ConfigMenu::FwUpdate;
+    return ConfigMenu::None;
   }
   return ConfigMenu::None;
 }
@@ -167,6 +169,8 @@ void config_menu_leave_to_parent(SystemState *state, ConfigMenu parent, ConfigMe
     state->menuRootSelection = menu_root_index_for_menu(child);
   } else if (parent == ConfigMenu::Protection) {
     state->protectionMenuSelection = (child == ConfigMenu::FanSettings) ? 1 : (child == ConfigMenu::Tests) ? 2 : 0;
+  } else if (parent == ConfigMenu::Tests) {
+    state->testsMenuSelection = (child == ConfigMenu::FwUpdate) ? 1 : 0;
   }
 
   config_menu_sync_pending_section(state, parent);
@@ -589,6 +593,8 @@ void fan_menu_finish(SystemState *state, bool save, bool returnToParent = false)
   const ConfigMenu parent = state->parentConfigMenu;
   state->fanSaveEvent = save;
   state->fanEditActive = false;
+  state->fanManualOverrideActive = false;
+  state->fanManualStateOn = false;
   fan_input_reset(state);
 
   if (returnToParent && parent != ConfigMenu::None) {
@@ -643,14 +649,11 @@ void tests_menu_begin(SystemState *state) {
   state->currentConfigMenu = ConfigMenu::Tests;
   state->parentConfigMenu = ConfigMenu::Root;
   state->testsMenuSelection = 0;
-  state->fanManualOverrideActive = true;
 }
 
 void tests_menu_finish(SystemState *state, bool returnToParent = false) {
   if (state == nullptr) return;
   const ConfigMenu parent = state->parentConfigMenu;
-  state->fanManualOverrideActive = false;
-  state->fanManualStateOn = false;
 
   if (returnToParent && parent != ConfigMenu::None) {
     config_menu_leave_to_parent(state, parent, ConfigMenu::Tests);
@@ -714,6 +717,9 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
     if (state->fanEditActive) {
       fan_menu_commit_edit(state);
     } else if (selection == 2) {
+      state->fanManualOverrideActive = true;
+      state->fanManualStateOn = !state->fanManualStateOn;
+    } else if (selection == 3) {
       fan_menu_finish(state, true, true);
     } else {
       fan_menu_start_edit(state);
@@ -723,10 +729,10 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
 
   if (menu == ConfigMenu::Tests) {
     const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::Tests);
-    if (selection == 1) {
-      tests_menu_finish(state, true);
+    if (selection == 0) {
+      config_menu_enter(state, ConfigMenu::FwUpdate, ConfigMenu::Tests);
     } else {
-      tests_menu_toggle_fan(state);
+      tests_menu_finish(state, true);
     }
     return;
   }
@@ -750,6 +756,11 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
 
   if (target == ConfigMenu::Tests) {
     tests_menu_begin(state);
+    return;
+  }
+
+  if (target == ConfigMenu::FwUpdate) {
+    config_menu_enter(state, ConfigMenu::FwUpdate, ConfigMenu::Tests);
     return;
   }
 
@@ -794,6 +805,11 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
 
   if (menu == ConfigMenu::Tests) {
     tests_menu_finish(state, true);
+    return;
+  }
+
+  if (menu == ConfigMenu::FwUpdate) {
+    config_menu_leave_to_parent(state, ConfigMenu::Tests, ConfigMenu::FwUpdate);
     return;
   }
 
@@ -965,6 +981,10 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuFwUpdate) {
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
         if (!g_state.fanEditActive) {
           const int direction = (action.value > 0) ? 1 : ((action.value < 0) ? -1 : 0);
@@ -1025,6 +1045,10 @@ void core_dispatch(const UserAction &action) {
 
       if (g_state.uiScreen == UiScreen::MenuTests) {
         config_menu_activate_selection(&g_state, ConfigMenu::Tests);
+        break;
+      }
+
+      if (g_state.uiScreen == UiScreen::MenuFwUpdate) {
         break;
       }
 
@@ -1300,6 +1324,15 @@ void core_dispatch(const UserAction &action) {
         break;
       }
 
+      if (g_state.uiScreen == UiScreen::MenuFwUpdate) {
+        if (action.key == 'E' && app_ota_has_error()) {
+          app_ota_restart();
+        } else if ((action.key == '<' || action.key == 'M') && !app_ota_is_uploading()) {
+          config_menu_back(&g_state, ConfigMenu::FwUpdate);
+        }
+        break;
+      }
+
       if (g_state.uiScreen == UiScreen::MenuFanSettings) {
         if (g_state.fanEditActive) {
           if (action.key == '<') {
@@ -1322,6 +1355,8 @@ void core_dispatch(const UserAction &action) {
           config_menu_select_index(&g_state, ConfigMenu::FanSettings, 1);
         } else if (action.key == '3') {
           config_menu_select_index(&g_state, ConfigMenu::FanSettings, 2);
+        } else if (action.key == '4') {
+          config_menu_select_index(&g_state, ConfigMenu::FanSettings, 3);
         } else if (action.key == 'U' || action.key == 'L') {
           config_menu_step_selection(&g_state, ConfigMenu::FanSettings, -1);
         } else if (action.key == 'D' || action.key == 'R') {
@@ -1490,6 +1525,13 @@ void core_tick_10ms() {
 const SystemState &core_get_state() {
   return g_state;
 }
+
+
+
+
+
+
+
 
 
 

@@ -16,6 +16,7 @@ enum class UiScreen : uint8_t {
   MenuRoot,
   MenuProtection,
   MenuTests,
+  MenuFwUpdate,
   MenuFanSettings,
   MenuLimits,
   MenuCalibration
@@ -32,6 +33,7 @@ enum class ConfigMenu : uint8_t {
   Root,
   Protection,
   Tests,
+  FwUpdate,
   FanSettings,
   Limits,
   Calibration

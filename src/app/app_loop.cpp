@@ -1,8 +1,10 @@
 #include "app_loop.h"
+
 #include <cstddef>
 
 #include "../core/core_engine.h"
 #include "../ui/ui_renderer.h"
+#include "app_ota.h"
 #include "app_startup.h"
 #include "app_runtime_sync.h"
 
@@ -69,20 +71,20 @@ void app_tick() {
   core_tick_10ms();
   app_runtime_sync_apply(core_get_state());
 
-  // Re-sync after possible blocking legacy flows so core keeps
-  // side effects done in legacy context (e.g. modeInitialized reset).
+  if (core_get_state().uiScreen == UiScreen::MenuFwUpdate) {
+    app_ota_handle();
+  }
+
   core_sync_from_legacy(app_runtime_sync_capture());
 
-  // Process actions queued from blocking legacy flows in the same cycle
-  // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
-  // Start a fresh one-shot window before dispatching post-flow actions so
-  // completed config flows are not re-entered in this same tick.
   core_begin_cycle();
   if (drain_action_queue()) {
     core_tick_10ms();
     app_runtime_sync_apply(core_get_state());
+    if (core_get_state().uiScreen == UiScreen::MenuFwUpdate) {
+      app_ota_handle();
+    }
   }
 
   ui_render(core_get_state());
 }
-

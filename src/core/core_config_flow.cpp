@@ -17,6 +17,10 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuTests;
   }
 
+  if (state.currentConfigMenu == ConfigMenu::FwUpdate) {
+    return UiScreen::MenuFwUpdate;
+  }
+
   if (state.currentConfigMenu == ConfigMenu::FanSettings) {
     return UiScreen::MenuFanSettings;
   }

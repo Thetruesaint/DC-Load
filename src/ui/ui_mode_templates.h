@@ -15,7 +15,8 @@ void ui_draw_limits_summary(float currentCutoff, float powerCutoff, float tempCu
 void ui_draw_config_root_menu(uint8_t selectedIndex);
 void ui_draw_protection_menu(uint8_t selectedIndex);
 void ui_draw_tests_menu(uint8_t selectedIndex, bool fanOn);
-void ui_draw_fan_settings_menu(uint8_t selectedIndex, float tempC, float holdSeconds, bool editActive, const char *inputText);
+void ui_draw_fw_update_screen(const char *statusLine, const char *detailLine, const char *hintLine);
+void ui_draw_fan_settings_menu(uint8_t selectedIndex, float tempC, float holdSeconds, bool editActive, const char *inputText, bool fanOn);
 void ui_draw_calibration_setup_menu();
 void ui_draw_calibration_mode_template(bool voltageMode, bool firstPointTaken);
 void ui_draw_calibration_abort(bool pointsTooClose);

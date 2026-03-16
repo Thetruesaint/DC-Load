@@ -74,6 +74,7 @@ void app_update_fan_control() {
     set_fan_output(false);
     fans_on = false;
     fan_on_time = currentMillis;
+    last_tmpchk = currentMillis - TMP_CHK_TIME;
   }
 
   if (manualOverrideActive) {

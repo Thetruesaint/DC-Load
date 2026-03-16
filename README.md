@@ -5,10 +5,9 @@
 - v2.x → ESP32 (Plataforma actual)
 
 **Trabajando:**
-
+- Introducir mejoras en TFT
 
 **A Trabajar:**
-- Introducir mejoras en TFT
 - Entrar en modo update de firmware
 - En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 
@@ -26,9 +25,17 @@
 - Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usare MOSFET de placa de control para Poner Iset a GND, agregue resistencia 1k en serie.
 - Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
 - Nueva pantallas de Protección para informar de limites superados.
+- **OTA Update!:**
+    - El menu `Configuration -> FW Update` conecta el WiFi y muestra IP/Host.
+    - El upload OTA correcto debe usar el mismo binario de `env:real`.
+    - Flujo validado:
+            ```powershell
+            pio run -e real
+            & "C:\Users\thetr\.platformio\penv\Scripts\python.exe" "C:\Users\thetr\.platformio\packages\framework-arduinoespressif32\tools\espota.py" -i <IP_QUE_MUESTRA_EL_TFT> -p 3232 -f ".pio\build\real\firmware.bin"
+            ```
+    - No usar `real_ota`: generaba un binario distinto al de `real`.
 
 **Posibles Mejoras SW:**
-- Control de velocidad de Fans o test de encendido y apagado
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
 - En CC, CP, CR y BC, con BTN encoder habilito cambiar de valor o de unidad para --CuPo, reqiuere reingenieriaa Cursor_Position
 - Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
