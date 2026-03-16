@@ -7,12 +7,13 @@ enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
 
 //---------------- I/O Pins ----------------------------------------------
 const uint8_t TEMP_SNSR = 36;
-const uint8_t FAN_CTRL = 25;
+const uint8_t FAN_CTRL = 16;
 const uint8_t BUZZER = 17;
 const uint8_t ENC_A = 14;
 const uint8_t ENC_B = 13;
 const uint8_t ENC_BTN = 32;
-const uint8_t LOADONOFF = 16;
+const uint8_t LOADONOFF = 39;
+const uint8_t MOSFONOFF = 25;
 #ifdef WOKWI_SIMULATION
 const uint8_t VSIM = 4;
 #else

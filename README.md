@@ -25,6 +25,7 @@
 **Mejoras**
 - Agregue una placa aparte para el control de FANs
 - Se agrega Menu para Test, y la 1era opción para ON/OFF de Fans.
+- Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usare MOSFET de placa de control para Poner Iset a GND, agregue resistencia 1k en serie.
 
 **Posibles Mejoras SW:**
 - Control de velocidad de Fans o test de encendido y apagado

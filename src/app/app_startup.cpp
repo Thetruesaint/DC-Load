@@ -26,9 +26,13 @@ void init_io() {
   pinMode(TEMP_SNSR, INPUT);
   analogReadResolution(12);
   analogSetPinAttenuation(TEMP_SNSR, ADC_0db);
-  pinMode(LOADONOFF, INPUT_PULLUP);
+  pinMode(LOADONOFF, INPUT);
   pinMode(FAN_CTRL, OUTPUT);
+  digitalWrite(FAN_CTRL, LOW);
   pinMode(BUZZER, OUTPUT);
+  digitalWrite(BUZZER, LOW);
+  pinMode(MOSFONOFF, OUTPUT);
+  digitalWrite(MOSFONOFF, HIGH);
 
 #ifdef WOKWI_SIMULATION
   pinMode(VSIM, INPUT);
@@ -81,8 +85,10 @@ void run_peripheral_health_check() {
 
   if (app_health_is_ok() && app_measurements_temp_c() <= 99) {
     printLCD(0, 2, F("Sensor Test OK"));
+    digitalWrite(MOSFONOFF, LOW);
   } else {
     printLCD(0, 2, F("Sensor Test FAIL"));
+    digitalWrite(MOSFONOFF, HIGH);
   }
 
   delay(2000);
