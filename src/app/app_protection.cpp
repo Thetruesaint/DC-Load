@@ -1,10 +1,12 @@
 #include "app_protection.h"
 
 #include "../config/system_constants.h"
+#include "../hal/hal_inputs.h"
 #include "../hw/hw_objects.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
 #include "app_fan_context.h"
+#include "app_input_buffer.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
 #include "app_load_output.h"
@@ -16,10 +18,46 @@
 
 namespace {
 constexpr unsigned long RUNOUT_SETTLE_MS = 200UL;
+constexpr unsigned long PROTECTION_BLINK_MS = 250UL;
 
 void set_fan_output(bool on) {
   digitalWrite(FAN_CTRL, on ? HIGH : LOW);
   app_fan_set_output_state(on);
+}
+
+char protection_cause_code(bool vlimit, bool ilimit, bool plimit, bool climit) {
+  if (vlimit) return 'V';
+  if (ilimit) return 'I';
+  if (plimit) return 'P';
+  if (climit) return 'T';
+  return '!';
+}
+
+void wait_for_protection_ack(const char *message, char causeCode) {
+  app_reset_input_pointers();
+
+  bool encoderWasPressed = false;
+  ui_draw_protection_modal(message, causeCode);
+
+  while (true) {
+    const char key = app_input_read_key();
+    if (!app_input_is_no_key(key) && key == 'E') {
+      app_reset_input_pointers();
+      return;
+    }
+
+    const bool encoderPressed = hal_encoder_button_low();
+    if (encoderPressed && !encoderWasPressed) {
+      while (hal_encoder_button_low()) {
+        hal_delay_ms(10);
+      }
+      app_reset_input_pointers();
+      return;
+    }
+    encoderWasPressed = encoderPressed;
+
+    hal_delay_ms(10);
+  }
 }
 }
 
@@ -125,10 +163,11 @@ void app_check_limits() {
     app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
 
-    ui_blink_limit_alarm(message, vlimit, ilimit, plimit, climit);
+    wait_for_protection_ack(message, protection_cause_code(vlimit, ilimit, plimit, climit));
 
     app_reset_input_pointers();
     app_mode_state_set_initialized(false);
+    ui_state_machine_reset();
   }
 }
 

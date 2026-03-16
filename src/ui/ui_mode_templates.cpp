@@ -206,6 +206,7 @@ void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sens
 
   printLCD(2, 3, F("E-OK  <=Cancel"));
 }
+
 void ui_draw_calibration_loaded_message() {
   printLCD(12, 3, F("Loaded!"));
 }
@@ -226,7 +227,6 @@ void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, u
   writeLCD(byte(0));
   printLCD_S(14, 2, String(highCurrent, 3));
   writeLCD(byte(0));
-
   printLCD_S(7, 3, String(periodMs));
 }
 
@@ -272,36 +272,12 @@ void ui_draw_header_temperature(int tempC) {
   printLCDRaw("C");
 }
 
-void ui_blink_limit_alarm(const char *message, bool vlimit, bool ilimit, bool plimit, bool climit) {
-  for (int i = 0; i < 6; i++) {
-    printLCD_S(0, 3, message);
-    if (vlimit) {
-      Print_Spaces(12, 1);
-    } else if (ilimit) {
-      Print_Spaces(5, 1);
-    } else if (plimit) {
-      Print_Spaces(19, 1);
-    } else if (climit) {
-      Print_Spaces(19, 0);
-    }
-    delay(250);
-
-    Print_Spaces(0, 3, 18);
-    if (vlimit) {
-      setCursorLCD(12, 1);
-      printLCDRaw(F("v"));
-    } else if (ilimit) {
-      setCursorLCD(5, 1);
-      writeLCD(byte(0));
-    } else if (plimit) {
-      setCursorLCD(19, 1);
-      printLCDRaw(F("w"));
-    } else if (climit) {
-      setCursorLCD(19, 0);
-      printLCDRaw(F("C"));
-    }
-    delay(250);
-  }
+void ui_draw_protection_modal(const char *message, char causeCode) {
+  clearLCD();
+  printLCD(0, 0, F("*** PROTECTION ***"));
+  printLCD_S(0, 1, String(message));
+  printLCD_S(0, 2, String(F("Cause: ")) + String(causeCode));
+  printLCD(0, 3, F("Load: OFF  E=OK"));
 }
 
 void ui_set_setpoint_cursor(int cursorColumn) {
@@ -352,9 +328,3 @@ void ui_show_current_limit_value(int col, int row, float current) {
 void ui_clear_mode_screen() {
   clearLCD();
 }
-
-
-
-
-
-

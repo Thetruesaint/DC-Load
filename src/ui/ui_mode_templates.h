@@ -28,7 +28,7 @@ void ui_draw_transient_list_mode_template(int totalSteps);
 void ui_draw_transient_list_setup_template();
 void ui_draw_transient_list_step_template(int stepIndex);
 void ui_draw_header_temperature(int tempC);
-void ui_blink_limit_alarm(const char *message, bool vlimit, bool ilimit, bool plimit, bool climit);
+void ui_draw_protection_modal(const char *message, char causeCode);
 void ui_set_setpoint_cursor(int cursorColumn);
 void ui_update_battery_life(float batteryLife);
 void ui_show_battery_done();

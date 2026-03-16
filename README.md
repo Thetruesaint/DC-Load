@@ -5,11 +5,10 @@
 - v2.x → ESP32 (Plataforma actual)
 
 **Trabajando:**
-- Test en HW de nueva placa de control de Fans y menu de Fans
+
 
 **A Trabajar:**
 - Introducir mejoras en TFT
-- Evaluando cambio de pines para poder controlar apagado de MOSFETs
 - Entrar en modo update de firmware
 - En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 
@@ -17,16 +16,16 @@
 - Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR
 - Las advertencias de Limites maximos superados pisan el template en el que se encuentre en ese momento en CC, CP y CR no hay problema, en otros modos si.
 - Cuando termino una calibración, al salir del menu, vuelve a esta en modo CA inicializado
-- el ">" en CC desaparece a veces. ver porque.
 
 **Fixes**
-- CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. verificar
+- CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
 
 **Mejoras**
 - Agregue una placa aparte para el control de FANs
 - Se agrega Menu para Test, y la 1era opción para ON/OFF de Fans.
 - Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usare MOSFET de placa de control para Poner Iset a GND, agregue resistencia 1k en serie.
 - Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
+- Nueva pantallas de Protección para informar de limites superados.
 
 **Posibles Mejoras SW:**
 - Control de velocidad de Fans o test de encendido y apagado
