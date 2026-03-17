@@ -4,7 +4,7 @@
 #include <cstring>
 
 #include "../app/app_ota.h"
-#include "../ui_lcd.h"
+#include "../ui_display.h"
 #include "../app/app_calibration_context.h"
 #include "../config/system_constants.h"
 #include "ui_mode_templates.h"
@@ -377,7 +377,7 @@ void screen_update_home(const UiViewState &viewState) {
     return;
   }
   draw_home_if_needed(viewState);
-  Update_LCD();
+  uiDisplayUpdate();
 }
 
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
