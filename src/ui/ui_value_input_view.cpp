@@ -4,7 +4,6 @@
 
 void app_value_input_view_begin(int col, int row) {
   setCursorLCD(col, row);
-  blinkOnLCD();
 }
 
 void app_value_input_view_render(int col, int row, int maxDigits, const char *text) {
@@ -13,6 +12,4 @@ void app_value_input_view_render(int col, int row, int maxDigits, const char *te
 }
 
 void app_value_input_view_end() {
-  noCursorLCD();
-  blinkOffLCD();
 }

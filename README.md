@@ -1,4 +1,4 @@
-## v2.12 ## NICE TIO SEE
+## v2.12 ## NICE TO SEE
 
 ## Hardware Versions
 
@@ -8,7 +8,6 @@
 - Introducir mejoras en TFT
 
 **A Trabajar:**
-- Entrar en modo update de firmware
 - En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 
 **Bugs**
@@ -21,7 +20,7 @@
 - IMPORTANTE: Corrección en la aplicación de la calibración en el SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
 
 **Mejoras**
-- Agregue una placa aparte para el control de FANs
+- Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
 - Se agrega Menu para Test, y la 1era opción para ON/OFF de Fans.
 - Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usare MOSFET de placa de control para Poner Iset a GND, agregue resistencia 1k en serie.
 - Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
@@ -35,6 +34,12 @@
             & "C:\Users\thetr\.platformio\penv\Scripts\python.exe" "C:\Users\thetr\.platformio\packages\framework-arduinoespressif32\tools\espota.py" -i <IP_QUE_MUESTRA_EL_TFT> -p 3232 -f ".pio\build\real\firmware.bin"
             ```
     - No usar `real_ota`: generaba un binario distinto al de `real`.
+- NUEVA SIMULACION WOKWI CON TFT 240x320
+    - Wokwi deja de usar la ruta LCD y ahora renderiza con `TFT_eSPI`, acercando mucho mas la simulacion al hardware real.
+    - `env:sim` usa un TFT `ILI9341` de `240x320`, mientras `env:real` mantiene la configuracion real existente.
+    - `diagram.json` fue actualizado al nuevo display TFT.
+    - `rename_output.py` vuelve a generar `wokwi.toml` y el artefacto `.pio/build/sim/DCLoad_main_sim.elf` para que Wokwi levante la simulacion automaticamente.
+    - En sim ya no se depende de `VSIM`; se usa una tension simulada fija para evitar lecturas desde un GPIO no conectado.
 
 **Posibles Mejoras SW:**
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)

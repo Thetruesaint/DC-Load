@@ -235,9 +235,9 @@ void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, u
   printLCD(13, 3, F("mSecs"));
 
   printLCD_S(3, 2, String(lowCurrent, 3));
-  writeLCD(byte(0));
+  printLCDRaw('A');
   printLCD_S(14, 2, String(highCurrent, 3));
-  writeLCD(byte(0));
+  printLCDRaw('A');
   printLCD_S(7, 3, String(periodMs));
 }
 
