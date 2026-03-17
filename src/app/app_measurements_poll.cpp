@@ -30,18 +30,14 @@ void app_measurements_poll() {
   const float rawCurrent = ads.computeVolts(adci) * SNS_CURR_FACT;
   app_measurements_set_current_a(apply_current_calibration(rawCurrent));
 #else
-  const int potValue = analogRead(VSIM);
   static float simulatedVoltage = 0.0f;
   static unsigned long lastDecreaseTime = 0;
   const unsigned long currentMillis = app_io_millis();
   const bool loadEnabled = app_load_is_enabled();
-
-  constexpr float SIM_VOLTAGE_MAX = 40.0f;
-  constexpr float ESP32_ADC_MAX = 4095.0f;
-  const float simulatedPotVoltage = constrain((static_cast<float>(potValue) / ESP32_ADC_MAX) * SIM_VOLTAGE_MAX, 0.0f, SIM_VOLTAGE_MAX);
+  const float simulatedSourceVoltage = SIM_DEFAULT_VOLTAGE;
 
   if (!app_mode_is_battery() && !app_mode_is_calibration()) {
-    simulatedVoltage = simulatedPotVoltage;
+    simulatedVoltage = simulatedSourceVoltage;
     app_measurements_set_voltage_v(simulatedVoltage);
   } else if (app_mode_is_battery()) {
     if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
@@ -50,11 +46,11 @@ void app_measurements_poll() {
       simulatedVoltage = max(simulatedVoltage, 0.0f);
       app_measurements_set_voltage_v(simulatedVoltage);
     } else if (!loadEnabled) {
-      simulatedVoltage = simulatedPotVoltage;
+      simulatedVoltage = simulatedSourceVoltage;
       app_measurements_set_voltage_v(simulatedVoltage);
     }
   } else if (app_mode_is_calibration()) {
-    simulatedVoltage = simulatedPotVoltage;
+    simulatedVoltage = simulatedSourceVoltage;
     const float errorVoltage = simulatedVoltage * 1.05f - 0.1f;
     app_measurements_set_voltage_v(apply_voltage_calibration(errorVoltage));
   }

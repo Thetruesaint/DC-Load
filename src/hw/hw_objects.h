@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
 #ifndef WOKWI_SIMULATION
 #include <Adafruit_ADS1X15.h>
 #include <Adafruit_MCP4725.h>
@@ -17,7 +16,6 @@
 extern Adafruit_MCP4725 dac;
 extern Adafruit_ADS1115 ads;
 #endif
-extern LiquidCrystal_I2C lcd;
 extern TFT_eSPI tft;
 extern RTC_DS1307 rtc;
 extern ESP32Encoder encoder;

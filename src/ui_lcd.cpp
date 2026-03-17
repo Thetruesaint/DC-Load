@@ -9,10 +9,16 @@
 
 #include <cstring>
 
-#ifndef WOKWI_SIMULATION
 namespace {
+#if defined(TFT_WIDTH) && (TFT_WIDTH <= 240)
+constexpr uint16_t TFT_CELL_W = 12;  // 20 columns across a 240px-wide sim TFT
+constexpr uint16_t TFT_CELL_H = 16;  // 4 rows with a compact text grid
+constexpr uint8_t TFT_TEXT_SIZE = 2;
+#else
 constexpr uint16_t TFT_CELL_W = 18;  // Grid column width for 20x4 layout on TFT
 constexpr uint16_t TFT_CELL_H = 24;  // Grid row height for 20x4 layout on TFT
+constexpr uint8_t TFT_TEXT_SIZE = 3;
+#endif
 constexpr uint16_t TFT_TEXT_COLOR = TFT_CYAN;
 constexpr uint16_t TFT_BG_COLOR = TFT_BLACK;
 constexpr int TFT_STATUS_X = 8 * TFT_CELL_W;
@@ -23,7 +29,7 @@ constexpr int TFT_STATUS_H = TFT_CELL_H - 2;
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
   tft.setTextFont(1);
-  tft.setTextSize(3);
+  tft.setTextSize(TFT_TEXT_SIZE);
 }
 
 void draw_tft_load_status(bool enabled) {
@@ -42,124 +48,65 @@ void clear_tft_cursor_cell(int col, int row) {
   tft.fillRect(x, y, TFT_CELL_W, TFT_CELL_H - 2, TFT_BG_COLOR);
 }
 }
-#endif
 
 void initLCD(void) {
-#ifdef WOKWI_SIMULATION
-  lcd.begin(20, 4);
-  lcd.backlight();
-  lcd.createChar(0, amp_char);
-#else
   tft.init();
   tft.setRotation(1);
   tft.fillScreen(TFT_BG_COLOR);
   restore_tft_text_style();
   tft.setTextWrap(false);
-#endif
 }
 
 void clearLCD(void) {
-#ifdef WOKWI_SIMULATION
-  lcd.clear();
-#else
   tft.fillScreen(TFT_BG_COLOR);
   tft.setCursor(0, 0);
   restore_tft_text_style();
-#endif
 }
 
 void setCursorLCD(int col, int row) {
-#ifdef WOKWI_SIMULATION
-  lcd.setCursor(col, row);
-#else
   tft.setCursor(col * TFT_CELL_W, row * TFT_CELL_H);
-#endif
 }
 
-void blinkOnLCD(void) {
-#ifdef WOKWI_SIMULATION
-  lcd.blink_on();
-#endif
-}
+void blinkOnLCD(void) {}
 
-void blinkOffLCD(void) {
-#ifdef WOKWI_SIMULATION
-  lcd.blink_off();
-#endif
-}
+void blinkOffLCD(void) {}
 
-void noCursorLCD(void) {
-#ifdef WOKWI_SIMULATION
-  lcd.noCursor();
-#endif
-}
+void noCursorLCD(void) {}
 
 void writeLCD(byte value) {
-#ifdef WOKWI_SIMULATION
-  lcd.write(value);
-#else
   if (value == 0) {
     tft.print('A');
   } else {
     tft.print((char)value);
   }
-#endif
 }
 
 void printLCDRaw(const String &message) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(message);
-#else
   tft.print(message);
-#endif
 }
 
 void printLCDRaw(const char *message) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(message);
-#else
   tft.print(message);
-#endif
 }
 
 void printLCDRaw(const __FlashStringHelper *message) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(message);
-#else
   tft.print(message);
-#endif
 }
 
 void printLCDRaw(char value) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(value);
-#else
   tft.print(value);
-#endif
 }
 
 void printLCDRaw(int value) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(value);
-#else
   tft.print(value);
-#endif
 }
 
 void printLCDRaw(unsigned long value) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(value);
-#else
   tft.print(value);
-#endif
 }
 
 void printLCDRaw(float value, int decimals) {
-#ifdef WOKWI_SIMULATION
-  lcd.print(value, decimals);
-#else
   tft.print(value, decimals);
-#endif
 }
 
 void render_keypad_input(uint8_t mode, bool calibrationMode) {
@@ -216,11 +163,7 @@ void Update_LCD(void) {
   if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
   const float power = state.measuredPower_W;
 
-#ifdef WOKWI_SIMULATION
-  printLCD(8, 0, state.loadEnabled ? F("ON  ") : F("OFF "));
-#else
   draw_tft_load_status(state.loadEnabled);
-#endif
 
   printLCDNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
   printLCDNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
@@ -256,11 +199,7 @@ void Update_LCD(void) {
     blink_cntr = (blink_cntr + 1) % 5;
     setCursorLCD(state.cursorPosition, 2);
     if (blink_cntr == 4) {
-#ifdef WOKWI_SIMULATION
-      Print_Spaces(state.cursorPosition, 2);
-#else
       clear_tft_cursor_cell(state.cursorPosition, 2);
-#endif
     }
   }
 

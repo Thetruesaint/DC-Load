@@ -33,10 +33,6 @@ void init_io() {
   digitalWrite(BUZZER, LOW);
   pinMode(MOSFONOFF, OUTPUT);
   digitalWrite(MOSFONOFF, HIGH);
-
-#ifdef WOKWI_SIMULATION
-  pinMode(VSIM, INPUT);
-#endif
 }
 
 void init_peripherals() {
