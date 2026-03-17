@@ -1,4 +1,4 @@
-## v2.12 ## NICE TIO SEE
+## v2.12 ## NICE TO SEE
 
 ## Hardware Versions
 

@@ -3,13 +3,23 @@
 
 #include <Arduino.h>
 
+struct UiGridMetrics {
+  uint16_t cols;
+  uint16_t rows;
+  uint16_t cellWidthPx;
+  uint16_t cellHeightPx;
+  uint16_t originXPx;
+  uint16_t originYPx;
+  uint8_t textSize;
+};
+
 void initLCD(void);
 void clearLCD(void);
 void setCursorLCD(int col, int row);
-void blinkOnLCD(void);
-void blinkOffLCD(void);
-void noCursorLCD(void);
-void writeLCD(byte value);
+const UiGridMetrics &uiGridMetrics();
+int uiGridPixelX(int col);
+int uiGridPixelY(int row);
+void uiClearCells(int col, int row, byte count = 1);
 void printLCDRaw(const String &message);
 void printLCDRaw(const char *message);
 void printLCDRaw(const __FlashStringHelper *message);

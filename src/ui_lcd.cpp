@@ -1,7 +1,6 @@
 #include "ui_lcd.h"
 #include "hw/hw_objects.h"
 #include "config/system_constants.h"
-#include "ui/ui_symbols.h"
 #include "ui/ui_state_cache.h"
 #include "ui/ui_state_machine.h"
 #include "app/app_input_buffer.h"
@@ -11,41 +10,49 @@
 
 namespace {
 #if defined(TFT_WIDTH) && (TFT_WIDTH <= 240)
-constexpr uint16_t TFT_CELL_W = 12;  // 20 columns across a 240px-wide sim TFT
-constexpr uint16_t TFT_CELL_H = 16;  // 4 rows with a compact text grid
-constexpr uint8_t TFT_TEXT_SIZE = 2;
+constexpr UiGridMetrics kGrid = {20, 4, 12, 16, 0, 0, 2};
 #else
-constexpr uint16_t TFT_CELL_W = 18;  // Grid column width for 20x4 layout on TFT
-constexpr uint16_t TFT_CELL_H = 24;  // Grid row height for 20x4 layout on TFT
-constexpr uint8_t TFT_TEXT_SIZE = 3;
+constexpr UiGridMetrics kGrid = {20, 4, 18, 24, 0, 0, 3};
 #endif
+
 constexpr uint16_t TFT_TEXT_COLOR = TFT_CYAN;
 constexpr uint16_t TFT_BG_COLOR = TFT_BLACK;
-constexpr int TFT_STATUS_X = 8 * TFT_CELL_W;
-constexpr int TFT_STATUS_Y = 0;
-constexpr int TFT_STATUS_W = 4 * TFT_CELL_W;
-constexpr int TFT_STATUS_H = TFT_CELL_H - 2;
+
+int cell_origin_x(int col) {
+  return kGrid.originXPx + (col * kGrid.cellWidthPx);
+}
+
+int cell_origin_y(int row) {
+  return kGrid.originYPx + (row * kGrid.cellHeightPx);
+}
+
+constexpr int TFT_STATUS_COL = 8;
+constexpr int TFT_STATUS_ROW = 0;
+constexpr int TFT_STATUS_COLS = 4;
+constexpr int TFT_STATUS_ROWS = 1;
 
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
   tft.setTextFont(1);
-  tft.setTextSize(TFT_TEXT_SIZE);
+  tft.setTextSize(kGrid.textSize);
 }
 
 void draw_tft_load_status(bool enabled) {
   const uint16_t bg = enabled ? TFT_RED : TFT_GREEN;
+  const int statusX = cell_origin_x(TFT_STATUS_COL);
+  const int statusY = cell_origin_y(TFT_STATUS_ROW);
+  const int statusW = TFT_STATUS_COLS * kGrid.cellWidthPx;
+  const int statusH = (TFT_STATUS_ROWS * kGrid.cellHeightPx) - 2;
 
-  tft.fillRect(TFT_STATUS_X, TFT_STATUS_Y, TFT_STATUS_W, TFT_STATUS_H, bg);
+  tft.fillRect(statusX, statusY, statusW, statusH, bg);
   tft.setTextColor(TFT_WHITE, bg);
-  tft.setCursor(TFT_STATUS_X, TFT_STATUS_Y);
+  tft.setCursor(statusX, statusY);
   tft.print(enabled ? "ON  " : "OFF ");
   restore_tft_text_style();
 }
 
 void clear_tft_cursor_cell(int col, int row) {
-  const int x = col * TFT_CELL_W;
-  const int y = row * TFT_CELL_H;
-  tft.fillRect(x, y, TFT_CELL_W, TFT_CELL_H - 2, TFT_BG_COLOR);
+  tft.fillRect(cell_origin_x(col), cell_origin_y(row), kGrid.cellWidthPx, kGrid.cellHeightPx - 2, TFT_BG_COLOR);
 }
 }
 
@@ -59,26 +66,22 @@ void initLCD(void) {
 
 void clearLCD(void) {
   tft.fillScreen(TFT_BG_COLOR);
-  tft.setCursor(0, 0);
+  tft.setCursor(kGrid.originXPx, kGrid.originYPx);
   restore_tft_text_style();
 }
 
 void setCursorLCD(int col, int row) {
-  tft.setCursor(col * TFT_CELL_W, row * TFT_CELL_H);
+  tft.setCursor(cell_origin_x(col), cell_origin_y(row));
 }
 
-void blinkOnLCD(void) {}
+const UiGridMetrics &uiGridMetrics() { return kGrid; }
 
-void blinkOffLCD(void) {}
+int uiGridPixelX(int col) { return cell_origin_x(col); }
 
-void noCursorLCD(void) {}
+int uiGridPixelY(int row) { return cell_origin_y(row); }
 
-void writeLCD(byte value) {
-  if (value == 0) {
-    tft.print('A');
-  } else {
-    tft.print((char)value);
-  }
+void uiClearCells(int col, int row, byte count) {
+  tft.fillRect(cell_origin_x(col), cell_origin_y(row), count * kGrid.cellWidthPx, kGrid.cellHeightPx - 2, TFT_BG_COLOR);
 }
 
 void printLCDRaw(const String &message) {
@@ -131,7 +134,7 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
     return;
   }
 
-  Print_Spaces(inputCol, inputRow, maxDigits);
+  uiClearCells(inputCol, inputRow, maxDigits);
   setCursorLCD(inputCol, inputRow);
   printLCDRaw(currentInput);
 
@@ -145,10 +148,7 @@ void Update_LCD(void) {
   static unsigned long lastUpdateTime = 0;
   static int blink_cntr = 0;
 
-  if (app_ui_consume_clear_cursor_blink_request()) {
-    noCursorLCD();
-    blinkOffLCD();
-  }
+  (void)app_ui_consume_clear_cursor_blink_request();
 
   const UiViewState &state = ui_state_cache_get();
   if (ui_state_machine_current_screen() != UiScreen::Home) return;
@@ -171,7 +171,7 @@ void Update_LCD(void) {
   if (mode != BC && mode != CA) {
     setCursorLCD(14, 1);
     if (power < 10) {
-      Print_Spaces(14, 1);
+      uiClearCells(14, 1);
       printLCDRaw(power, 2);
     } else if (power < 100) {
       printLCDRaw(power, 2);
@@ -186,8 +186,8 @@ void Update_LCD(void) {
     setCursorLCD(6, 2);
     const float readingValue = state.readingValue;
     if (mode == CC || mode == BC || mode == CA) {
-      if (readingValue < 100) Print_Spaces(6, 2);
-      if (readingValue < 10) Print_Spaces(7, 2);
+      if (readingValue < 100) uiClearCells(6, 2);
+      if (readingValue < 10) uiClearCells(7, 2);
       printLCDRaw(readingValue, 3);
     } else {
       if (readingValue < 100) printLCDRaw("0");
@@ -220,16 +220,11 @@ void printLCDNumber(int col, int row, float number, char unit, int decimals) {
   setCursorLCD(col, row);
   printLCDRaw(number, decimals);
 
-  if (unit != '\0' && unit != ' ' && unit != 'A') {
+  if (unit != '\0' && unit != ' ') {
     printLCDRaw(unit);
-  } else if (unit == 'A') {
-    writeLCD(byte(0));
   }
 }
 
 void Print_Spaces(int col, int row, byte count) {
-  setCursorLCD(col, row);
-  for (byte i = 0; i < count; i++) {
-    printLCDRaw(F(" "));
-  }
+  uiClearCells(col, row, count);
 }
