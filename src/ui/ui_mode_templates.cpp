@@ -215,7 +215,7 @@ void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sens
     printLCD_S(13, 2, String(outputOffset, 0));
   }
 
-  printLCD(2, 3, F("E-OK  <=Cancel"));
+  printLCD(2, 3, F("E-OK  CLR-Cancel"));
 }
 
 void ui_draw_calibration_loaded_message() {
@@ -288,7 +288,7 @@ void ui_draw_protection_modal(const char *message, char causeCode) {
   printLCD(0, 0, F("*** PROTECTION ***"));
   printLCD_S(0, 1, String(message));
   printLCD_S(0, 2, String(F("Cause: ")) + String(causeCode));
-  printLCD(0, 3, F("Load: OFF  E=OK"));
+  printLCD(0, 3, F("Load: OFF  E-OK"));
 }
 
 void ui_set_setpoint_cursor(int cursorColumn) {

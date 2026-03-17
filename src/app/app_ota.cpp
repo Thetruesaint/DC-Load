@@ -41,7 +41,7 @@ void begin_wifi_connect() {
   g_otaBegun = false;
   g_uploading = false;
   g_error = false;
-  set_texts("Connecting WiFi...", "Host: DC_LOAD", "<= Back");
+  set_texts("Connecting WiFi...", "Host: DC_LOAD", "CLR-Back");
 }
 
 void ensure_ota_started() {
@@ -67,14 +67,14 @@ void ensure_ota_started() {
     g_uploading = false;
     g_error = true;
     std::snprintf(detail, sizeof(detail), "Err %d", static_cast<int>(error));
-    set_texts("Upload failed", detail, "E=Retry <=Back");
+    set_texts("Upload failed", detail, "E-Retry   CLR-Back");
   });
   ArduinoOTA.begin();
   g_otaBegun = true;
 
   char ipLine[21];
   std::snprintf(ipLine, sizeof(ipLine), "IP: %s", WiFi.localIP().toString().c_str());
-  set_texts(ipLine, "Host: DC_LOAD", "<= Back");
+  set_texts(ipLine, "Host: DC_LOAD", "CLR-Back");
 }
 }
 
@@ -84,14 +84,14 @@ void app_ota_begin() {
   g_otaBegun = false;
   g_uploading = false;
   g_error = true;
-  set_texts("OTA not in sim", "", "<= Back");
+  set_texts("OTA not in sim", "", "CLR-Back");
   return;
 #endif
   if (g_active) return;
   if (std::strlen(APP_OTA_WIFI_SSID) == 0U) {
     g_active = true;
     g_error = true;
-    set_texts("OTA not config'd", "", "<= Back");
+    set_texts("OTA not config'd", "", "CLR-Back");
     return;
   }
   begin_wifi_connect();
@@ -107,7 +107,7 @@ void app_ota_handle() {
     if ((millis() - g_wifiStartMs) >= WIFI_CONNECT_TIMEOUT_MS) {
       g_error = true;
       g_uploading = false;
-      set_texts("WiFi failed", "", "E=Retry <=Back");
+      set_texts("WiFi failed", "", "E-Retry   CLR-Back");
     }
     return;
   }
