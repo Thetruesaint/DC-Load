@@ -18,6 +18,7 @@
 
 **Fixes**
 - CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
+- IMPORTANTE: Corrección en la aplicación de la calibración en el SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
 
 **Mejoras**
 - Agregue una placa aparte para el control de FANs
