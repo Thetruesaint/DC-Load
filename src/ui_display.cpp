@@ -1514,7 +1514,7 @@ void uiDisplayRenderProtectionMenu(const UiViewState &state) {
   draw_config_column_item(layout, rightX, startY, "3 Back", state.protectionMenuSelection == 2, itemSize);
 }
 
-void uiDisplayRenderTestsMenu(const UiViewState &state) {
+void uiDisplayRenderUpdateMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
   const uint8_t titleSize = 1;
   const uint8_t itemSize = 1;
@@ -1534,8 +1534,8 @@ void uiDisplayRenderTestsMenu(const UiViewState &state) {
 
   clear_config_content_zone();
   draw_config_title(layout, "FW UPDATE", titleSize);
-  draw_config_column_item(layout, leftX, startY, "1 Start OTA", state.testsMenuSelection == 0, itemSize);
-  draw_config_column_item(layout, rightX, startY, "2 Back", state.testsMenuSelection == 1, itemSize);
+  draw_config_column_item(layout, leftX, startY, "1 Start OTA", state.updateMenuSelection == 0, itemSize);
+  draw_config_column_item(layout, rightX, startY, "2 Back", state.updateMenuSelection == 1, itemSize);
 }
 
 void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine) {

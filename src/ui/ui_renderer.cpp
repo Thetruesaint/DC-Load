@@ -64,7 +64,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;
-  view.testsMenuSelection = state.testsMenuSelection;
+  view.updateMenuSelection = state.updateMenuSelection;
   view.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
   view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;

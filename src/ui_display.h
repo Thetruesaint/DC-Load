@@ -46,7 +46,7 @@ void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC);
 void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk);
 void uiDisplayRenderConfigRootMenu(const UiViewState &state);
 void uiDisplayRenderProtectionMenu(const UiViewState &state);
-void uiDisplayRenderTestsMenu(const UiViewState &state);
+void uiDisplayRenderUpdateMenu(const UiViewState &state);
 void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine);
 void uiDisplayRenderFanSettingsMenu(const UiViewState &state);
 void uiDisplayRenderLimitsMenu(const UiViewState &state);

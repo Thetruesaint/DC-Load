@@ -15,7 +15,7 @@ enum class UiScreen : uint8_t {
   TransientListSetupStep,
   MenuRoot,
   MenuProtection,
-  MenuTests,
+  MenuUpdate,
   MenuFwUpdate,
   MenuFanSettings,
   MenuLimits,
@@ -32,7 +32,7 @@ enum class ConfigMenu : uint8_t {
   None = 0,
   Root,
   Protection,
-  Tests,
+  Update,
   FwUpdate,
   FanSettings,
   Limits,
@@ -106,7 +106,7 @@ struct SystemState {
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
-  uint8_t testsMenuSelection;
+  uint8_t updateMenuSelection;
   uint8_t fanSettingsMenuSelection;
 
   int cursorPosition;
@@ -147,7 +147,7 @@ inline SystemState core_state_make_default() {
   state.limitsMenuField = 0;
   state.calibrationMenuOption = 1;
   state.protectionMenuSelection = 0;
-  state.testsMenuSelection = 0;
+  state.updateMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;

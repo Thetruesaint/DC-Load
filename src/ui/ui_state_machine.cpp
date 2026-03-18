@@ -28,7 +28,7 @@ struct ProtectionRenderCache {
   bool valid;
 };
 
-struct TestsRenderCache {
+struct UpdateRenderCache {
   uint8_t option;
   bool fanOn;
   bool valid;
@@ -87,7 +87,7 @@ struct TransientListSetupRenderCache {
 };
 
 ProtectionRenderCache g_protectionCache = {0, false};
-TestsRenderCache g_testsCache = {0, false, false};
+UpdateRenderCache g_updateCache = {0, false, false};
 FwUpdateRenderCache g_fwUpdateCache = {{'\0'}, {'\0'}, {'\0'}, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
@@ -175,17 +175,17 @@ void draw_protection_if_needed(const UiViewState &viewState) {
   g_protectionCache.valid = true;
 }
 
-void draw_tests_if_needed(const UiViewState &viewState) {
-  if (g_testsCache.valid &&
-      g_testsCache.option == viewState.testsMenuSelection &&
-      g_testsCache.fanOn == viewState.fanManualStateOn) {
+void draw_update_if_needed(const UiViewState &viewState) {
+  if (g_updateCache.valid &&
+      g_updateCache.option == viewState.updateMenuSelection &&
+      g_updateCache.fanOn == viewState.fanManualStateOn) {
     return;
   }
 
-  uiDisplayRenderTestsMenu(viewState);
-  g_testsCache.option = viewState.testsMenuSelection;
-  g_testsCache.fanOn = viewState.fanManualStateOn;
-  g_testsCache.valid = true;
+  uiDisplayRenderUpdateMenu(viewState);
+  g_updateCache.option = viewState.updateMenuSelection;
+  g_updateCache.fanOn = viewState.fanManualStateOn;
+  g_updateCache.valid = true;
 }
 
 void draw_fan_settings_if_needed(const UiViewState &viewState) {
@@ -271,7 +271,7 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
 void screen_enter_home(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
-  g_testsCache.valid = false;
+  g_updateCache.valid = false;
   g_fwUpdateCache.valid = false;
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;
@@ -434,16 +434,16 @@ void screen_update_menu_protection(const UiViewState &viewState) {
 
 void screen_render_menu_protection(const UiViewState &viewState) { (void)viewState; }
 
-void screen_enter_menu_tests(const UiViewState &viewState) {
-  g_testsCache.valid = false;
-  draw_tests_if_needed(viewState);
+void screen_enter_menu_update(const UiViewState &viewState) {
+  g_updateCache.valid = false;
+  draw_update_if_needed(viewState);
 }
 
-void screen_update_menu_tests(const UiViewState &viewState) {
-  draw_tests_if_needed(viewState);
+void screen_update_menu_update(const UiViewState &viewState) {
+  draw_update_if_needed(viewState);
 }
 
-void screen_render_menu_tests(const UiViewState &viewState) { (void)viewState; }
+void screen_render_menu_update(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_fw_update(const UiViewState &viewState) {
   (void)viewState;
@@ -505,7 +505,7 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientListSetupStep: screen_enter_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_enter_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_enter_menu_protection(viewState); break;
-    case UiScreen::MenuTests: screen_enter_menu_tests(viewState); break;
+    case UiScreen::MenuUpdate: screen_enter_menu_update(viewState); break;
     case UiScreen::MenuFwUpdate: screen_enter_menu_fw_update(viewState); break;
     case UiScreen::MenuFanSettings: screen_enter_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_enter_menu_limits(viewState); break;
@@ -527,7 +527,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientListSetupStep: screen_update_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_update_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_update_menu_protection(viewState); break;
-    case UiScreen::MenuTests: screen_update_menu_tests(viewState); break;
+    case UiScreen::MenuUpdate: screen_update_menu_update(viewState); break;
     case UiScreen::MenuFwUpdate: screen_update_menu_fw_update(viewState); break;
     case UiScreen::MenuFanSettings: screen_update_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_update_menu_limits(viewState); break;
@@ -549,7 +549,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::TransientListSetupStep: screen_render_transient_list_setup(viewState); break;
     case UiScreen::MenuRoot: screen_render_menu_root(viewState); break;
     case UiScreen::MenuProtection: screen_render_menu_protection(viewState); break;
-    case UiScreen::MenuTests: screen_render_menu_tests(viewState); break;
+    case UiScreen::MenuUpdate: screen_render_menu_update(viewState); break;
     case UiScreen::MenuFwUpdate: screen_render_menu_fw_update(viewState); break;
     case UiScreen::MenuFanSettings: screen_render_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_render_menu_limits(viewState); break;
@@ -564,7 +564,7 @@ void ui_state_machine_reset() {
   g_currentScreen = UiScreen::Home;
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
-  g_testsCache.valid = false;
+  g_updateCache.valid = false;
   g_fwUpdateCache.valid = false;
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;

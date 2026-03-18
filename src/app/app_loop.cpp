@@ -59,7 +59,7 @@ void app_push_action(const UserAction &action) {
 }
 
 void app_tick() {
-  core_sync_from_legacy(app_runtime_sync_capture());
+  core_sync_from_runtime(app_runtime_sync_capture());
   core_begin_cycle();
 
   if (app_startup_consume_limits_setup_request()) {
@@ -75,7 +75,7 @@ void app_tick() {
     app_ota_handle();
   }
 
-  core_sync_from_legacy(app_runtime_sync_capture());
+  core_sync_from_runtime(app_runtime_sync_capture());
 
   core_begin_cycle();
   if (drain_action_queue()) {
