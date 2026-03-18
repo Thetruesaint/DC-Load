@@ -13,7 +13,7 @@
 **Fixes**
 
 **Mejoras**
-
+- Mejoras esteticas en setups de TC, TL y Menues de Configuración
 
 **Posibles Mejoras SW:**
 - Unificar template para cuando se supera mas de un límite.
@@ -22,6 +22,7 @@
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
 - Promediar los valores de a y v para que no cambien tanto y se deba refrescar continuamente
+- Graficar Y/t para mostrar el historico de a y v.
 
 **Posibles Mejoras de HW:**
 - Medición de baterias por celda 

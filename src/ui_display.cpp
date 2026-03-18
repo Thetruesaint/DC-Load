@@ -1099,10 +1099,10 @@ void uiDisplayRenderTransientContSetup(const UiViewState &state) {
   const uint8_t titleFont = 2;
   const uint8_t titleSize = isLargeDisplay ? 2 : 1;
   const uint8_t textFont = 2;
-  const uint8_t textSize = 1;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
   const int titleH = uiDisplayFontHeight(titleSize, titleFont);
   const int textH = uiDisplayFontHeight(textSize, textFont);
-  const int verticalGap = max(isLargeDisplay ? 3 : 5, (contentH - titleH - (textH * 4)) / 6);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
   const int titleY = contentY + verticalGap;
   const String title = "TRANSIENT CONT";
   const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
@@ -1116,17 +1116,31 @@ void uiDisplayRenderTransientContSetup(const UiViewState &state) {
   const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
   const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
   const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
-  const String hint = (state.transientSetupStage == 0) ? "Step 1 of 3"
-                    : (state.transientSetupStage == 1) ? "Step 2 of 3"
-                                                      : "Step 3 of 3";
-  const int hintX = (displayW - uiDisplayTextWidth(hint, textSize, textFont)) / 2;
+  const int highlightPadX = isLargeDisplay ? 10 : 6;
+  const int highlightPadY = isLargeDisplay ? 4 : 2;
+
+  const auto draw_stage_line = [&](const String &text, int x, int y, bool selected) {
+    if (selected) {
+      uiDisplayFillRect(x - highlightPadX,
+                        y - highlightPadY,
+                        uiDisplayTextWidth(text, textSize, textFont) + (highlightPadX * 2),
+                        textH + (highlightPadY * 2),
+                        kUiHighlight);
+    }
+    uiDisplayPrintStyledAt(x,
+                           y,
+                           text,
+                           selected ? kUiDark : kUiText,
+                           selected ? kUiHighlight : kUiModeAreaBg,
+                           textSize,
+                           textFont);
+  };
 
   draw_setup_screen_base(state, "TC");
   uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
-  uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiText, kUiModeAreaBg, textSize, textFont);
-  uiDisplayPrintStyledAt(line2X, row2Y, line2, kUiText, kUiModeAreaBg, textSize, textFont);
-  uiDisplayPrintStyledAt(line3X, row3Y, line3, kUiText, kUiModeAreaBg, textSize, textFont);
-  uiDisplayPrintStyledAt(hintX, hintY, hint, kUiHighlight, kUiModeAreaBg, textSize, textFont);
+  draw_stage_line(line1, line1X, row1Y, state.transientSetupStage == 0);
+  draw_stage_line(line2, line2X, row2Y, state.transientSetupStage == 1);
+  draw_stage_line(line3, line3X, row3Y, state.transientSetupStage >= 2);
   uiDisplayUpdateTransientContSetupValue(state);
   draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
 }
@@ -1158,34 +1172,56 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state) {
   const uint8_t titleFont = 2;
   const uint8_t titleSize = isLargeDisplay ? 2 : 1;
   const uint8_t textFont = 2;
-  const uint8_t textSize = 1;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
   const int titleH = uiDisplayFontHeight(titleSize, titleFont);
   const int textH = uiDisplayFontHeight(textSize, textFont);
-  const int verticalGap = max(isLargeDisplay ? 3 : 5, (contentH - titleH - (textH * 4)) / 6);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
   const int titleY = contentY + verticalGap;
   const String title = "TRANSIENT LIST";
   const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
   const int row1Y = titleY + titleH + verticalGap;
   const int row2Y = row1Y + textH + verticalGap;
   const int row3Y = row2Y + textH + verticalGap;
-  const int hintY = row3Y + textH + verticalGap;
+  const int highlightPadX = isLargeDisplay ? 10 : 6;
+  const int highlightPadY = isLargeDisplay ? 4 : 2;
+
+  const auto draw_stage_line = [&](const String &text, int x, int y, bool selected) {
+    if (selected) {
+      uiDisplayFillRect(x - highlightPadX,
+                        y - highlightPadY,
+                        uiDisplayTextWidth(text, textSize, textFont) + (highlightPadX * 2),
+                        textH + (highlightPadY * 2),
+                        kUiHighlight);
+    }
+    uiDisplayPrintStyledAt(x,
+                           y,
+                           text,
+                           selected ? kUiDark : kUiText,
+                           selected ? kUiHighlight : kUiModeAreaBg,
+                           textSize,
+                           textFont);
+  };
 
   draw_setup_screen_base(state, "TL");
   uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
 
   if (state.transientListSetupStage == 0) {
     const String line1 = "How many steps?";
-    const String line2 = "Allowed range: 2 to 10";
-    const String line3 = "Sequence loops forever";
-    const String hint = "Step count";
+    const String line2Prefix = "Allowed range: ";
+    const String line2Value = "2 to 10";
+    const String line2 = line2Prefix + line2Value;
+    const String line3 = "";
     const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
     const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
-    const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
-    const int hintX = (displayW - uiDisplayTextWidth(hint, textSize, textFont)) / 2;
+    const int line2ValueX = line2X + uiDisplayTextWidth(line2Prefix, textSize, textFont);
     uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiText, kUiModeAreaBg, textSize, textFont);
     uiDisplayPrintStyledAt(line2X, row2Y, line2, kUiText, kUiModeAreaBg, textSize, textFont);
-    uiDisplayPrintStyledAt(line3X, row3Y, line3, kUiText, kUiModeAreaBg, textSize, textFont);
-    uiDisplayPrintStyledAt(hintX, hintY, hint, kUiHighlight, kUiModeAreaBg, textSize, textFont);
+    uiDisplayFillRect(line2ValueX - highlightPadX,
+                      row2Y - highlightPadY,
+                      uiDisplayTextWidth(line2Value, textSize, textFont) + (highlightPadX * 2),
+                      textH + (highlightPadY * 2),
+                      kUiHighlight);
+    uiDisplayPrintStyledAt(line2ValueX, row2Y, line2Value, kUiDark, kUiHighlight, textSize, textFont);
   } else {
     const int visibleStep = state.transientListDraftStepIndex + 1;
     const int totalSteps = max(2, static_cast<int>(state.transientListDraftStepCount));
@@ -1196,15 +1232,12 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state) {
                          ((state.transientListCurrentPeriodMs > 0.0f)
                               ? String(static_cast<unsigned long>(state.transientListCurrentPeriodMs))
                               : "--");
-    const String hint = (state.transientListDraftField == 0) ? "Enter current" : "Enter period";
     const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
     const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
     const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
-    const int hintX = (displayW - uiDisplayTextWidth(hint, textSize, textFont)) / 2;
     uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiHighlight, kUiModeAreaBg, textSize, textFont);
-    uiDisplayPrintStyledAt(line2X, row2Y, line2, kUiText, kUiModeAreaBg, textSize, textFont);
-    uiDisplayPrintStyledAt(line3X, row3Y, line3, kUiText, kUiModeAreaBg, textSize, textFont);
-    uiDisplayPrintStyledAt(hintX, hintY, hint, kUiHighlight, kUiModeAreaBg, textSize, textFont);
+    draw_stage_line(line2, line2X, row2Y, state.transientListDraftField == 0);
+    draw_stage_line(line3, line3X, row3Y, state.transientListDraftField != 0);
   }
 
   uiDisplayUpdateTransientListSetupValue(state);
@@ -1430,13 +1463,13 @@ String format_limit_temp(float value) {
 
 void uiDisplayRenderConfigRootMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int gap = layout.isLargeDisplay ? 10 : 8;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int gap = layout.isLargeDisplay ? 4 : 8;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 12);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   int leftX = 0;
   int rightX = 0;
@@ -1457,13 +1490,13 @@ void uiDisplayRenderConfigRootMenu(const UiViewState &state) {
 
 void uiDisplayRenderProtectionMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
-  const int gap = layout.isLargeDisplay ? 10 : 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
+  const int gap = layout.isLargeDisplay ? 4 : 8;
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 12);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   int leftX = 0;
   int rightX = 0;
@@ -1483,12 +1516,12 @@ void uiDisplayRenderProtectionMenu(const UiViewState &state) {
 
 void uiDisplayRenderUpdateMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 12);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   int leftX = 0;
   int rightX = 0;
@@ -1507,13 +1540,13 @@ void uiDisplayRenderUpdateMenu(const UiViewState &state) {
 
 void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t textSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(textSize, font);
-  const int gap = layout.isLargeDisplay ? 8 : 6;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
   const String status = statusLine ? String(statusLine) : "";
   const String detail = detailLine ? String(detailLine) : "";
   const String hint = hintLine ? String(hintLine) : "";
@@ -1527,13 +1560,13 @@ void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLin
 
 void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int gap = layout.isLargeDisplay ? 8 : 6;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   const int leftWidth = max(uiDisplayTextWidth("1 Temp: 100C", itemSize, font),
                             max(uiDisplayTextWidth("2 Hold: 255s", itemSize, font),
@@ -1564,13 +1597,13 @@ void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
 
 void uiDisplayRenderLimitsMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int gap = layout.isLargeDisplay ? 8 : 6;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
   const String currValue = (state.limitsEditActive && state.limitsMenuField == 0 && state.limitsInputText[0] != '\0')
                                ? String(state.limitsInputText)
                                : format_limit_current(state.limitsDraftCurrentA);
@@ -1590,13 +1623,13 @@ void uiDisplayRenderLimitsMenu(const UiViewState &state) {
 
 void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int gap = layout.isLargeDisplay ? 8 : 6;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   int leftX = 0;
   int rightX = 0;
@@ -1619,13 +1652,13 @@ void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
 
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t itemSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(itemSize, font);
-  const int gap = layout.isLargeDisplay ? 8 : 6;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
   const int columnGap = layout.isLargeDisplay ? 48 : 32;
   int leftX = 0;
   int rightX = 0;
