@@ -74,6 +74,11 @@ SystemState app_runtime_sync_capture() {
   state.transientLowCurrentA = app_transient_low_current_ref();
   state.transientHighCurrentA = app_transient_high_current_ref();
   state.transientPeriodMs = static_cast<float>(app_transient_period_ref());
+  state.transientListActiveStep = static_cast<uint8_t>(max(0, app_transient_current_step_ref()));
+  state.transientListTotalSteps = static_cast<uint8_t>(max(0, app_transient_total_steps_ref() + 1));
+  if (state.mode == TL && state.transientListTotalSteps > 0) {
+    state.transientPeriodMs = static_cast<float>(app_transient_list_ref()[state.transientListActiveStep][1]);
+  }
   state.cursorPosition = app_runtime_cursor_position();
   state.functionIndex = app_mode_state_function_index();
 

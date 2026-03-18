@@ -21,6 +21,13 @@ namespace {
 constexpr unsigned long RUNOUT_SETTLE_MS = 200UL;
 constexpr unsigned long PROTECTION_BLINK_MS = 250UL;
 
+bool uses_legacy_home_temperature_overlay() {
+  if (ui_state_machine_current_screen() != UiScreen::Home) return false;
+
+  const uint8_t mode = app_mode_state_mode();
+  return mode != CC && mode != CP && mode != CR && mode != BC && mode != TC && mode != TL;
+}
+
 void set_fan_output(bool on) {
   digitalWrite(FAN_CTRL, on ? HIGH : LOW);
   app_fan_set_output_state(on);
@@ -86,11 +93,7 @@ void app_update_fan_control() {
       fan_on_time = currentMillis;
     }
     was_manual_override_active = true;
-    if (ui_state_machine_current_screen() == UiScreen::Home &&
-        app_mode_state_mode() != CC &&
-        app_mode_state_mode() != CP &&
-        app_mode_state_mode() != CR &&
-        app_mode_state_mode() != BC) {
+    if (uses_legacy_home_temperature_overlay()) {
       ui_draw_header_temperature(app_measurements_temp_c());
     }
     return;
@@ -117,11 +120,7 @@ void app_update_fan_control() {
 
   was_manual_override_active = false;
 
-  if (ui_state_machine_current_screen() == UiScreen::Home &&
-      app_mode_state_mode() != CC &&
-      app_mode_state_mode() != CP &&
-      app_mode_state_mode() != CR &&
-      app_mode_state_mode() != BC) {
+  if (uses_legacy_home_temperature_overlay()) {
     ui_draw_header_temperature(app_measurements_temp_c());
   }
 }

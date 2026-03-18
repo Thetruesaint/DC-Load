@@ -14,6 +14,7 @@ struct UiViewState {
   float measuredPower_W;
   float tempC;
   float readingValue;
+  float setCurrent_mA;
 
   float currentCutOffA;
   float powerCutOffW;
@@ -27,6 +28,8 @@ struct UiViewState {
   float transientLowCurrentA;
   float transientHighCurrentA;
   float transientPeriodMs;
+  uint8_t transientListActiveStep;
+  uint8_t transientListTotalSteps;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;

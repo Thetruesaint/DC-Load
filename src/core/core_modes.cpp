@@ -11,13 +11,15 @@ constexpr uint8_t MODE_TC = 4;
 constexpr uint8_t MODE_TL = 5;
 constexpr uint8_t MODE_CA = 6;
 constexpr int DECIMAL_CURSOR_COL = 9;
+constexpr float TC_MIN_PERIOD_MS = 100.0f;
+constexpr float TC_MAX_PERIOD_MS = 10000.0f;
 
 bool mode_uses_managed_input(uint8_t mode) {
-  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_BC || mode == MODE_CA;
+  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_BC || mode == MODE_TC || mode == MODE_CA;
 }
 
 bool mode_uses_managed_setpoints(uint8_t mode) {
-  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_CA;
+  return mode == MODE_CC || mode == MODE_CP || mode == MODE_CR || mode == MODE_TC || mode == MODE_CA;
 }
 
 UiScreen battery_setup_target_screen(const SystemState &state) {
@@ -48,10 +50,22 @@ int cursor_max_by_mode(uint8_t mode) {
   return (mode == MODE_CP || mode == MODE_CR) ? 10 : 12;
 }
 
-float factor_for_cursor(int cursor) {
+float factor_for_cursor(uint8_t mode, int cursor) {
+  if (mode == MODE_TC) {
+    switch (cursor) {
+      case 8: return 10000.0f;
+      case 9: return 1000.0f;
+      case 10: return 100.0f;
+      case 11: return 10.0f;
+      case 12: return 1.0f;
+      default: return 1000.0f;
+    }
+  }
+
   switch (cursor) {
     case 6: return 100000.0f;
     case 7: return 10000.0f;
+    case 9: return 1000.0f;
     case 10: return 100.0f;
     case 11: return 10.0f;
     case 12: return 1.0f;
@@ -76,10 +90,10 @@ void core_mode_normalize_state(SystemState *state) {
   if (state == nullptr || !mode_uses_managed_input(state->mode)) return;
 
   wrap_cursor_by_mode(state);
-  if (state->cursorPosition == DECIMAL_CURSOR_COL) {
+  if (state->mode != MODE_TC && state->cursorPosition == DECIMAL_CURSOR_COL) {
     state->cursorPosition = cursor_min_by_mode(state->mode);
   }
-  state->encoderStep = factor_for_cursor(state->cursorPosition);
+  state->encoderStep = factor_for_cursor(state->mode, state->cursorPosition);
 }
 
 void core_mode_apply_encoder_delta(SystemState *state, int direction) {
@@ -100,18 +114,30 @@ void core_mode_move_cursor(SystemState *state, int direction) {
 
   if (direction > 0) {
     state->cursorPosition++;
-    if (state->cursorPosition == DECIMAL_CURSOR_COL) state->cursorPosition++;
+    if (state->mode != MODE_TC && state->cursorPosition == DECIMAL_CURSOR_COL) state->cursorPosition++;
   } else if (direction < 0) {
     state->cursorPosition--;
-    if (state->cursorPosition == DECIMAL_CURSOR_COL) state->cursorPosition--;
+    if (state->mode != MODE_TC && state->cursorPosition == DECIMAL_CURSOR_COL) state->cursorPosition--;
   }
 
   wrap_cursor_by_mode(state);
-  state->encoderStep = factor_for_cursor(state->cursorPosition);
+  state->encoderStep = factor_for_cursor(state->mode, state->cursorPosition);
 }
 
 void core_mode_update_setpoints(SystemState *state) {
   if (state == nullptr || !mode_uses_managed_setpoints(state->mode)) return;
+
+  if (state->mode == MODE_TC) {
+    if (!state->modeInitialized || state->uiScreen != UiScreen::Home) return;
+
+    float periodMs = state->encoderPositionRaw;
+    if (periodMs < TC_MIN_PERIOD_MS) periodMs = TC_MIN_PERIOD_MS;
+    if (periodMs > TC_MAX_PERIOD_MS) periodMs = TC_MAX_PERIOD_MS;
+
+    state->transientPeriodMs = periodMs;
+    state->encoderPositionRaw = periodMs;
+    return;
+  }
 
   const float minReading = (state->mode == MODE_CR) ? 0.1f : 0.0f;
   float maxReading = state->encoderMaxRaw / 1000.0f;

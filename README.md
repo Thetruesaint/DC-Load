@@ -4,19 +4,21 @@
 - Introduciendo mejorar con TFT
 
 **A Trabajar:**
-- En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
 - Setear hora y fecha del RTC: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); y que no se pise con cada update de FW.
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los dígitos
-- En otros modos que no sean CC, CP y CR el cursor se indica mal pero se corregira al convetir los que falten.
 
 **Fixes**
 - CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
 - IMPORTANTE: Corrección en la aplicación de la calibración en el SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
+- En BC, TC y TL ahoira se detecta el salto de modo con S+N
 
 **Mejoras**
-- Nuevos templates TFT para modos CC, CP, CR y BC!!
+- Indicador de shift pressed
+- En TL los steps x/t empiezan contando de 1 y no de 0.
+- En TC se puede reajustar el periodo con teclado o encoder.
+- Nuevos templates TFT para modos CC, CP, CR, BC, TC y TL!!
 - Nueva simulacion WOKWI con TFT 240x320
 - Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
 - Se agrega opción para ON/OFF de Fans en Fans Settings
@@ -32,11 +34,7 @@
 
 **Posibles Mejoras SW:**
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
-- En CC, CP, CR y BC, con BTN encoder se podria hacer algo
-- Colocar un indicador de Shift?
-- En TL indicar cada step y marcar en cual se esta ej.: ---3----- -> ----4----
 - En TC y TL: mostrar mSec decrecientes?
-- En TC, ajustar timing con encoder?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
 

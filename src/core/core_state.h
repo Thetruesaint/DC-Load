@@ -65,6 +65,8 @@ struct SystemState {
   float transientLowCurrentA;
   float transientHighCurrentA;
   float transientPeriodMs;
+  uint8_t transientListActiveStep;
+  uint8_t transientListTotalSteps;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;

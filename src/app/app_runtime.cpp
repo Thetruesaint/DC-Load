@@ -29,6 +29,8 @@
 #include "app_value_result_context.h"
 
 namespace {
+constexpr unsigned long kTransientContMaxPeriodMs = 10000UL;
+
 void prepare_core_managed_home_mode() {
   if (core_get_state().uiScreen != UiScreen::Home) return;
   if (app_mode_state_initialized()) return;
@@ -66,6 +68,16 @@ void prepare_core_managed_home_mode() {
       app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
+    case TC:
+      if (!app_mode_state_configured()) break;
+      app_runtime_set_cursor_position(8);
+      app_runtime_set_encoder_step(10000.0f);
+      app_runtime_set_encoder_position(static_cast<float>(constrain(app_transient_period_ref(), 100UL, kTransientContMaxPeriodMs)));
+      app_runtime_set_encoder_max(kTransientContMaxPeriodMs);
+      app_load_set_set_current_mA(0.0f);
+      app_mode_state_set_initialized(true);
+      app_encoder_setup_reset();
+      break;
     default:
       break;
   }
@@ -80,6 +92,7 @@ void update_core_managed_home_cursor() {
     case CR:
     case BC:
     case CA:
+    case TC:
       app_setpoint_cursor_update();
       break;
     default:
@@ -172,7 +185,6 @@ void run_core_managed_transient_cont_mode() {
   static bool transientContToggle = false;
 
   if (!app_mode_state_initialized()) {
-    ui_draw_transient_cont_mode_template(lowCurrent, highCurrent, transientPeriod);
     app_load_set_set_current_mA(0.0f);
     app_mode_state_set_initialized(true);
     app_encoder_setup_reset();
@@ -211,18 +223,10 @@ void run_core_managed_transient_list_mode() {
   int &currentStep = app_transient_current_step_ref();
 
   static unsigned long lastTime = 0;
-  static unsigned int lastTransientPeriod = static_cast<unsigned int>(-1);
 
   if (!app_mode_state_initialized()) {
-    ui_draw_transient_list_mode_template(totalSteps);
     app_mode_state_set_initialized(true);
     app_encoder_setup_reset();
-  }
-
-  ui_update_transient_list_step(currentStep);
-  if (transientPeriod != lastTransientPeriod) {
-    ui_update_transient_list_period(transientPeriod);
-    lastTransientPeriod = transientPeriod;
   }
 
   if (!app_load_is_enabled()) {

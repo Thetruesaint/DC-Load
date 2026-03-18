@@ -41,6 +41,10 @@ void uiDisplayRenderBatterySetupCustom(const UiViewState &state);
 void uiDisplayRenderBatterySetupCells(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCustomValue(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCellsValue(const UiViewState &state);
+void uiDisplayRenderTransientContSetup(const UiViewState &state);
+void uiDisplayUpdateTransientContSetupValue(const UiViewState &state);
+void uiDisplayRenderTransientListSetup(const UiViewState &state);
+void uiDisplayUpdateTransientListSetupValue(const UiViewState &state);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);

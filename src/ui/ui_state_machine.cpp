@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <cstring>
 
+#include "../app/app_msc.h"
 #include "../app/app_ota.h"
 #include "../ui_display.h"
 #include "../app/app_calibration_context.h"
@@ -67,6 +68,7 @@ struct BatterySetupRenderCache {
   uint8_t stage;
   char batteryType[8];
   char inputText[8];
+  bool shiftActive;
   bool valid;
 };
 
@@ -76,6 +78,7 @@ struct TransientContSetupRenderCache {
   float highCurrentA;
   float periodMs;
   char inputText[8];
+  bool shiftActive;
   bool valid;
 };
 
@@ -87,6 +90,7 @@ struct TransientListSetupRenderCache {
   float currentA;
   float periodMs;
   char inputText[8];
+  bool shiftActive;
   bool valid;
 };
 
@@ -97,9 +101,9 @@ FwUpdateRenderCache g_fwUpdateCache = {{'\0'}, {'\0'}, {'\0'}, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
-BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false};
-TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false};
-TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false};
+BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false, false};
+TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false, false};
+TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false, false};
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -148,21 +152,26 @@ void draw_home_if_needed(const UiViewState &viewState) {
 }
 
 void draw_battery_setup_task_if_needed(const UiViewState &viewState) {
-  if (g_batterySetupCache.valid && g_batterySetupCache.stage == 0) {
+  const bool shiftActive = app_msc_shift_active();
+  if (g_batterySetupCache.valid && g_batterySetupCache.stage == 0 &&
+      g_batterySetupCache.shiftActive == shiftActive) {
     return;
   }
 
   uiDisplayRenderBatterySetupTask(viewState);
   g_batterySetupCache.stage = 0;
+  g_batterySetupCache.shiftActive = shiftActive;
   g_batterySetupCache.valid = true;
 }
 
 void draw_battery_setup_custom_if_needed(const UiViewState &viewState) {
+  const bool shiftActive = app_msc_shift_active();
   const bool sameStage = g_batterySetupCache.valid && g_batterySetupCache.stage == 1;
   const bool sameType = std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0;
   const bool sameInput = std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0;
+  const bool sameShift = g_batterySetupCache.shiftActive == shiftActive;
 
-  if (sameStage && sameType && sameInput) {
+  if (sameStage && sameType && sameInput && sameShift) {
     return;
   }
 
@@ -176,15 +185,18 @@ void draw_battery_setup_custom_if_needed(const UiViewState &viewState) {
   std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
   g_batterySetupCache.inputText[sizeof(g_batterySetupCache.inputText) - 1] = '\0';
   g_batterySetupCache.stage = 1;
+  g_batterySetupCache.shiftActive = shiftActive;
   g_batterySetupCache.valid = true;
 }
 
 void draw_battery_setup_cells_if_needed(const UiViewState &viewState) {
+  const bool shiftActive = app_msc_shift_active();
   const bool sameStage = g_batterySetupCache.valid && g_batterySetupCache.stage == 2;
   const bool sameType = std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0;
   const bool sameInput = std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0;
+  const bool sameShift = g_batterySetupCache.shiftActive == shiftActive;
 
-  if (sameStage && sameType && sameInput) {
+  if (sameStage && sameType && sameInput && sameShift) {
     return;
   }
 
@@ -198,6 +210,7 @@ void draw_battery_setup_cells_if_needed(const UiViewState &viewState) {
   std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
   g_batterySetupCache.inputText[sizeof(g_batterySetupCache.inputText) - 1] = '\0';
   g_batterySetupCache.stage = 2;
+  g_batterySetupCache.shiftActive = shiftActive;
   g_batterySetupCache.valid = true;
 }
 
@@ -423,41 +436,23 @@ void screen_update_battery_setup_cells(const UiViewState &viewState) {
 void screen_render_battery_setup_cells(const UiViewState &viewState) { (void)viewState; }
 
 void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
-  if (g_transientContSetupCache.valid &&
-      g_transientContSetupCache.stage == viewState.transientSetupStage &&
-      g_transientContSetupCache.lowCurrentA == viewState.transientLowCurrentA &&
-      g_transientContSetupCache.highCurrentA == viewState.transientHighCurrentA &&
-      g_transientContSetupCache.periodMs == viewState.transientPeriodMs &&
-      std::strcmp(g_transientContSetupCache.inputText, viewState.transientInputText) == 0) {
+  const bool shiftActive = app_msc_shift_active();
+  const bool sameStage = g_transientContSetupCache.valid &&
+                         g_transientContSetupCache.stage == viewState.transientSetupStage;
+  const bool sameValues = g_transientContSetupCache.lowCurrentA == viewState.transientLowCurrentA &&
+                          g_transientContSetupCache.highCurrentA == viewState.transientHighCurrentA &&
+                          g_transientContSetupCache.periodMs == viewState.transientPeriodMs;
+  const bool sameInput = std::strcmp(g_transientContSetupCache.inputText, viewState.transientInputText) == 0;
+  const bool sameShift = g_transientContSetupCache.shiftActive == shiftActive;
+
+  if (sameStage && sameValues && sameInput && sameShift) {
     return;
   }
 
-  ui_draw_transient_cont_setup_template();
-
-  if (viewState.transientSetupStage > 0) {
-    ui_show_value_number(11, 1, viewState.transientLowCurrentA, 'A', 3);
+  if (!sameStage || !sameValues) {
+    uiDisplayRenderTransientContSetup(viewState);
   } else {
-    Print_Spaces(10, 1, 10);
-  }
-
-  if (viewState.transientSetupStage > 1) {
-    ui_show_value_number(11, 2, viewState.transientHighCurrentA, 'A', 3);
-  } else {
-    Print_Spaces(10, 2, 10);
-  }
-
-  if (viewState.transientSetupStage == 0) {
-    ui_prepare_value_input_prompt(11, 1, 5);
-    printLCD_S(11, 1, String(viewState.transientInputText));
-    Print_Spaces(10, 2, 10);
-    Print_Spaces(10, 3, 6);
-  } else if (viewState.transientSetupStage == 1) {
-    ui_prepare_value_input_prompt(11, 2, 5);
-    printLCD_S(11, 2, String(viewState.transientInputText));
-    Print_Spaces(10, 3, 6);
-  } else {
-    ui_prepare_value_input_prompt(11, 3, 5);
-    printLCD_S(11, 3, String(viewState.transientInputText));
+    uiDisplayUpdateTransientContSetupValue(viewState);
   }
 
   g_transientContSetupCache.stage = viewState.transientSetupStage;
@@ -466,6 +461,7 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
   g_transientContSetupCache.periodMs = viewState.transientPeriodMs;
   std::strncpy(g_transientContSetupCache.inputText, viewState.transientInputText, sizeof(g_transientContSetupCache.inputText) - 1);
   g_transientContSetupCache.inputText[sizeof(g_transientContSetupCache.inputText) - 1] = '\0';
+  g_transientContSetupCache.shiftActive = shiftActive;
   g_transientContSetupCache.valid = true;
 }
 
@@ -481,37 +477,25 @@ void screen_update_transient_cont_setup(const UiViewState &viewState) {
 void screen_render_transient_cont_setup(const UiViewState &viewState) { (void)viewState; }
 
 void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
-  if (g_transientListSetupCache.valid &&
-      g_transientListSetupCache.stage == viewState.transientListSetupStage &&
-      g_transientListSetupCache.stepCount == viewState.transientListDraftStepCount &&
-      g_transientListSetupCache.stepIndex == viewState.transientListDraftStepIndex &&
-      g_transientListSetupCache.field == viewState.transientListDraftField &&
-      g_transientListSetupCache.currentA == viewState.transientListCurrentA &&
-      g_transientListSetupCache.periodMs == viewState.transientListCurrentPeriodMs &&
-      std::strcmp(g_transientListSetupCache.inputText, viewState.transientListInputText) == 0) {
+  const bool shiftActive = app_msc_shift_active();
+  const bool sameStage = g_transientListSetupCache.valid &&
+                         g_transientListSetupCache.stage == viewState.transientListSetupStage;
+  const bool sameValues = g_transientListSetupCache.stepCount == viewState.transientListDraftStepCount &&
+                          g_transientListSetupCache.stepIndex == viewState.transientListDraftStepIndex &&
+                          g_transientListSetupCache.field == viewState.transientListDraftField &&
+                          g_transientListSetupCache.currentA == viewState.transientListCurrentA &&
+                          g_transientListSetupCache.periodMs == viewState.transientListCurrentPeriodMs;
+  const bool sameInput = std::strcmp(g_transientListSetupCache.inputText, viewState.transientListInputText) == 0;
+  const bool sameShift = g_transientListSetupCache.shiftActive == shiftActive;
+
+  if (sameStage && sameValues && sameInput && sameShift) {
     return;
   }
 
-  if (viewState.transientListSetupStage == 0) {
-    ui_draw_transient_list_setup_template();
-    ui_prepare_value_input_prompt(9, 2, 2);
-    printLCD_S(9, 2, String(viewState.transientListInputText));
+  if (!sameStage || !sameValues) {
+    uiDisplayRenderTransientListSetup(viewState);
   } else {
-    ui_draw_transient_list_step_template(viewState.transientListDraftStepIndex);
-    if (viewState.transientListDraftField == 0) {
-      ui_prepare_value_input_prompt(13, 2, 5);
-      printLCD_S(13, 2, String(viewState.transientListInputText));
-      if (viewState.transientListCurrentPeriodMs > 0.0f) {
-        Print_Spaces(12, 3, 6);
-        printLCD_S(13, 3, String(static_cast<unsigned long>(viewState.transientListCurrentPeriodMs)));
-      } else {
-        Print_Spaces(12, 3, 6);
-      }
-    } else {
-      ui_show_value_number(13, 2, viewState.transientListCurrentA, 'A', 3);
-      ui_prepare_value_input_prompt(13, 3, 5);
-      printLCD_S(13, 3, String(viewState.transientListInputText));
-    }
+    uiDisplayUpdateTransientListSetupValue(viewState);
   }
 
   g_transientListSetupCache.stage = viewState.transientListSetupStage;
@@ -522,6 +506,7 @@ void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
   g_transientListSetupCache.periodMs = viewState.transientListCurrentPeriodMs;
   std::strncpy(g_transientListSetupCache.inputText, viewState.transientListInputText, sizeof(g_transientListSetupCache.inputText) - 1);
   g_transientListSetupCache.inputText[sizeof(g_transientListSetupCache.inputText) - 1] = '\0';
+  g_transientListSetupCache.shiftActive = shiftActive;
   g_transientListSetupCache.valid = true;
 }
 

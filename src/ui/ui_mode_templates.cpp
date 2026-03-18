@@ -254,7 +254,7 @@ void ui_draw_transient_list_mode_template(int totalSteps) {
   uiGridPrint(0, 0, F("TL LOAD"));
   uiGridPrint(6, 2, F("Step: "));
   uiGridPrint(13, 2, F("/"));
-  uiGridPrintString(14, 2, String(totalSteps));
+  uiGridPrintString(14, 2, String(totalSteps + 1));
   uiGridPrint(4, 3, F("dt: "));
   uiGridPrint(13, 3, F("mS"));
 }
@@ -268,7 +268,7 @@ void ui_draw_transient_list_setup_template() {
 void ui_draw_transient_list_step_template(int stepIndex) {
   uiDisplayClear();
   uiGridPrint(3, 0, F("TRANSIENT LIST"));
-  uiGridPrintString(5, 1, "Set step " + String(stepIndex));
+  uiGridPrintString(5, 1, "Set step " + String(stepIndex + 1));
   uiGridPrint(0, 2, F("Current (A):"));
   uiGridPrint(0, 3, F("Time (mSec):"));
 }
@@ -310,7 +310,7 @@ void ui_update_battery_timer(const String &timeText) {
 }
 
 void ui_update_transient_list_step(int step) {
-  uiGridPrintString(12, 2, String(step));
+  uiGridPrintString(12, 2, String(step + 1));
 }
 
 void ui_update_transient_list_period(unsigned long periodMs) {

@@ -5,7 +5,7 @@
 #include "app_loop.h"
 
 namespace {
-constexpr unsigned long SHIFT_TIMEOUT_MS = 700UL;
+bool shiftPressed = false;
 
 bool is_shift_mode_key(char key) {
   return key >= '1' && key <= '6';
@@ -13,14 +13,6 @@ bool is_shift_mode_key(char key) {
 }
 
 MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
-  static bool shiftPressed = false;
-  static unsigned long shiftPressedAt = 0;
-
-  const unsigned long now = millis();
-  if (shiftPressed && (now - shiftPressedAt) > SHIFT_TIMEOUT_MS) {
-    shiftPressed = false;
-  }
-
   if (key == 'M') {
     shiftPressed = false;
     app_push_action(make_mode_select_action(false));
@@ -28,8 +20,12 @@ MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
   }
 
   if (shiftPressed) {
-    shiftPressed = false;
+    if (key == 'S') {
+      shiftPressed = false;
+      return MscKeyDecision::Consumed;
+    }
     if (is_shift_mode_key(key)) {
+      shiftPressed = false;
       app_push_action(make_mode_select_action(true, key));
       return MscKeyDecision::ExitMode;
     }
@@ -38,7 +34,6 @@ MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
 
   if (key == 'S') {
     shiftPressed = true;
-    shiftPressedAt = now;
     return MscKeyDecision::Consumed;
   }
 
@@ -47,4 +42,8 @@ MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
   }
 
   return MscKeyDecision::Continue;
+}
+
+bool app_mode_shift_active() {
+  return shiftPressed;
 }

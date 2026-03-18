@@ -441,7 +441,7 @@ void transient_list_setup_commit(SystemState *state) {
   }
 
   const float period = static_cast<float>(atoi(state->transientListInputText));
-  if (period < 1.0f || period > 99999.0f) return;
+  if (period < 10.0f || period > 10000.0f) return;
   state->transientListDraftPeriodsMs[state->transientListDraftStepIndex] = period;
   transient_list_input_reset(state);
 
@@ -919,7 +919,11 @@ void core_sync_from_legacy(const SystemState &state) {
   g_state.transientSetupStage = transientSetupStage;
   g_state.transientLowCurrentA = transientLowCurrentA;
   g_state.transientHighCurrentA = transientHighCurrentA;
-  g_state.transientPeriodMs = transientPeriodMs;
+  if (state.mode == TL && state.modeConfigured && state.uiScreen == UiScreen::Home) {
+    g_state.transientPeriodMs = state.transientPeriodMs;
+  } else {
+    g_state.transientPeriodMs = transientPeriodMs;
+  }
   std::strncpy(g_state.transientInputText, transientInputText, sizeof(g_state.transientInputText) - 1);
   g_state.transientInputText[sizeof(g_state.transientInputText) - 1] = '\0';
   g_state.transientInputLength = transientInputLength;

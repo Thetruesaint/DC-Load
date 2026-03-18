@@ -17,6 +17,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.measuredPower_W = state.measuredPower_W;
   view.tempC = state.temp_C;
   view.readingValue = state.readingValue;
+  view.setCurrent_mA = state.setCurrent_mA;
   view.currentCutOffA = state.currentCutOffA;
   view.powerCutOffW = state.powerCutOffW;
   view.tempCutOffC = state.tempCutOffC;
@@ -30,6 +31,8 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.transientLowCurrentA = state.transientLowCurrentA;
   view.transientHighCurrentA = state.transientHighCurrentA;
   view.transientPeriodMs = state.transientPeriodMs;
+  view.transientListActiveStep = state.transientListActiveStep;
+  view.transientListTotalSteps = state.transientListTotalSteps;
   view.limitsDraftCurrentA = state.limitsDraftCurrentA;
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
