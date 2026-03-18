@@ -884,12 +884,6 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
 }
 }
 
-const UiGridMetrics &uiGridMetrics() { return kGrid; }
-
-int uiGridPixelX(int col) { return cell_origin_x(col); }
-
-int uiGridPixelY(int row) { return cell_origin_y(row); }
-
 int uiDisplayWidthPx() { return tft.width(); }
 
 int uiDisplayHeightPx() { return tft.height(); }
@@ -1887,6 +1881,30 @@ void uiDisplayRenderProtectionModal(const char *message, char causeCode) {
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 
+void uiDisplayRenderLegacyLimitsSummary(float currentCutoff, float powerCutoff, float tempCutoff) {
+  uiDisplayClear();
+  uiGridPrint(1, 0, F("Limits"));
+  uiGridPrint(0, 1, F("Current:"));
+  uiGridPrintNumber(9, 1, currentCutoff, ' ', 3);
+  printLCDRaw(F("A"));
+  uiGridPrint(0, 2, F("Power:"));
+  uiGridPrintNumber(9, 2, powerCutoff, 'W', 2);
+  uiGridPrint(0, 3, F("Temp.:"));
+  uiGridPrintNumber(9, 3, tempCutoff, ' ', 0);
+  printLCDRaw(char(0xDF));
+  printLCDRaw("C");
+}
+
+void uiDisplayDrawLegacyHeaderTemperature(int tempC) {
+  uiGridSetCursor(16, 0);
+  if (tempC < 10) {
+    printLCDRaw(" ");
+  }
+  printLCDRaw(tempC);
+  printLCDRaw(char(0xDF));
+  printLCDRaw("C");
+}
+
 void uiGridSetCursor(int col, int row) {
   tft.setCursor(cell_origin_x(col), cell_origin_y(row));
 }
@@ -1909,6 +1927,85 @@ void printLCDRaw(unsigned long value) { tft.print(value); }
 
 void printLCDRaw(float value, int decimals) { tft.print(value, decimals); }
 
+bool home_mode_uses_managed_renderer(uint8_t mode) {
+  switch (mode) {
+    case CC:
+    case CP:
+    case CR:
+    case BC:
+    case CA:
+    case TC:
+    case TL:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void render_legacy_home_metrics(const UiViewState &state, float measuredCurrent, float measuredVoltage) {
+  const float power = state.measuredPower_W;
+  const uint8_t mode = state.mode;
+
+  draw_tft_load_status(state.loadEnabled);
+  uiGridPrintNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
+  uiGridPrintNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
+
+  if (mode == BC || mode == CA) {
+    return;
+  }
+
+  uiGridSetCursor(14, 1);
+  if (power < 10) {
+    uiClearCells(14, 1);
+    printLCDRaw(power, 2);
+  } else if (power < 100) {
+    printLCDRaw(power, 2);
+  } else {
+    printLCDRaw(power, 1);
+  }
+  uiGridSetCursor(19, 1);
+  printLCDRaw(F("w"));
+}
+
+void render_legacy_home_setpoint(const UiViewState &state) {
+  const uint8_t mode = state.mode;
+  if (mode == TC || mode == TL) {
+    return;
+  }
+
+  uiGridSetCursor(6, 2);
+  const float readingValue = state.readingValue;
+  if (mode == CC || mode == BC || mode == CA) {
+    if (readingValue < 100) uiClearCells(6, 2);
+    if (readingValue < 10) uiClearCells(7, 2);
+    printLCDRaw(readingValue, 3);
+  } else {
+    if (readingValue < 100) printLCDRaw("0");
+    if (readingValue < 10) printLCDRaw("0");
+    printLCDRaw(readingValue, 1);
+  }
+
+  uiGridSetCursor(state.cursorPosition, 2);
+  static int blink_cntr = 0;
+  blink_cntr = (blink_cntr + 1) % 5;
+  if (blink_cntr == 4) {
+    clear_cursor_cell(state.cursorPosition, 2);
+  }
+}
+
+void render_legacy_home(const UiViewState &state) {
+  g_ccLayoutDrawn = false;
+
+  float measuredVoltage = state.measuredVoltage_V;
+  float measuredCurrent = state.measuredCurrent_A;
+  if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
+  if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
+
+  render_legacy_home_metrics(state, measuredCurrent, measuredVoltage);
+  render_legacy_home_setpoint(state);
+  render_keypad_input(state.mode, state.mode == CA);
+}
+
 void uiDisplayUpdate(void) {
   static unsigned long lastUpdateTime = 0;
 
@@ -1927,91 +2024,12 @@ void uiDisplayUpdate(void) {
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
   lastUpdateTime = millis();
 
-  if (state.mode == CC) {
+  if (home_mode_uses_managed_renderer(state.mode)) {
     render_managed_home(state, true);
     return;
   }
 
-  if (state.mode == CP) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  if (state.mode == CR) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  if (state.mode == BC) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  if (state.mode == CA) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  if (state.mode == TC) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  if (state.mode == TL) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  g_ccLayoutDrawn = false;
-
-  float measuredVoltage = state.measuredVoltage_V;
-  float measuredCurrent = state.measuredCurrent_A;
-  if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
-  if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
-  const float power = state.measuredPower_W;
-
-  draw_tft_load_status(state.loadEnabled);
-
-  uiGridPrintNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
-  uiGridPrintNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
-  const uint8_t mode = state.mode;
-  if (mode != BC && mode != CA) {
-    uiGridSetCursor(14, 1);
-    if (power < 10) {
-      uiClearCells(14, 1);
-      printLCDRaw(power, 2);
-    } else if (power < 100) {
-      printLCDRaw(power, 2);
-    } else {
-      printLCDRaw(power, 1);
-    }
-    uiGridSetCursor(19, 1);
-    printLCDRaw(F("w"));
-  }
-
-  if (mode != TC && mode != TL) {
-    uiGridSetCursor(6, 2);
-    const float readingValue = state.readingValue;
-    if (mode == CC || mode == BC || mode == CA) {
-      if (readingValue < 100) uiClearCells(6, 2);
-      if (readingValue < 10) uiClearCells(7, 2);
-      printLCDRaw(readingValue, 3);
-    } else {
-      if (readingValue < 100) printLCDRaw("0");
-      if (readingValue < 10) printLCDRaw("0");
-      printLCDRaw(readingValue, 1);
-    }
-    uiGridSetCursor(state.cursorPosition, 2);
-
-    uiGridSetCursor(state.cursorPosition, 2);
-    static int blink_cntr = 0;
-    blink_cntr = (blink_cntr + 1) % 5;
-    if (blink_cntr == 4) {
-      clear_cursor_cell(state.cursorPosition, 2);
-    }
-  }
-
-  render_keypad_input(mode, state.mode == CA);
+  render_legacy_home(state);
 }
 
 void uiGridPrintString(int col, int row, const String &message) {
@@ -2032,21 +2050,3 @@ void uiGridPrintNumber(int col, int row, float number, char unit, int decimals) 
     printLCDRaw(unit);
   }
 }
-
-void initLCD(void) { uiDisplayInit(); }
-
-void clearLCD(void) { uiDisplayClear(); }
-
-void setCursorLCD(int col, int row) { uiGridSetCursor(col, row); }
-
-void Update_LCD(void) { uiDisplayUpdate(); }
-
-void printLCD_S(int col, int row, const String &message) { uiGridPrintString(col, row, message); }
-
-void printLCD(int col, int row, const __FlashStringHelper *message) { uiGridPrint(col, row, message); }
-
-void printLCDNumber(int col, int row, float number, char unit, int decimals) {
-  uiGridPrintNumber(col, row, number, unit, decimals);
-}
-
-void Print_Spaces(int col, int row, byte count) { uiClearCells(col, row, count); }

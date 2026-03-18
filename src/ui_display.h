@@ -15,9 +15,6 @@ struct UiGridMetrics {
   uint8_t textSize;
 };
 
-const UiGridMetrics &uiGridMetrics();
-int uiGridPixelX(int col);
-int uiGridPixelY(int row);
 int uiDisplayWidthPx();
 int uiDisplayHeightPx();
 int uiDisplayTextWidth(const char *text, uint8_t textSize = 1, uint8_t textFont = 1);
@@ -59,6 +56,8 @@ void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);
 void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail);
 void uiDisplayRenderProtectionModal(const char *message, char causeCode);
+void uiDisplayRenderLegacyLimitsSummary(float currentCutoff, float powerCutoff, float tempCutoff);
+void uiDisplayDrawLegacyHeaderTemperature(int tempC);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);
@@ -73,15 +72,5 @@ void printLCDRaw(char value);
 void printLCDRaw(int value);
 void printLCDRaw(unsigned long value);
 void printLCDRaw(float value, int decimals = 2);
-
-// Legacy compatibility layer while the codebase migrates away from LCD naming.
-void initLCD(void);
-void clearLCD(void);
-void setCursorLCD(int col, int row);
-void Update_LCD(void);
-void printLCD_S(int col, int row, const String &message);
-void printLCD(int col, int row, const __FlashStringHelper *message);
-void printLCDNumber(int col, int row, float number, char unit = '\0', int decimals = 2);
-void Print_Spaces(int col, int row, byte count = 1);
 
 #endif

@@ -8,7 +8,6 @@
 #include "../ui_display.h"
 #include "../app/app_calibration_context.h"
 #include "../config/system_constants.h"
-#include "ui_mode_templates.h"
 
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
@@ -21,13 +20,6 @@ struct LimitsRenderCache {
   uint8_t field;
   bool editActive;
   char inputText[8];
-  bool valid;
-};
-
-struct HomeRenderCache {
-  uint8_t mode;
-  float batteryCutoffVolts;
-  char batteryType[8];
   bool valid;
 };
 
@@ -94,7 +86,6 @@ struct TransientListSetupRenderCache {
   bool valid;
 };
 
-HomeRenderCache g_homeCache = {0, 0.0f, {'\0'}, false};
 ProtectionRenderCache g_protectionCache = {0, false};
 TestsRenderCache g_testsCache = {0, false, false};
 FwUpdateRenderCache g_fwUpdateCache = {{'\0'}, {'\0'}, {'\0'}, false};
@@ -109,46 +100,6 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
   uiDisplayRenderConfigRootMenu(viewState);
   g_lastMenuRootSelection = viewState.menuRootSelection;
-}
-
-bool home_mode_uses_ui_template(uint8_t mode) {
-  (void)mode;
-  return false;
-}
-
-void draw_home_template_for_mode(const UiViewState &viewState) {
-  if (viewState.mode == 0) {
-    ui_draw_cc_template();
-  } else if (viewState.mode == 1) {
-    ui_draw_cp_template();
-  } else if (viewState.mode == 2) {
-    ui_draw_cr_template();
-  } else if (viewState.mode == 3) {
-    ui_draw_bc_template(viewState.batteryCutoffVolts,
-                        viewState.batteryLife,
-                        String(viewState.batteryType));
-  }
-}
-
-void draw_home_if_needed(const UiViewState &viewState) {
-  if (!home_mode_uses_ui_template(viewState.mode)) {
-    g_homeCache.valid = false;
-    return;
-  }
-
-  if (g_homeCache.valid &&
-      g_homeCache.mode == viewState.mode &&
-      g_homeCache.batteryCutoffVolts == viewState.batteryCutoffVolts &&
-      std::strcmp(g_homeCache.batteryType, viewState.batteryType) == 0) {
-    return;
-  }
-
-  draw_home_template_for_mode(viewState);
-  g_homeCache.mode = viewState.mode;
-  g_homeCache.batteryCutoffVolts = viewState.batteryCutoffVolts;
-  std::strncpy(g_homeCache.batteryType, viewState.batteryType, sizeof(g_homeCache.batteryType) - 1);
-  g_homeCache.batteryType[sizeof(g_homeCache.batteryType) - 1] = '\0';
-  g_homeCache.valid = true;
 }
 
 void draw_battery_setup_task_if_needed(const UiViewState &viewState) {
@@ -328,18 +279,15 @@ void screen_enter_home(const UiViewState &viewState) {
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
-  g_homeCache.valid = false;
   if (viewState.mode == CA && app_calibration_confirmation_active()) {
     return;
   }
-  draw_home_if_needed(viewState);
 }
 
 void screen_update_home(const UiViewState &viewState) {
   if (viewState.mode == CA && app_calibration_confirmation_active()) {
     return;
   }
-  draw_home_if_needed(viewState);
   uiDisplayUpdate();
 }
 
@@ -624,7 +572,6 @@ void ui_state_machine_reset() {
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
-  g_homeCache.valid = false;
 }
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {

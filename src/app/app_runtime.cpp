@@ -3,9 +3,9 @@
 #include "../config/system_constants.h"
 #include "../core/core_engine.h"
 #include "../hw/hw_objects.h"
+#include "../ui_display.h"
 #include "app_calibration_flow.h"
 #include "../ui/ui_cycle_render.h"
-#include "../ui/ui_mode_templates.h"
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
 #include "app_inputs.h"
@@ -62,9 +62,7 @@ void prepare_core_managed_home_mode() {
     case CA:
       if (!app_mode_state_configured()) break;
       app_calibration_begin_mode_from_selection(app_value_result_get());
-      ui_draw_calibration_mode_template(
-          app_calibration_is_voltage_mode(),
-          app_calibration_first_point_taken());
+      uiDisplayInvalidateHomeLayout();
       app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;

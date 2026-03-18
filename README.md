@@ -16,6 +16,7 @@
 - En BC, TC y TL ahoira se detecta el salto de modo con S+N
 
 **Mejoras**
+- Limpieza y organización de todo el código sacando funciones basadas en grilla LCD 20x4
 - Indicador de shift pressed
 - En TL los steps x/t empiezan contando de 1 y no de 0.
 - En TC se puede reajustar el periodo con teclado o encoder.

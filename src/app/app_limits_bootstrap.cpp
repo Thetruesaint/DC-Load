@@ -2,7 +2,7 @@
 
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
-#include "../ui/ui_mode_templates.h"
+#include "../ui_display.h"
 #include "app_limits_context.h"
 
 bool app_limits_values_are_valid(float currentCutoffA, float powerCutoffW, float tempCutoffC) {
@@ -36,7 +36,7 @@ void app_limits_save_to_eeprom() {
 
 void app_limits_show_summary() {
   app_limits_load_from_eeprom();
-  ui_draw_limits_summary(
+  uiDisplayRenderLegacyLimitsSummary(
       app_limits_current_cutoff(),
       app_limits_power_cutoff(),
       app_limits_temp_cutoff());

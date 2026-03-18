@@ -4,7 +4,6 @@
 #include "../hal/hal_inputs.h"
 #include "../hw/hw_objects.h"
 #include "../ui_display.h"
-#include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
 #include "app_fan_context.h"
 #include "app_input_buffer.h"
@@ -102,7 +101,7 @@ void app_update_fan_control() {
     }
     was_manual_override_active = true;
     if (uses_legacy_home_temperature_overlay()) {
-      ui_draw_header_temperature(app_measurements_temp_c());
+      uiDisplayDrawLegacyHeaderTemperature(app_measurements_temp_c());
     }
     return;
   }
@@ -129,7 +128,7 @@ void app_update_fan_control() {
   was_manual_override_active = false;
 
   if (uses_legacy_home_temperature_overlay()) {
-    ui_draw_header_temperature(app_measurements_temp_c());
+    uiDisplayDrawLegacyHeaderTemperature(app_measurements_temp_c());
   }
 }
 

@@ -17,7 +17,6 @@
 #include "../ui_display.h"
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
-#include "../ui/ui_mode_templates.h"
 
 void app_calibration_mode_update() {
   static bool confirmationDrawn = false;
@@ -30,7 +29,7 @@ void app_calibration_mode_update() {
 
   if (app_calibration_confirmation_active()) {
     if (!confirmationDrawn) {
-      ui_draw_calibration_result(
+      uiDisplayRenderCalibrationResultScreen(
           app_calibration_pending_is_voltage_mode(),
           app_calibration_pending_sensor_factor(),
           app_calibration_pending_sensor_offset(),
@@ -45,9 +44,7 @@ void app_calibration_mode_update() {
 
   if (!app_mode_state_initialized()) {
     app_calibration_begin_mode_from_selection(app_value_result_get());
-    ui_draw_calibration_mode_template(
-        app_calibration_is_voltage_mode(),
-        app_calibration_first_point_taken());
+    uiDisplayInvalidateHomeLayout();
     app_encoder_setup_begin(app_limits_current_cutoff());
     app_mode_state_set_initialized(true);
   }
@@ -98,13 +95,13 @@ void app_calibration_run_setup() {
   app_mode_state_set_configured(true);
   if (selection == 3.0f) {
     Load_Calibration();
-    ui_draw_calibration_loaded_message();
+    uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Loaded");
     delay(1500);
     app_mode_state_set_configured(false);
   }
   if (selection == 4.0f) {
     Save_Calibration();
-    ui_draw_calibration_saved_message();
+    uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Saved");
     delay(1500);
     app_mode_state_set_configured(false);
   }
@@ -119,23 +116,21 @@ void app_calibration_confirm_value(float realValue) {
 
   AppCalibrationComputationResult result{};
   if (!app_calibration_capture_or_compute(measuredValue, realValue, setCurrentA, result)) {
-    ui_draw_calibration_mode_template(
-        app_calibration_is_voltage_mode(),
-        app_calibration_first_point_taken());
+    uiDisplayInvalidateHomeLayout();
     return;
   }
 
   app_load_output_off();
 
   if (result.pointsTooClose || result.pointMismatch) {
-    ui_draw_calibration_abort(result.pointsTooClose);
+    uiDisplayRenderCalibrationAbortScreen(result.pointsTooClose);
     app_calibration_finish_mode();
     delay(2000);
     return;
   }
 
   app_calibration_prepare_pending_result(result);
-  ui_draw_calibration_result(
+  uiDisplayRenderCalibrationResultScreen(
       app_calibration_pending_is_voltage_mode(),
       app_calibration_pending_sensor_factor(),
       app_calibration_pending_sensor_offset(),
@@ -153,13 +148,13 @@ void app_calibration_apply_menu_option(uint8_t option) {
     app_value_result_set(static_cast<float>(option));
   } else if (option == 3) {
     Load_Calibration();
-    ui_draw_calibration_loaded_message();
+    uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Loaded");
     delay(1500);
     app_mode_state_set_configured(false);
     app_mode_state_set_initialized(false);
   } else if (option == 4) {
     Save_Calibration();
-    ui_draw_calibration_saved_message();
+    uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Saved");
     delay(1500);
     app_mode_state_set_configured(false);
     app_mode_state_set_initialized(false);
