@@ -1484,7 +1484,15 @@ void core_dispatch(const UserAction &action) {
       break;
 
     case ActionType::OpenConfigSection:
-      if (g_state.uiScreen != UiScreen::Home) {
+      if (g_state.uiScreen != UiScreen::Home &&
+          g_state.uiScreen != UiScreen::BatterySetupTask &&
+          g_state.uiScreen != UiScreen::BatterySetupCustomCutoff &&
+          g_state.uiScreen != UiScreen::BatterySetupCellCount &&
+          g_state.uiScreen != UiScreen::TransientContSetupLow &&
+          g_state.uiScreen != UiScreen::TransientContSetupHigh &&
+          g_state.uiScreen != UiScreen::TransientContSetupPeriod &&
+          g_state.uiScreen != UiScreen::TransientListSetupCount &&
+          g_state.uiScreen != UiScreen::TransientListSetupStep) {
         break;
       }
       g_state.loadEnabled = false;
@@ -1508,7 +1516,6 @@ void core_dispatch(const UserAction &action) {
       g_state.fanManualOverrideActive = false;
       g_state.fanManualStateOn = false;
       fan_input_reset(&g_state);
-      battery_input_reset(&g_state);
       break;
     case ActionType::None:
     default:

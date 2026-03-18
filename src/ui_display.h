@@ -47,6 +47,17 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state);
 void uiDisplayUpdateTransientListSetupValue(const UiViewState &state);
 void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC);
 void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk);
+void uiDisplayRenderConfigRootMenu(const UiViewState &state);
+void uiDisplayRenderProtectionMenu(const UiViewState &state);
+void uiDisplayRenderTestsMenu(const UiViewState &state);
+void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine);
+void uiDisplayRenderFanSettingsMenu(const UiViewState &state);
+void uiDisplayRenderLimitsMenu(const UiViewState &state);
+void uiDisplayRenderCalibrationMenu(const UiViewState &state);
+void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
+void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
+void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);
+void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);

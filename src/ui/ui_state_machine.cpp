@@ -107,7 +107,7 @@ TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
-  ui_draw_config_root_menu(viewState.menuRootSelection);
+  uiDisplayRenderConfigRootMenu(viewState);
   g_lastMenuRootSelection = viewState.menuRootSelection;
 }
 
@@ -219,7 +219,7 @@ void draw_protection_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  ui_draw_protection_menu(viewState.protectionMenuSelection);
+  uiDisplayRenderProtectionMenu(viewState);
   g_protectionCache.option = viewState.protectionMenuSelection;
   g_protectionCache.valid = true;
 }
@@ -231,7 +231,7 @@ void draw_tests_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  ui_draw_tests_menu(viewState.testsMenuSelection, viewState.fanManualStateOn);
+  uiDisplayRenderTestsMenu(viewState);
   g_testsCache.option = viewState.testsMenuSelection;
   g_testsCache.fanOn = viewState.fanManualStateOn;
   g_testsCache.valid = true;
@@ -248,12 +248,7 @@ void draw_fan_settings_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  ui_draw_fan_settings_menu(viewState.fanSettingsMenuSelection,
-                            viewState.fanDraftTempC,
-                            viewState.fanDraftHoldSeconds,
-                            viewState.fanEditActive,
-                            viewState.fanInputText,
-                            viewState.fanManualStateOn);
+  uiDisplayRenderFanSettingsMenu(viewState);
   g_fanSettingsCache.option = viewState.fanSettingsMenuSelection;
   g_fanSettingsCache.tempC = viewState.fanDraftTempC;
   g_fanSettingsCache.holdSeconds = viewState.fanDraftHoldSeconds;
@@ -276,7 +271,7 @@ void draw_fw_update_if_needed() {
     return;
   }
 
-  ui_draw_fw_update_screen(status, detail, hint);
+  uiDisplayRenderFwUpdateScreen(status, detail, hint);
   std::strncpy(g_fwUpdateCache.status, status, sizeof(g_fwUpdateCache.status) - 1);
   g_fwUpdateCache.status[sizeof(g_fwUpdateCache.status) - 1] = '\0';
   std::strncpy(g_fwUpdateCache.detail, detail, sizeof(g_fwUpdateCache.detail) - 1);
@@ -286,46 +281,7 @@ void draw_fw_update_if_needed() {
   g_fwUpdateCache.valid = true;
 }
 
-void draw_limits_menu(const UiViewState &viewState) {
-  clearLCD();
-  printLCD(4, 0, F("Set Limits"));
-  printLCD(0, 1, (viewState.limitsMenuField == 0) ? F(">") : F(" "));
-  printLCD(1, 1, F("1-Curr"));
-  if (viewState.limitsMenuField == 0) {
-    Print_Spaces(10, 1, 9);
-    if (viewState.limitsEditActive) {
-      printLCD_S(10, 1, String(viewState.limitsInputText));
-    } else {
-      ui_show_current_limit_value(10, 1, viewState.limitsDraftCurrentA);
-    }
-  } else {
-    ui_show_current_limit_value(10, 1, viewState.limitsDraftCurrentA);
-  }
-
-  printLCD(0, 2, (viewState.limitsMenuField == 1) ? F(">") : F(" "));
-  printLCD(1, 2, F("2-Power"));
-  if (viewState.limitsMenuField == 1) {
-    Print_Spaces(11, 2, 8);
-    if (viewState.limitsEditActive) {
-      printLCD_S(11, 2, String(viewState.limitsInputText));
-    } else {
-      ui_show_value_number(11, 2, viewState.limitsDraftPowerW, 'W', 1);
-    }
-  } else {
-    ui_show_value_number(11, 2, viewState.limitsDraftPowerW, 'W', 1);
-  }
-
-  printLCD(0, 3, (viewState.limitsMenuField == 2) ? F(">") : F(" "));
-  printLCD(1, 3, F("3-Temp"));
-  Print_Spaces(12, 3, 6);
-  if (viewState.limitsMenuField == 2 && viewState.limitsEditActive) {
-    printLCD_S(12, 3, String(viewState.limitsInputText));
-  } else {
-    ui_show_value_number(12, 3, viewState.limitsDraftTempC, ' ', 0);
-    printLCDRaw(char(0xDF));
-    printLCDRaw(F("C"));
-  }
-}
+void draw_limits_menu(const UiViewState &viewState) { uiDisplayRenderLimitsMenu(viewState); }
 
 void draw_limits_if_needed(const UiViewState &viewState) {
   if (g_limitsCache.valid &&
@@ -349,20 +305,7 @@ void draw_limits_if_needed(const UiViewState &viewState) {
   g_limitsCache.valid = true;
 }
 
-void draw_calibration_menu(const UiViewState &viewState) {
-  clearLCD();
-  printLCD(4, 0, F("Calibration"));
-  printLCD(0, 1, (viewState.calibrationMenuOption == 1) ? F(">") : F(" "));
-  printLCD(1, 1, F("1-Voltage"));
-  printLCD(10, 1, (viewState.calibrationMenuOption == 2) ? F(">") : F(" "));
-  printLCD(11, 1, F("2-Current"));
-  printLCD(0, 2, (viewState.calibrationMenuOption == 3) ? F(">") : F(" "));
-  printLCD(1, 2, F("3-Load"));
-  printLCD(10, 2, (viewState.calibrationMenuOption == 4) ? F(">") : F(" "));
-  printLCD(11, 2, F("4-Save"));
-  printLCD(0, 3, (viewState.calibrationMenuOption == 5) ? F(">") : F(" "));
-  printLCD(1, 3, F("5-Back"));
-}
+void draw_calibration_menu(const UiViewState &viewState) { uiDisplayRenderCalibrationMenu(viewState); }
 
 void draw_calibration_if_needed(const UiViewState &viewState) {
   if (g_calibrationCache.valid && g_calibrationCache.option == viewState.calibrationMenuOption) {
@@ -686,9 +629,7 @@ void ui_state_machine_reset() {
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
   if (targetScreen != g_currentScreen) {
-    if (g_currentScreen == UiScreen::Home || targetScreen != UiScreen::Home) {
-      uiDisplayInvalidateHomeLayout();
-    }
+    uiDisplayInvalidateHomeLayout();
     if (g_currentScreen == UiScreen::MenuFwUpdate && targetScreen != UiScreen::MenuFwUpdate) {
       app_ota_stop();
       g_fwUpdateCache.valid = false;

@@ -158,30 +158,17 @@ void ui_draw_fan_settings_menu(uint8_t selectedIndex, float tempC, float holdSec
 }
 
 void ui_draw_calibration_setup_menu() {
-  uiDisplayClear();
-  uiGridPrint(4, 0, F("CALIBRATION"));
-  uiGridPrint(0, 1, F("1-Voltage 2-Current"));
-  uiGridPrint(0, 2, F("3-Load    4-Save"));
+  uiDisplayRenderCalibrationSetupMenu("");
 }
 
 void ui_draw_calibration_mode_template(bool voltageMode, bool firstPointTaken) {
-  uiDisplayClear();
-  uiGridPrint(0, 0, voltageMode ? F("CA VOLT") : F("CA CURR"));
-  uiGridPrint(14, 1, firstPointTaken ? F("Set P2") : F("Set P1"));
-  uiGridPrint(1, 2, F("Adj->"));
-  uiGridPrint(13, 2, F("A"));
-  uiGridPrint(0, 3, F(">"));
-  uiGridPrint(7, 3, F("<Set real"));
+  (void)voltageMode;
+  (void)firstPointTaken;
+  uiDisplayInvalidateHomeLayout();
 }
 
 void ui_draw_calibration_abort(bool pointsTooClose) {
-  uiDisplayClear();
-  uiGridPrint(0, 1, F("Calib Abort"));
-  if (pointsTooClose) {
-    uiGridPrint(0, 2, F("P1/P2 too close"));
-  } else {
-    uiGridPrint(0, 2, F("Set/Read >20%"));
-  }
+  uiDisplayRenderCalibrationAbortScreen(pointsTooClose);
 }
 
 void ui_draw_calibration_success() {
@@ -190,40 +177,15 @@ void ui_draw_calibration_success() {
 }
 
 void ui_draw_calibration_result(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset) {
-  uiDisplayClear();
-  uiGridPrint(0, 0, voltageMode ? F("V Calibrated:") : F("I Calibrated:"));
-
-  if (voltageMode) {
-    uiGridPrint(0, 1, F("SF:"));
-    uiClearCells(3, 1, 8);
-    uiGridPrintString(3, 1, String(sensorFactor, 6));
-    uiGridPrint(0, 2, F("SO:"));
-    uiClearCells(3, 2, 8);
-    uiGridPrintString(3, 2, String(sensorOffset, 6));
-  } else {
-    uiGridPrint(0, 1, F("SF:"));
-    uiClearCells(3, 1, 7);
-    uiGridPrintString(3, 1, String(sensorFactor, 4));
-    uiGridPrint(10, 1, F("SO:"));
-    uiClearCells(13, 1, 7);
-    uiGridPrintString(13, 1, String(sensorOffset, 3));
-    uiGridPrint(0, 2, F("OF:"));
-    uiClearCells(3, 2, 7);
-    uiGridPrintString(3, 2, String(outputFactor, 4));
-    uiGridPrint(10, 2, F("OO:"));
-    uiClearCells(13, 2, 7);
-    uiGridPrintString(13, 2, String(outputOffset, 0));
-  }
-
-  uiGridPrint(2, 3, F("E-OK  CLR-Cancel"));
+  uiDisplayRenderCalibrationResultScreen(voltageMode, sensorFactor, sensorOffset, outputFactor, outputOffset);
 }
 
 void ui_draw_calibration_loaded_message() {
-  uiGridPrint(12, 3, F("Loaded!"));
+  uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Loaded");
 }
 
 void ui_draw_calibration_saved_message() {
-  uiGridPrint(12, 3, F("Saved!"));
+  uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Saved");
 }
 
 void ui_draw_transient_cont_mode_template(float lowCurrent, float highCurrent, unsigned long periodMs) {

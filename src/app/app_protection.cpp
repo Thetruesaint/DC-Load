@@ -25,7 +25,7 @@ bool uses_legacy_home_temperature_overlay() {
   if (ui_state_machine_current_screen() != UiScreen::Home) return false;
 
   const uint8_t mode = app_mode_state_mode();
-  return mode != CC && mode != CP && mode != CR && mode != BC && mode != TC && mode != TL;
+  return mode != CC && mode != CP && mode != CR && mode != BC && mode != TC && mode != TL && mode != CA;
 }
 
 void set_fan_output(bool on) {

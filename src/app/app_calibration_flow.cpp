@@ -2,16 +2,19 @@
 
 #include "app_calibration_context.h"
 #include "app_encoder_setup.h"
+#include "app_input_buffer.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
 #include "app_load_output.h"
+#include "app_loop.h"
+#include "app_msc.h"
 #include "app_measurements_context.h"
 #include "app_mode_state_context.h"
 #include "app_runtime_context.h"
 #include "app_setpoint_cursor.h"
 #include "app_setpoint_context.h"
-#include "app_value_input.h"
 #include "app_value_result_context.h"
+#include "../ui_display.h"
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
 #include "../ui/ui_mode_templates.h"
@@ -62,17 +65,34 @@ void app_calibration_mode_update() {
 }
 
 void app_calibration_run_setup() {
-  ui_draw_calibration_setup_menu();
-
   float selection = 0.0f;
+  app_input_reset();
   do {
-    const int col = 1;
-    const int row = 3;
-    ui_prepare_value_input_prompt(col, row, 1);
-    if (!app_value_input(col, row, 1, false)) {
-      return;
+    uiDisplayRenderCalibrationSetupMenu(app_input_text());
+
+    while (true) {
+      char key = app_input_wait_key();
+      app_push_action(make_key_pressed_action(key));
+
+      if (!app_handle_msc_keys(key)) {
+        app_input_reset();
+        return;
+      }
+
+      bool handled = app_input_append_digit(key, 1);
+      if (!handled && key == '<') {
+        handled = app_input_backspace();
+      }
+
+      if (!handled && key == 'E' && app_input_length() > 0) {
+        selection = app_input_parse_float();
+        app_value_result_set(selection);
+        app_input_reset();
+        break;
+      }
+
+      uiDisplayRenderCalibrationSetupMenu(app_input_text());
     }
-    selection = app_value_result_get();
   } while (selection < 1.0f || selection > 4.0f);
 
   app_mode_state_set_configured(true);

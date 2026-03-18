@@ -198,7 +198,6 @@ void app_calibration_finish_mode() {
   app_mode_state_set_initialized(false);
   app_mode_state_set_configured(false);
   app_calibration_reset_session();
-  app_calibration_request_menu_return();
 }
 
 void app_calibration_store_return_mode(uint8_t mode, int functionIndex) {

@@ -1,7 +1,10 @@
 #include "ui_display.h"
 
 #include "app/app_input_buffer.h"
+#include "app/app_calibration_context.h"
+#include "app/app_measurements_context.h"
 #include "app/app_msc.h"
+#include "app/app_setpoint_context.h"
 #include "app/app_timing_alerts.h"
 #include "app/app_ui_context.h"
 #include "config/system_constants.h"
@@ -396,6 +399,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const bool isBcMode = state.mode == BC;
   const bool isTcMode = state.mode == TC;
   const bool isTlMode = state.mode == TL;
+  const bool isCaMode = state.mode == CA;
   const bool isTransientMode = isTcMode || isTlMode;
   const int topBarH = (displayH * 10) / 100;
   const int metricsH = (displayH * 20) / 100;
@@ -416,7 +420,9 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
 
   const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
-  const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : isCrMode ? "CR" : isBcMode ? "BC" : isTcMode ? "TC" : "TL";
+  const bool calibrationVoltageMode = app_calibration_is_voltage_mode();
+  const bool calibrationFirstPointTaken = app_calibration_first_point_taken();
+  const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : isCrMode ? "CR" : isBcMode ? "BC" : isTcMode ? "TC" : isTlMode ? "TL" : "CA";
   const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
   const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
   const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
@@ -451,35 +457,48 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const char *liveInput = app_input_text();
   const bool supportsLiveInput = isCcMode || isCpMode || isCrMode || isBcMode || isTcMode;
   const bool hasLiveInput = supportsLiveInput && (liveInput != nullptr) && (liveInput[0] != '\0');
+  const bool hasCalibrationRealInput = isCaMode && (liveInput != nullptr) && (liveInput[0] != '\0');
   const int transientVisibleTotalSteps = (state.transientListTotalSteps > 0) ? state.transientListTotalSteps : 1;
   const String transientStepText = String(state.transientListActiveStep + 1) + "/" + String(transientVisibleTotalSteps);
   const String setValueText = hasLiveInput
                                   ? String(liveInput)
                                   : ((isCcMode || isBcMode) ? String(state.readingValue, 3)
+                                              : isCaMode ? String(state.readingValue, 3)
                                               : isCpMode ? format_cp_value(state.readingValue)
                                               : isCrMode ? format_cr_value(state.readingValue)
                                               : isTcMode ? format_tc_period_value(state.transientPeriodMs)
                                                          : transientStepText);
   const String setPrefix = isBcMode ? "CURR> " : isTcMode ? "PER> " : isTlMode ? "STEP> " : "SET> ";
-  const String setUnit = isCrMode ? " ohms" : isTcMode ? " ms" : ((isCcMode || isBcMode) ? "A" : isCpMode ? "W" : "");
+  const String setUnit = isCrMode ? " ohms" : isTcMode ? " ms" : ((isCcMode || isBcMode || isCaMode) ? "A" : isCpMode ? "W" : "");
+  const String calibrationRealPrefix = "REAL> ";
+  const String calibrationRealUnit = calibrationVoltageMode ? "V" : "A";
+  const String calibrationRealValue = hasCalibrationRealInput ? String(liveInput) : "";
   const String setText = setPrefix + setValueText + setUnit;
   const String bcStatus = state.batteryDone ? "DONE" : state.loadEnabled ? "DISCHARGING" : "READY";
-  const String modeTitle = isBcMode ? "BATTERY CAPACITY" : isTcMode ? "TRANSIENT CONT" : isTlMode ? "TRANSIENT LIST" : "";
+  const String modeTitle = isBcMode ? "BATTERY CAPACITY"
+                                    : isTcMode ? "TRANSIENT CONT"
+                                    : isTlMode ? "TRANSIENT LIST"
+                                               : (calibrationVoltageMode ? "CAL VOLTAGE" : "CAL CURRENT");
   const String modeLine1 = isBcMode ? String("Status: ") + bcStatus
                                     : isTcMode ? String(state.loadEnabled ? "Output toggling" : "Enable load to start")
+                                    : isCaMode ? String("Point: ") + (calibrationFirstPointTaken ? "P2" : "P1")
                                     : isTlMode ? String(state.loadEnabled ? "Sequence running" : "Enable load to start")
                                                : "";
   const String modeLine2 = isBcMode ? String("Cutoff: ") + String(state.batteryCutoffVolts, 2) + "v"
                                     : isTcMode ? String("I2: ") + format_transient_current(state.transientHighCurrentA)
+                                               : isCaMode ? String("Target with encoder")
                                                : String("Set: ") + format_transient_current(max(0.0f, state.setCurrent_mA / 1000.0f));
   const String modeLine3 = isBcMode ? String("Type: ") + String(state.batteryType)
                                     : isTcMode ? String("I1: ") + format_transient_current(state.transientLowCurrentA)
+                                               : isCaMode ? String("Enter REAL at right")
                                                : String("Total: ") + String(transientVisibleTotalSteps);
   const String modeLine4 = isBcMode ? String("Capacity: ") + String(state.batteryLife, 0) + " mAh"
                                     : isTcMode ? String("dt: ") + format_transient_period_label(state.transientPeriodMs)
+                                               : isCaMode ? ""
                                                : String("dt: ") + format_transient_period_label(state.transientPeriodMs);
   const String modeLine5 = isBcMode ? String("Elapsed: ") + app_timer_get_time()
                                     : isTcMode ? ""
+                                               : isCaMode ? ""
                                                : String("Total: ") + String(transientVisibleTotalSteps);
 
   const bool modeChanged = g_ccLastMode != state.mode;
@@ -593,7 +612,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastMetric3 = metric3;
   }
 
-  if ((isBcMode || isTransientMode) &&
+  if ((isBcMode || isTransientMode || isCaMode) &&
       (layoutChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
        g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
     const uint8_t infoTitleFont = 2;
@@ -639,20 +658,39 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
                            kUiModeAreaBg,
                            infoTextSize,
                            infoTextFont);
-    uiDisplayPrintStyledAt(row2StartX,
-                           row2Y,
-                           modeLine3,
-                           kUiText,
-                           kUiModeAreaBg,
-                           infoTextSize,
-                           infoTextFont);
-    uiDisplayPrintStyledAt(row2RightX,
-                           row2Y,
-                           modeLine2,
-                           kUiText,
-                           kUiModeAreaBg,
-                           infoTextSize,
-                           infoTextFont);
+    if (isCaMode) {
+      const int line2X = (displayW - uiDisplayTextWidth(modeLine2, infoTextSize, infoTextFont)) / 2;
+      const int line3X = (displayW - uiDisplayTextWidth(modeLine3, infoTextSize, infoTextFont)) / 2;
+      uiDisplayPrintStyledAt(line2X,
+                             row2Y,
+                             modeLine2,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      uiDisplayPrintStyledAt(line3X,
+                             row3Y,
+                             modeLine3,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+    } else {
+      uiDisplayPrintStyledAt(row2StartX,
+                             row2Y,
+                             modeLine3,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      uiDisplayPrintStyledAt(row2RightX,
+                             row2Y,
+                             modeLine2,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+    }
     if (compactTcInfo || compactTlInfo) {
       uiDisplayPrintStyledAt(row3CenterX,
                              row3Y,
@@ -661,7 +699,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
                              kUiModeAreaBg,
                              infoTextSize,
                              infoTextFont);
-    } else {
+    } else if (!isCaMode) {
       uiDisplayPrintStyledAt(row3StartX,
                              row3Y,
                              modeLine4,
@@ -685,32 +723,22 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
 
-  const bool supportsCursorHighlight = isCcMode || isCpMode || isCrMode || isBcMode || isTcMode;
+  const bool supportsCursorHighlight = isCcMode || isCpMode || isCrMode || isBcMode || isTcMode || isCaMode;
   const bool shiftActive = app_msc_shift_active();
-  if (layoutChanged || g_ccLastSetText != setText || g_ccLastShiftActive != shiftActive ||
-      (supportsCursorHighlight && !hasLiveInput &&
+  if (layoutChanged || g_ccLastSetText != (isCaMode ? (setText + "|" + calibrationRealValue) : setText) || g_ccLastShiftActive != shiftActive ||
+      (supportsCursorHighlight && !(hasLiveInput || hasCalibrationRealInput) &&
        (g_ccLastCursorVisible != cursorVisible || g_ccLastCursorPosition != state.cursorPosition))) {
     uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
     const int setTextX = displayW / 50;
-    const String prefixText = setPrefix;
-    const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
-    uiDisplayPrintStyledAt(setTextX, setTextY, prefixText, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
-
-    if (hasLiveInput) {
-      uiDisplayPrintStyledAt(setTextX + prefixWidth,
-                             setTextY,
-                             setText.substring(5),
-                             kUiSetColor,
-                             kUiBg,
-                             sectionTextSize,
-                             sectionTextFont);
-    } else if (supportsCursorHighlight) {
-      const int highlightedIndex = isCcMode
-                                       ? cc_cursor_text_index(setValueText, state.cursorPosition)
-                                       : isCpMode ? cp_cursor_text_index(setValueText, state.cursorPosition)
-                                       : isCrMode ? cr_cursor_text_index(setValueText, state.cursorPosition)
-                                       : isTcMode ? tc_cursor_text_index(setValueText, state.cursorPosition)
-                                                  : bc_cursor_text_index(setValueText, state.cursorPosition);
+    if (isCaMode) {
+      const int realBlockWidth = uiDisplayTextWidth(calibrationRealPrefix + String("0.000") + calibrationRealUnit,
+                                                    sectionTextSize,
+                                                    sectionTextFont);
+      const int realX = displayW - realBlockWidth - max(24, displayW / 25);
+      const String prefixText = setPrefix;
+      const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
+      uiDisplayPrintStyledAt(setTextX, setTextY, prefixText, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
+      const int highlightedIndex = cc_cursor_text_index(setValueText, state.cursorPosition);
       int currentX = setTextX + prefixWidth;
       for (int i = 0; i < setValueText.length(); ++i) {
         const String digitText = String(setValueText.charAt(i));
@@ -731,21 +759,76 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
                              kUiBg,
                              sectionTextSize,
                              sectionTextFont);
-    } else {
-      uiDisplayPrintStyledAt(setTextX + prefixWidth,
+      uiDisplayPrintStyledAt(realX,
                              setTextY,
-                             setValueText + setUnit,
+                             calibrationRealPrefix,
                              kUiSetColor,
                              kUiBg,
                              sectionTextSize,
                              sectionTextFont);
+      uiDisplayPrintStyledAt(realX + uiDisplayTextWidth(calibrationRealPrefix, sectionTextSize, sectionTextFont),
+                             setTextY,
+                             calibrationRealValue + calibrationRealUnit,
+                             kUiSetColor,
+                             kUiBg,
+                             sectionTextSize,
+                             sectionTextFont);
+    } else {
+      const String prefixText = setPrefix;
+      const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
+      uiDisplayPrintStyledAt(setTextX, setTextY, prefixText, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
+
+      if (hasLiveInput) {
+        uiDisplayPrintStyledAt(setTextX + prefixWidth,
+                               setTextY,
+                               setText.substring(5),
+                               kUiSetColor,
+                               kUiBg,
+                               sectionTextSize,
+                               sectionTextFont);
+      } else if (supportsCursorHighlight) {
+        const int highlightedIndex = isCcMode
+                                         ? cc_cursor_text_index(setValueText, state.cursorPosition)
+                                         : isCpMode ? cp_cursor_text_index(setValueText, state.cursorPosition)
+                                         : isCrMode ? cr_cursor_text_index(setValueText, state.cursorPosition)
+                                         : isTcMode ? tc_cursor_text_index(setValueText, state.cursorPosition)
+                                                    : bc_cursor_text_index(setValueText, state.cursorPosition);
+        int currentX = setTextX + prefixWidth;
+        for (int i = 0; i < setValueText.length(); ++i) {
+          const String digitText = String(setValueText.charAt(i));
+          const bool highlighted = (i == highlightedIndex) && cursorVisible;
+          uiDisplayPrintStyledAt(currentX,
+                                 setTextY,
+                                 digitText,
+                                 highlighted ? kUiBg : kUiSetColor,
+                                 highlighted ? kUiSetColor : kUiBg,
+                                 sectionTextSize,
+                                 sectionTextFont);
+          currentX += uiDisplayTextWidth(digitText, sectionTextSize, sectionTextFont);
+        }
+        uiDisplayPrintStyledAt(currentX,
+                               setTextY,
+                               setUnit,
+                               kUiSetColor,
+                               kUiBg,
+                               sectionTextSize,
+                               sectionTextFont);
+      } else {
+        uiDisplayPrintStyledAt(setTextX + prefixWidth,
+                               setTextY,
+                               setValueText + setUnit,
+                               kUiSetColor,
+                               kUiBg,
+                               sectionTextSize,
+                               sectionTextFont);
+      }
     }
     if (shiftActive) {
       const String shiftHint = "sf";
       const int shiftX = displayW - uiDisplayTextWidth(shiftHint, sectionTextSize, sectionTextFont) - max(6, displayW / 50);
       uiDisplayPrintStyledAt(shiftX, setTextY, shiftHint, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
     }
-    g_ccLastSetText = setText;
+    g_ccLastSetText = isCaMode ? (setText + "|" + calibrationRealValue) : setText;
     g_ccLastCursorVisible = cursorVisible;
     g_ccLastCursorPosition = state.cursorPosition;
     g_ccLastShiftActive = shiftActive;
@@ -1283,6 +1366,429 @@ void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool 
   draw_horizontal_separator(footerY, displayW, kUiBorder);
 }
 
+struct ManagedZoneLayout {
+  int displayW;
+  int displayH;
+  int topBarH;
+  int metricsH;
+  int setZoneH;
+  int bottomBarH;
+  int footerY;
+  int setZoneY;
+  int contentY;
+  int contentH;
+  bool isLargeDisplay;
+};
+
+ManagedZoneLayout managed_zone_layout() {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  return {displayW, displayH, topBarH, metricsH, setZoneH, bottomBarH, footerY, setZoneY, contentY, contentH, displayW >= 400};
+}
+
+void clear_config_content_zone() {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
+  uiDisplayDrawRect(0, 0, layout.displayW, layout.displayH, kUiBorder);
+  draw_horizontal_separator(layout.topBarH, layout.displayW, kUiBorder);
+  draw_horizontal_separator(layout.contentY, layout.displayW, kUiBorder);
+  draw_horizontal_separator(layout.setZoneY, layout.displayW, kUiBorder);
+  draw_horizontal_separator(layout.footerY, layout.displayW, kUiBorder);
+}
+
+void draw_config_title(const ManagedZoneLayout &layout, const String &title, uint8_t textSize = 0) {
+  const uint8_t font = 2;
+  const uint8_t size = (textSize != 0) ? textSize : (layout.isLargeDisplay ? 2 : 1);
+  const int y = layout.contentY + max(8, layout.isLargeDisplay ? 12 : 8);
+  uiDisplayPrintStyledAt((layout.displayW - uiDisplayTextWidth(title, size, font)) / 2,
+                         y,
+                         title,
+                         kUiHighlight,
+                         kUiModeAreaBg,
+                         size,
+                         font);
+}
+
+void draw_config_line(const ManagedZoneLayout &layout, int y, const String &text, bool selected, uint8_t textSize = 0) {
+  const uint8_t font = 2;
+  const uint8_t size = (textSize != 0) ? textSize : (layout.isLargeDisplay ? 2 : 1);
+  const int x = (layout.displayW - uiDisplayTextWidth(text, size, font)) / 2;
+  const int h = uiDisplayFontHeight(size, font);
+  if (selected) {
+    uiDisplayFillRect(x - 4, y - 1, uiDisplayTextWidth(text, size, font) + 8, h + 2, kUiHighlight);
+  }
+  uiDisplayPrintStyledAt(x,
+                         y,
+                         text,
+                         selected ? kUiDark : kUiText,
+                         selected ? kUiHighlight : kUiModeAreaBg,
+                         size,
+                         font);
+}
+
+void draw_config_column_item(const ManagedZoneLayout &layout, int x, int y, const String &text, bool selected, uint8_t textSize = 1) {
+  const uint8_t font = 2;
+  const int h = uiDisplayFontHeight(textSize, font);
+  if (selected) {
+    uiDisplayFillRect(x - 4, y - 1, uiDisplayTextWidth(text, textSize, font) + 8, h + 2, kUiHighlight);
+  }
+  uiDisplayPrintStyledAt(x,
+                         y,
+                         text,
+                         selected ? kUiDark : kUiText,
+                         selected ? kUiHighlight : kUiModeAreaBg,
+                         textSize,
+                         font);
+}
+
+void compute_two_column_positions(const ManagedZoneLayout &layout, int leftWidth, int rightWidth, int gap, int &leftX, int &rightX) {
+  const int totalWidth = leftWidth + gap + rightWidth;
+  leftX = (layout.displayW - totalWidth) / 2;
+  rightX = leftX + leftWidth + gap;
+}
+
+String format_limit_current(float value) {
+  return String(value, 3) + " A";
+}
+
+String format_limit_power(float value) {
+  return String(value, 1) + " W";
+}
+
+String format_limit_temp(float value) {
+  return String(static_cast<int>(value)) + " C";
+}
+
+void uiDisplayRenderConfigRootMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 10 : 8;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth("2 Calibration", itemSize, font),
+                               uiDisplayTextWidth("4 Exit", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+
+  clear_config_content_zone();
+  draw_config_title(layout, "CONFIGURATION", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Protection", state.menuRootSelection == 0, itemSize);
+  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Calibration", state.menuRootSelection == 1, itemSize);
+  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 FW Update", state.menuRootSelection == 2, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Exit", state.menuRootSelection == 3, itemSize);
+}
+
+void uiDisplayRenderProtectionMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int gap = layout.isLargeDisplay ? 10 : 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth("2 Fan", itemSize, font),
+                               uiDisplayTextWidth("3 Back", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+
+  clear_config_content_zone();
+  draw_config_title(layout, "PROTECTION", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Limits", state.protectionMenuSelection == 0, itemSize);
+  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Fan", state.protectionMenuSelection == 1, itemSize);
+  draw_config_column_item(layout, rightX, startY, "3 Back", state.protectionMenuSelection == 2, itemSize);
+}
+
+void uiDisplayRenderTestsMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth("1 Start OTA", itemSize, font),
+                               uiDisplayTextWidth("2 Back", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+
+  clear_config_content_zone();
+  draw_config_title(layout, "FW UPDATE", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Start OTA", state.testsMenuSelection == 0, itemSize);
+  draw_config_column_item(layout, rightX, startY, "2 Back", state.testsMenuSelection == 1, itemSize);
+}
+
+void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t textSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(textSize, font);
+  const int gap = layout.isLargeDisplay ? 8 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const String status = statusLine ? String(statusLine) : "";
+  const String detail = detailLine ? String(detailLine) : "";
+  const String hint = hintLine ? String(hintLine) : "";
+
+  clear_config_content_zone();
+  draw_config_title(layout, "FW UPDATE", titleSize);
+  draw_config_line(layout, startY, status, false, textSize);
+  draw_config_line(layout, startY + (lineHeight + gap), detail, false, textSize);
+  draw_config_line(layout, startY + ((lineHeight + gap) * 2), hint, true, textSize);
+}
+
+void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 8 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  const int leftWidth = max(uiDisplayTextWidth("1 Temp: 100C", itemSize, font),
+                            max(uiDisplayTextWidth("2 Hold: 255s", itemSize, font),
+                                uiDisplayTextWidth("3 Fan: OFF", itemSize, font)));
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               leftWidth,
+                               uiDisplayTextWidth("4 Back", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+  const String tempValue = (state.fanEditActive && state.fanSettingsMenuSelection == 0 && state.fanInputText[0] != '\0')
+                               ? String(state.fanInputText)
+                               : String(static_cast<int>(state.fanDraftTempC));
+  const String holdValue = (state.fanEditActive && state.fanSettingsMenuSelection == 1 && state.fanInputText[0] != '\0')
+                               ? String(state.fanInputText)
+                               : String(static_cast<int>(state.fanDraftHoldSeconds));
+  const String fanState = state.fanManualStateOn ? "ON" : "OFF";
+
+  clear_config_content_zone();
+  draw_config_title(layout, "FAN SETTINGS", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Temp: " + tempValue + "C", state.fanSettingsMenuSelection == 0, itemSize);
+  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Hold: " + holdValue + "s", state.fanSettingsMenuSelection == 1, itemSize);
+  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Fan: " + fanState, state.fanSettingsMenuSelection == 2, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Back", state.fanSettingsMenuSelection == 3, itemSize);
+}
+
+void uiDisplayRenderLimitsMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 8 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const String currValue = (state.limitsEditActive && state.limitsMenuField == 0 && state.limitsInputText[0] != '\0')
+                               ? String(state.limitsInputText)
+                               : format_limit_current(state.limitsDraftCurrentA);
+  const String powerValue = (state.limitsEditActive && state.limitsMenuField == 1 && state.limitsInputText[0] != '\0')
+                                ? String(state.limitsInputText)
+                                : format_limit_power(state.limitsDraftPowerW);
+  const String tempValue = (state.limitsEditActive && state.limitsMenuField == 2 && state.limitsInputText[0] != '\0')
+                               ? String(state.limitsInputText)
+                               : format_limit_temp(state.limitsDraftTempC);
+
+  clear_config_content_zone();
+  draw_config_title(layout, "LIMITS", titleSize);
+  draw_config_line(layout, startY, "1 Current: " + currValue, state.limitsMenuField == 0, itemSize);
+  draw_config_line(layout, startY + (lineHeight + gap), "2 Power: " + powerValue, state.limitsMenuField == 1, itemSize);
+  draw_config_line(layout, startY + ((lineHeight + gap) * 2), "3 Temp: " + tempValue, state.limitsMenuField == 2, itemSize);
+}
+
+void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 8 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth("3 Load", itemSize, font),
+                               uiDisplayTextWidth("5 Back", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+  const uint8_t selected = (state.calibrationMenuOption > 0) ? static_cast<uint8_t>(state.calibrationMenuOption - 1) : 0;
+
+  clear_config_content_zone();
+  draw_config_title(layout, "CALIBRATION", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Voltage", selected == 0, itemSize);
+  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Current", selected == 1, itemSize);
+  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Load", selected == 2, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Save", selected == 3, itemSize);
+  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Back", selected == 4, itemSize);
+}
+
+void uiDisplayRenderCalibrationSetupMenu(const char *inputText) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t itemSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 8 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 10;
+  const int columnGap = layout.isLargeDisplay ? 48 : 32;
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth("3 Load", itemSize, font),
+                               uiDisplayTextWidth("4 Save", itemSize, font),
+                               columnGap,
+                               leftX,
+                               rightX);
+
+  clear_config_content_zone();
+  draw_config_title(layout, "CALIBRATION", titleSize);
+  draw_config_column_item(layout, leftX, startY, "1 Voltage", false, itemSize);
+  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Current", false, itemSize);
+  draw_config_column_item(layout, rightX, startY, "3 Load", false, itemSize);
+  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "4 Save", false, itemSize);
+  draw_battery_setup_set_zone("SEL> ", (inputText != nullptr) ? String(inputText) : "");
+}
+
+void draw_calibration_overlay_chrome(const char *title) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = layout.isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
+  const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const int indicatorRadius = layout.isLargeDisplay ? 10 : ((layout.topBarH >= 30) ? 8 : 6);
+  const int indicatorX = (layout.displayW / 6) + 9;
+  const int indicatorY = layout.topBarH / 2;
+  const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const String footerVersion = "v2.12";
+  const String footerDateTime = rtc_timestamp_text();
+  const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
+
+  uiDisplayFillRect(0, 0, layout.displayW, layout.topBarH, kUiAccent);
+  uiDisplayFillRect(1, layout.topBarH + 1, layout.displayW - 2, layout.metricsH - 2, kUiBg);
+  uiDisplayFillRect(0, layout.footerY, layout.displayW, layout.bottomBarH, kUiAccent);
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+
+  uiDisplayPrintStyledAt(layout.displayW / 50, topBarTextY, title, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, kUiLoadOff);
+  uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
+  uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
+                         topBarTextY,
+                         "OFF",
+                         kUiHighlight,
+                         kUiAccent,
+                         barTextSize,
+                         barTextFont);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
+                       topBarTextY + (layout.isLargeDisplay ? 3 : 1),
+                       kUiHighlight,
+                       kUiAccent,
+                       barTextSize,
+                       barTextFont);
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  uiDisplayPrintStyledAt(layout.displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                         footerTextY,
+                         footerDateTime,
+                         kUiText,
+                         kUiAccent,
+                         footerTextSize,
+                         footerTextFont);
+}
+
+void uiDisplayRenderCalibrationResultScreen(bool voltageMode,
+                                            float sensorFactor,
+                                            float sensorOffset,
+                                            float outputFactor,
+                                            float outputOffset) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t textSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(textSize, font);
+  const int rowGap = layout.isLargeDisplay ? 10 : 8;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int columnGap = layout.isLargeDisplay ? 40 : 24;
+  const String leftTop = "OF: " + String(outputFactor, 4);
+  const String rightTop = "OO: " + String(outputOffset, 0);
+  const String leftBottom = "SF: " + String(sensorFactor, voltageMode ? 6 : 4);
+  const String rightBottom = "SO: " + String(sensorOffset, voltageMode ? 6 : 3);
+  const int leftWidth = max(uiDisplayTextWidth(leftTop, textSize, font), uiDisplayTextWidth(leftBottom, textSize, font));
+  const int rightWidth = max(uiDisplayTextWidth(rightTop, textSize, font), uiDisplayTextWidth(rightBottom, textSize, font));
+  int leftX = 0;
+  int rightX = 0;
+  compute_two_column_positions(layout, leftWidth, rightWidth, columnGap, leftX, rightX);
+
+  draw_calibration_overlay_chrome("CA");
+  clear_config_content_zone();
+  draw_config_title(layout, voltageMode ? "CAL RESULT V" : "CAL RESULT I", titleSize);
+  draw_config_column_item(layout, leftX, startY, leftTop, false, textSize);
+  draw_config_column_item(layout, rightX, startY, rightTop, false, textSize);
+  draw_config_column_item(layout, leftX, startY + lineHeight + rowGap, leftBottom, false, textSize);
+  draw_config_column_item(layout, rightX, startY + lineHeight + rowGap, rightBottom, false, textSize);
+  draw_battery_setup_set_zone("E-Accept  ", "CLR-Reject");
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+}
+
+void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t textSize = 1;
+  const String detail = pointsTooClose ? "P1/P2 too close" : "Set/Read >20%";
+
+  draw_calibration_overlay_chrome("CA");
+  clear_config_content_zone();
+  draw_config_title(layout, "CALIBRATION ABORT", titleSize);
+  draw_config_line(layout, layout.contentY + 46, detail, true, textSize);
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+}
+
+void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  draw_calibration_overlay_chrome("CA");
+  clear_config_content_zone();
+  draw_config_title(layout, title ? String(title) : String("CALIBRATION"), 1);
+  draw_config_line(layout, layout.contentY + 46, detail ? String(detail) : String(""), true, 1);
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+}
+
 void uiGridSetCursor(int col, int row) {
   tft.setCursor(cell_origin_x(col), cell_origin_y(row));
 }
@@ -1339,6 +1845,11 @@ void uiDisplayUpdate(void) {
   }
 
   if (state.mode == BC) {
+    render_managed_home(state, true);
+    return;
+  }
+
+  if (state.mode == CA) {
     render_managed_home(state, true);
     return;
   }
