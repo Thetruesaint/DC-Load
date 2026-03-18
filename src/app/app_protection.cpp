@@ -45,8 +45,9 @@ void wait_for_protection_ack(const char *message, char causeCode) {
   app_reset_input_pointers();
 
   bool encoderWasPressed = false;
+  int lastTempC = app_measurements_temp_c();
   uiDisplayInvalidateHomeLayout();
-  ui_draw_protection_modal(message, causeCode);
+  uiDisplayRenderProtectionModal(message, causeCode);
 
   while (true) {
     const char key = app_input_read_key();
@@ -64,6 +65,13 @@ void wait_for_protection_ack(const char *message, char causeCode) {
       return;
     }
     encoderWasPressed = encoderPressed;
+
+    const int tempC = static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR);
+    if (tempC != lastTempC) {
+      app_measurements_set_temp_c(tempC);
+      lastTempC = tempC;
+      uiDisplayRenderProtectionModal(message, causeCode);
+    }
 
     hal_delay_ms(10);
   }
@@ -149,19 +157,19 @@ void app_check_limits() {
   const bool runoutSettled = (currentMillis - lastSetCurrentChangeMs) >= RUNOUT_SETTLE_MS;
 
   if (app_measurements_voltage_v() > MAX_VOLTAGE) {
-    strcpy(message, "Max Voltage!      ");
+    strcpy(message, "Max Voltage!");
     vlimit = true;
   } else if (measuredCurrent > app_limits_current_cutoff() * 1.01f) {
-    strcpy(message, "Current Cut Off!  ");
+    strcpy(message, "Current Cut Off!");
     ilimit = true;
   } else if (app_load_is_enabled() && setCurrentA > 0.0f && runoutSettled && measuredCurrent > setCurrentA * 1.11f) {
-    strcpy(message, "Runout Cut Off!   ");
+    strcpy(message, "Runout Cut Off!");
     ilimit = true;
   } else if (power > app_limits_power_cutoff()) {
-    strcpy(message, "Power Cut Off!    ");
+    strcpy(message, "Power Cut Off!");
     plimit = true;
   } else if (app_measurements_temp_c() > app_limits_temp_cutoff()) {
-    strcpy(message, "Over Temperature! ");
+    strcpy(message, "Over Temperature!");
     climit = true;
   } else if (actpwrdis >= maxpwrdis) {
     strcpy(message, "Max PWR Disipation");

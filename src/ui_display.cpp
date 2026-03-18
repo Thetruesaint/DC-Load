@@ -4,6 +4,7 @@
 #include "app/app_calibration_context.h"
 #include "app/app_measurements_context.h"
 #include "app/app_msc.h"
+#include "app/app_load_context.h"
 #include "app/app_setpoint_context.h"
 #include "app/app_timing_alerts.h"
 #include "app/app_ui_context.h"
@@ -38,6 +39,8 @@ constexpr uint16_t kUiLoadOn = TFT_RED;
 constexpr uint16_t kUiLoadOff = TFT_GREEN;
 constexpr uint16_t kUiHighlight = TFT_YELLOW;
 constexpr uint16_t kUiSetColor = TFT_MAGENTA;
+constexpr uint16_t kUiAlertBg = TFT_RED;
+constexpr uint16_t kUiAlertText = TFT_WHITE;
 
 void draw_horizontal_separator(int y, int width, uint16_t color) {
   tft.drawLine(0, y, width - 1, y, color);
@@ -97,6 +100,24 @@ void draw_tft_load_status(bool enabled) {
   tft.setCursor(statusX, statusY);
   tft.print(enabled ? "ON  " : "OFF ");
   restore_tft_text_style();
+}
+
+void draw_centered_load_status(int displayW, int topBarH, bool enabled, bool isLargeDisplay, uint8_t textSize, uint8_t textFont) {
+  const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
+  const int indicatorX = (displayW / 2) - 26;
+  const int indicatorY = topBarH / 2;
+  const int textY = ((topBarH - uiDisplayFontHeight(textSize, textFont)) / 2) + (isLargeDisplay ? 1 : 0);
+  const uint16_t loadColor = enabled ? kUiLoadOn : kUiLoadOff;
+
+  uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
+  uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
+  uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
+                         textY,
+                         enabled ? "ON" : "OFF",
+                         kUiHighlight,
+                         kUiAccent,
+                         textSize,
+                         textFont);
 }
 
 void clear_cursor_cell(int col, int row) {
@@ -326,16 +347,7 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
 
   uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
-  const uint16_t loadColor = state.loadEnabled ? kUiLoadOn : kUiLoadOff;
-  uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
-  uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
-  uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
-                         topBarTextY,
-                         state.loadEnabled ? "ON" : "OFF",
-                         kUiHighlight,
-                         kUiAccent,
-                         barTextSize,
-                         barTextFont);
+  draw_centered_load_status(displayW, topBarH, state.loadEnabled, isLargeDisplay, barTextSize, barTextFont);
   const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
   uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
   draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
@@ -530,23 +542,11 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastShiftActive = false;
   }
 
-  const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
-  const int indicatorX = (displayW / 6) + 9;
-  const int indicatorY = topBarH / 2;
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
   if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
     uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
     uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
-    const uint16_t loadColor = state.loadEnabled ? kUiLoadOn : kUiLoadOff;
-    uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
-    uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
-    uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
-                           topBarTextY,
-                           state.loadEnabled ? "ON" : "OFF",
-                           kUiHighlight,
-                           kUiAccent,
-                           barTextSize,
-                           barTextFont);
+    draw_centered_load_status(displayW, topBarH, state.loadEnabled, isLargeDisplay, barTextSize, barTextFont);
   }
 
   const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
@@ -1732,6 +1732,43 @@ void draw_calibration_overlay_chrome(const char *title) {
                          footerTextFont);
 }
 
+void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = layout.isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
+  const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const String footerVersion = "v2.12";
+  const String footerDateTime = rtc_timestamp_text();
+  const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
+
+  uiDisplayFillRect(0, 0, layout.displayW, layout.topBarH, kUiAccent);
+  uiDisplayFillRect(1, layout.topBarH + 1, layout.displayW - 2, layout.metricsH - 2, kUiBg);
+  uiDisplayFillRect(0, layout.footerY, layout.displayW, layout.bottomBarH, kUiAccent);
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+
+  uiDisplayPrintStyledAt(layout.displayW / 50, topBarTextY, title, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  draw_centered_load_status(layout.displayW, layout.topBarH, loadEnabled, layout.isLargeDisplay, barTextSize, barTextFont);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
+                       topBarTextY + (layout.isLargeDisplay ? 3 : 1),
+                       kUiHighlight,
+                       kUiAccent,
+                       barTextSize,
+                       barTextFont);
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  uiDisplayPrintStyledAt(layout.displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                         footerTextY,
+                         footerDateTime,
+                         kUiText,
+                         kUiAccent,
+                         footerTextSize,
+                         footerTextFont);
+}
+
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode,
                                             float sensorFactor,
                                             float sensorOffset,
@@ -1786,6 +1823,67 @@ void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detai
   clear_config_content_zone();
   draw_config_title(layout, title ? String(title) : String("CALIBRATION"), 1);
   draw_config_line(layout, layout.contentY + 46, detail ? String(detail) : String(""), true, 1);
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+}
+
+void uiDisplayRenderProtectionModal(const char *message, char causeCode) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = 1;
+  const uint8_t textSize = 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + 8;
+  const int lineHeight = uiDisplayFontHeight(textSize, font);
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 14;
+  const String detail = message ? String(message) : String("");
+  const String cause = String("Cause: ") + String(causeCode);
+  const String metric1 = format_measured_current(max(0.0f, app_measurements_current_a()));
+  const String metric2 = format_measured_voltage(max(0.0f, app_measurements_voltage_v()));
+  const String metric3 = format_measured_power(max(0.0f, app_measurements_power_w()));
+  const uint8_t metricTextFont = 1;
+  uint8_t metricTextSize = layout.isLargeDisplay ? 4 : 3;
+  int metric1W = 0;
+  int metric2W = 0;
+  int metric3W = 0;
+  int metricGap = 0;
+  const int metricsMargin = layout.isLargeDisplay ? 12 : 8;
+  const int metricsAvailableW = layout.displayW - (metricsMargin * 2);
+
+  for (; metricTextSize > 0; --metricTextSize) {
+    metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
+    metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
+    metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
+    metricGap = uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2;
+    const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
+    if (totalW <= metricsAvailableW || metricTextSize == 1) break;
+  }
+  const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
+  const int metricsStartX = ((layout.displayW - metricsTotalW) / 2) + (layout.isLargeDisplay ? 8 : 0);
+  const int metricsTextY = layout.topBarH + ((layout.metricsH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (layout.isLargeDisplay ? 2 : 0);
+  const int alertW = uiDisplayTextWidth(detail, textSize, font) + 16;
+  const int alertX = (layout.displayW - alertW) / 2;
+
+  draw_modal_overlay_chrome("PROTECTION", app_load_is_enabled());
+  clear_config_content_zone();
+  uiDisplayPrintStyledAt(metricsStartX - metricGap, metricsTextY, metric1, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap, metricsTextY, metric2, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap,
+                         metricsTextY,
+                         metric3,
+                         kUiText,
+                         kUiBg,
+                         metricTextSize,
+                         metricTextFont);
+  draw_config_title(layout, "LOAD DISABLED", titleSize);
+  uiDisplayFillRect(alertX, startY - 1, alertW, lineHeight + 2, kUiAlertBg);
+  uiDisplayPrintStyledAt((layout.displayW - uiDisplayTextWidth(detail, textSize, font)) / 2,
+                         startY,
+                         detail,
+                         kUiAlertText,
+                         kUiAlertBg,
+                         textSize,
+                         font);
+  draw_config_line(layout, startY + lineHeight + 10, cause, false, textSize);
+  draw_battery_setup_set_zone("E-Accept", "");
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 

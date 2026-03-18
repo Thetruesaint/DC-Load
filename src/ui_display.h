@@ -58,6 +58,7 @@ void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);
 void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail);
+void uiDisplayRenderProtectionModal(const char *message, char causeCode);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);

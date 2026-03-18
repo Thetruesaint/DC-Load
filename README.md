@@ -19,7 +19,7 @@
 - Indicador de shift pressed
 - En TL los steps x/t empiezan contando de 1 y no de 0.
 - En TC se puede reajustar el periodo con teclado o encoder.
-- Nuevos templates TFT para pantalla de inicio, modos CC, CP, CR, BC, TC, TL y CA!!
+- Nuevos templates TFT para pantalla de inicio, modos CC, CP, CR, BC, TC, TL, CA y advertencias!!
 - Nueva simulacion WOKWI con TFT 240x320
 - Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
 - Se agrega opción para ON/OFF de Fans en Fans Settings
@@ -34,10 +34,12 @@
 
 
 **Posibles Mejoras SW:**
+- Unificar template para cuando se supera mas de un límite.
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
 - En TC y TL: mostrar mSec decrecientes?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
+- Promediar los valores de a y v para que no cambien tanto y se deba refrescar continuamente
 
 **Posibles Mejoras de HW:**
 - Medición de baterias por celda 

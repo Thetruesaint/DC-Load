@@ -246,11 +246,7 @@ void ui_draw_header_temperature(int tempC) {
 }
 
 void ui_draw_protection_modal(const char *message, char causeCode) {
-  uiDisplayClear();
-  uiGridPrint(0, 0, F("*** PROTECTION ***"));
-  uiGridPrintString(0, 1, String(message));
-  uiGridPrintString(0, 2, String(F("Cause: ")) + String(causeCode));
-  uiGridPrint(0, 3, F("Load: OFF  E-OK"));
+  uiDisplayRenderProtectionModal(message, causeCode);
 }
 
 void ui_set_setpoint_cursor(int cursorColumn) {
