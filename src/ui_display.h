@@ -45,6 +45,8 @@ void uiDisplayRenderTransientContSetup(const UiViewState &state);
 void uiDisplayUpdateTransientContSetupValue(const UiViewState &state);
 void uiDisplayRenderTransientListSetup(const UiViewState &state);
 void uiDisplayUpdateTransientListSetupValue(const UiViewState &state);
+void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC);
+void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);

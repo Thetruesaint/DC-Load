@@ -1,9 +1,10 @@
 ## v2.12 ## NICE TO SEE
 
 **Trabajando:**
-- Introduciendo mejorar con TFT
+- Introduciendo mejoras con TFT
 
 **A Trabajar:**
+- Migrar menues y pantallas iniciales a TFT para terminar de migrar lo legacy
 - Setear hora y fecha del RTC: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); y que no se pise con cada update de FW.
 
 **Bugs**
@@ -18,7 +19,7 @@
 - Indicador de shift pressed
 - En TL los steps x/t empiezan contando de 1 y no de 0.
 - En TC se puede reajustar el periodo con teclado o encoder.
-- Nuevos templates TFT para modos CC, CP, CR, BC, TC y TL!!
+- Nuevos templates TFT para pantalla de inicio, modos CC, CP, CR, BC, TC y TL!!
 - Nueva simulacion WOKWI con TFT 240x320
 - Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
 - Se agrega opción para ON/OFF de Fans en Fans Settings

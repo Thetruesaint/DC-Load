@@ -16,6 +16,7 @@
 
 namespace {
 bool g_startupNeedsLimitsSetup = false;
+bool g_rtcDetected = false;
 
 void init_io() {
   encoder.attachFullQuad(ENC_B, ENC_A);
@@ -45,72 +46,64 @@ void init_peripherals() {
 
 void run_peripheral_health_check() {
   app_health_set_ok(true);
+  bool dacDetected = true;
+  bool adsDetected = true;
+  bool sensorOk = false;
 
 #ifndef WOKWI_SIMULATION
   if (dac.begin(0x60)) {
-    uiGridPrint(0, 0, F("dac OK"));
-    Serial.print("dac OK");
+    Serial.print("DAC detected");
     ads.setGain(GAIN_TWOTHIRDS);
   } else {
-    uiGridPrint(0, 0, F("dac NDT"));
+    dacDetected = false;
     app_health_set_ok(false);
-    Serial.print("dac NDT");
+    Serial.print("DAC not detected");
   }
 
   if (ads.begin()) {
     ads.setGain(GAIN_TWOTHIRDS);
-    uiGridPrint(0, 1, F("ads OK"));
+    Serial.print(" ADS detected");
   } else {
-    uiGridPrint(0, 1, F("ads NDT"));
+    adsDetected = false;
     app_health_set_ok(false);
-    Serial.print("ads NDT");
+    Serial.print(" ADS not detected");
   }
 #endif
 
-  if (rtc.begin()) {
-    uiGridPrint(8, 0, F("RTC OK"));
-    Serial.print("RTC OK");
+  g_rtcDetected = rtc.begin();
+  if (g_rtcDetected) {
+    Serial.print(" RTC detected");
   } else {
-    uiGridPrint(8, 0, F("RTC NDT"));
     app_health_set_ok(false);
-    Serial.print("RTC NDT");
+    Serial.print(" RTC not detected");
   }
 
   app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
-  uiGridPrintString(11, 1, String(app_measurements_temp_c()) + String((char)0xDF) + "C");
+  sensorOk = app_health_is_ok() && app_measurements_temp_c() <= 99;
 
-  if (app_health_is_ok() && app_measurements_temp_c() <= 99) {
-    uiGridPrint(0, 2, F("Sensor Test OK"));
+  if (sensorOk) {
     digitalWrite(MOSFONOFF, LOW);
   } else {
-    uiGridPrint(0, 2, F("Sensor Test FAIL"));
     digitalWrite(MOSFONOFF, HIGH);
   }
 
+  uiDisplayRenderStartupHealthCheck(dacDetected, adsDetected, g_rtcDetected, app_measurements_temp_c(), sensorOk);
   delay(2000);
 }
 
 void ensure_rtc_running() {
-  if (!rtc.isrunning()) {
+  if (g_rtcDetected && !rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 }
 
 void show_startup_splash() {
-  DateTime now = rtc.now();
-  String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());
-  String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
-
-  uiDisplayClear();
-  uiGridPrint(0, 0, F("*DC Electronic Load*"));
-  uiGridPrintString(0, 1, date + " - " + time);
-  uiGridPrint(0, 2, F("By Guy & Codex"));
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+  uiDisplayRenderStartupSplash(false, app_measurements_temp_c());
 
 #ifndef WOKWI_SIMULATION
-  uiGridPrint(0, 3, F("v2.12b"));
   delay(2000);
 #else
-  uiGridPrint(0, 3, F("v2.12b sim"));
   delay(1000);
 #endif
 }
@@ -152,11 +145,12 @@ void load_runtime_configuration() {
 
 void app_startup_run() {
   g_startupNeedsLimitsSetup = false;
+  g_rtcDetected = false;
   init_io();
   init_peripherals();
+  show_startup_splash();
   run_peripheral_health_check();
   ensure_rtc_running();
-  show_startup_splash();
   load_runtime_configuration();
 }
 

@@ -160,6 +160,60 @@ String rtc_timestamp_text() {
          two_digits(now.minute());
 }
 
+void draw_degree_c_symbol(int x, int y, uint16_t color, uint16_t bg, uint8_t textSize, uint8_t textFont);
+
+void draw_startup_base(const char *title, bool rtcDetected, int tempC, bool showTemperature) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = isLargeDisplay ? 2 : 1;
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
+  const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const String footerVersion = "v2.12";
+  uiDisplayClear();
+  uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
+  uiDisplayFillRect(1, topBarH + 1, displayW - 2, footerY - topBarH - 1, kUiModeAreaBg);
+  uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
+  uiDisplayDrawRect(0, 0, displayW, displayH, kUiBorder);
+  draw_horizontal_separator(topBarH, displayW, kUiBorder);
+  draw_horizontal_separator(footerY, displayW, kUiBorder);
+
+  uiDisplayPrintStyledAt(displayW / 50, topBarTextY, title, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  if (showTemperature) {
+    const String tempText = String(constrain(tempC, 0, 99));
+    const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
+    uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+    draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
+                         topBarTextY + (isLargeDisplay ? 3 : 1),
+                         kUiHighlight,
+                         kUiAccent,
+                         barTextSize,
+                         barTextFont);
+  }
+
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  if (rtcDetected) {
+    const String footerDateTime = rtc_timestamp_text();
+    uiDisplayPrintStyledAt(displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                           footerTextY,
+                           footerDateTime,
+                           kUiText,
+                           kUiAccent,
+                           footerTextSize,
+                           footerTextFont);
+  }
+}
+
+String startup_status_text(bool detected) {
+  return detected ? "Detected" : "Not detected";
+}
+
 int cc_cursor_text_index(const String &valueText, int cursorPosition) {
   const int decimal = valueText.indexOf('.');
   switch (cursorPosition) {
@@ -1126,6 +1180,107 @@ void uiDisplayUpdateTransientListSetupValue(const UiViewState &state) {
   const String setValue = (state.transientListInputText[0] != '\0') ? String(state.transientListInputText) + suffix : "";
   const String prefix = (state.transientListSetupStage == 0) ? "STEPS> " : "SET> ";
   draw_battery_setup_set_zone(prefix, setValue);
+}
+
+void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int footerY = displayH - ((displayH * 10) / 100);
+  const int contentY = topBarH;
+  const int contentH = footerY - contentY;
+  const uint8_t titleFont = 2;
+  const uint8_t titleSize = isLargeDisplay ? 2 : 1;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const String line1 = "DC Electronic Load";
+  const String line2 = "Initializing system...";
+  const String line3 = "By Guy & Codex";
+  const int centerY = contentY + (contentH / 2) - uiDisplayFontHeight(textSize, textFont);
+  const int gap = isLargeDisplay ? 20 : 12;
+  const int line1Y = centerY - uiDisplayFontHeight(titleSize, titleFont) - gap;
+  const int line2Y = centerY;
+  const int line3Y = centerY + uiDisplayFontHeight(textSize, textFont) + gap;
+
+  draw_startup_base("STARTUP", rtcDetected, tempC, false);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line1, titleSize, titleFont)) / 2,
+                         line1Y,
+                         line1,
+                         kUiHighlight,
+                         kUiModeAreaBg,
+                         titleSize,
+                         titleFont);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2,
+                         line2Y,
+                         line2,
+                         kUiText,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2,
+                         line3Y,
+                         line3,
+                         kUiText,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayDrawRect(0, 0, displayW, displayH, kUiBorder);
+  draw_horizontal_separator(topBarH, displayW, kUiBorder);
+  draw_horizontal_separator(footerY, displayW, kUiBorder);
+}
+
+void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int footerY = displayH - ((displayH * 10) / 100);
+  const int contentY = topBarH;
+  const int contentH = footerY - contentY;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int lineHeight = uiDisplayFontHeight(textSize, textFont);
+  const int verticalGap = isLargeDisplay ? 16 : 10;
+  const int totalBlockH = (lineHeight * 4) + (verticalGap * 3);
+  const int startY = contentY + max(8, (contentH - totalBlockH) / 2);
+  const String line1 = String("DAC: ") + startup_status_text(dacDetected);
+  const String line2 = String("ADS: ") + startup_status_text(adsDetected);
+  const String line3 = String("RTC: ") + startup_status_text(rtcDetected);
+  const String line4 = String("TEMP: ") + (sensorOk ? "Detected" : "Fail");
+
+  draw_startup_base("HEALTH CHECK", rtcDetected, tempC, true);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2,
+                         startY,
+                         line1,
+                         dacDetected ? kUiText : kUiHighlight,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2,
+                         startY + lineHeight + verticalGap,
+                         line2,
+                         adsDetected ? kUiText : kUiHighlight,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2,
+                         startY + ((lineHeight + verticalGap) * 2),
+                         line3,
+                         rtcDetected ? kUiText : kUiHighlight,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line4, textSize, textFont)) / 2,
+                         startY + ((lineHeight + verticalGap) * 3),
+                         line4,
+                         sensorOk ? kUiText : kUiHighlight,
+                         kUiModeAreaBg,
+                         textSize,
+                         textFont);
+  uiDisplayDrawRect(0, 0, displayW, displayH, kUiBorder);
+  draw_horizontal_separator(topBarH, displayW, kUiBorder);
+  draw_horizontal_separator(footerY, displayW, kUiBorder);
 }
 
 void uiGridSetCursor(int col, int row) {
