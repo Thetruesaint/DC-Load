@@ -5,6 +5,7 @@ float batteryLife = 0.0f;
 float batteryLifePrevious = 0.0f;
 float batteryCutoffVolts = 0.0f;
 float batteryCurrent = 0.0f;
+bool batteryDone = false;
 String batteryType = "    ";
 }
 
@@ -26,5 +27,9 @@ float& app_battery_current_ref() {
 
 String& app_battery_type_ref() {
   return batteryType;
+}
+
+bool& app_battery_done_ref() {
+  return batteryDone;
 }
 

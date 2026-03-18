@@ -1,48 +1,44 @@
-## v2.11 ## BY LCD HELLO TFT & AI
-
-## Hardware Versions
-
-- v2.x → ESP32 (Plataforma actual)
-- v1.x → Arduino Nano (legacy - ver rama nano-legacy)
+## v2.12 ## NICE TO SEE YOU
 
 **Trabajando:**
-- Usando Codex para mejorar todo el código y modularizarlo para poder trabajar partes independientemente.
+- Introduciendo mejoras con TFT
 
 **A Trabajar:**
-- Introducir mejoras en TFT
-    
-**En Cola:**
-- Test de encendido de Fans en Fan Settings
-- Entrar en modo update de firmware
-- En TL los steps x/t empiecen contando de 1 y no de 0 como el index de la lista
+- Setear hora y fecha del RTC: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); y que no se pise con cada update de FW.
+- Seguir optimizando la arquitectura
 
 **Bugs**
-- Falta símbolo de "grado" centigrado en la temperatura y sigo de "ohms" en el modo CR
-- Las advertencias de Limites maximos superados pisan el template en el quee se encuentre en ese momento.
-- CRITICO: No poner carga cuando el USB esta conectado porque el DAC no puede controlar los MOSFET y quedan en corto.
+- Pixeles remanentes cuando a y v se reacomodan por los dígitos
 
 **Fixes**
-- Corrección de calibración del Out_Curr_Calib_Offs ya que se sumaba en amperes y no se le aplicaba el OUT_CURR_FACT para el seteo del DAC. Se ajusto tambien el almacenamiento en EEPROM para este factor y su rango de validación
-- Se agregaron protecciónes para los puntos de calibración. 
+- CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
+- IMPORTANTE: Corrección de calibración en SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
+- En BC, TC y TL ahora se detecta el salto de modo con S+N
 
 **Mejoras**
-- En OFF, el ADC registra 6mA y consumia 24mA de la fuente. Agregue un op amp con offset para corregir el offset del DAC que hacia que los mosfet conducieran con Set I = 0A.
-- Vuelve a funcionar el teclado en sim WOKWI, puse resistencias de pullup en GPIO 34 y 35.
-- Adios LCD, hola TFT!. Por ahora solo simula la grilla de 20x4 del LCD
-- IMPORTANTE: Migración a nueva arquitectura asistido por CODEX
-- Nuevo esquema de Menues para Calibración y Protección que incluye a Limites. seteos para el Fan y visualización de los factores y offset ajustados
+- Limpieza y organización de todo el código migrando/eliminando funciones basadas en grilla LCD 20x4 y ajuste de arquictura.
+- Indicador de shift pressed
+- En TL los steps x/t empiezan contando de 1 y no de 0.
+- En TC se puede reajustar el periodo con teclado o encoder.
+- Nuevos templates TFT para pantallas de inicio, menues y modos CC, CP, CR, BC, TC, TL, CA y advertencias!!
+- Nueva simulacion WOKWI con TFT 240x320
+- Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
+- Opción ON/OFF de Fans en Fans Settings para probarlos
+- Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usos MOSFET de placa de control Power para mandar Iset a GND forzando el apagado por si falla el DAC.
+- Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
+- **FW Update por Wifi! (OTA)**
+    - El menu `Configuration -> FW Update` conecta el WiFi y muestra IP/Host.
+    - En powershell ejecutar:
+            pio run -e real
+            & "C:\Users\thetr\.platformio\penv\Scripts\python.exe" "C:\Users\thetr\.platformio\packages\framework-arduinoespressif32\tools\espota.py" -i <IP_QUE_MUESTRA_EL_TFT> -p 3232 -f ".pio\build\real\firmware.bin"
 
 **Posibles Mejoras SW:**
-- Control de velocidad de Fans o test de encendido y apagado
+- Unificar template para cuando se supera mas de un límite.
 - Menu de configuración ampliado (limites de descarga de baterias por ej.)
-- En CC, CP, CR y BC, con BTN encoder habilito cambiar de valor o de unidad para --CuPo, reqiuere reingenieriaa Cursor_Position
-- Colocar un indicador de Shift? salvo BC, hay lugar en 20,3
-- En TL poner "-" por cada step y marcar en cual se esta ej.: ---3----- -> ----4----
 - En TC y TL: mostrar mSec decrecientes?
-- En TC, ajustar timing con encoder?
 - En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
-- Setear hora y fecha del RTC y poder mirarla boton Shift?: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //
 - EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
+- Promediar los valores de a y v para que no cambien tanto y se deba refrescar continuamente
 
 **Posibles Mejoras de HW:**
 - Medición de baterias por celda 

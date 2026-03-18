@@ -15,7 +15,9 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.measuredCurrent_A = state.measuredCurrent_A;
   view.measuredVoltage_V = state.measuredVoltage_V;
   view.measuredPower_W = state.measuredPower_W;
+  view.tempC = state.temp_C;
   view.readingValue = state.readingValue;
+  view.setCurrent_mA = state.setCurrent_mA;
   view.currentCutOffA = state.currentCutOffA;
   view.powerCutOffW = state.powerCutOffW;
   view.tempCutOffC = state.tempCutOffC;
@@ -23,11 +25,14 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanHoldSeconds = state.fanHoldSeconds;
   view.batteryCutoffVolts = state.batteryCutoffVolts;
   view.batteryLife = state.batteryLife;
+  view.batteryDone = state.batteryDone;
   std::strncpy(view.batteryType, state.batteryType, sizeof(view.batteryType) - 1);
   view.batteryType[sizeof(view.batteryType) - 1] = '\0';
   view.transientLowCurrentA = state.transientLowCurrentA;
   view.transientHighCurrentA = state.transientHighCurrentA;
   view.transientPeriodMs = state.transientPeriodMs;
+  view.transientListActiveStep = state.transientListActiveStep;
+  view.transientListTotalSteps = state.transientListTotalSteps;
   view.limitsDraftCurrentA = state.limitsDraftCurrentA;
   view.limitsDraftPowerW = state.limitsDraftPowerW;
   view.limitsDraftTempC = state.limitsDraftTempC;
@@ -40,6 +45,8 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanEditActive = state.fanEditActive;
   std::strncpy(view.fanInputText, state.fanInputText, sizeof(view.fanInputText) - 1);
   view.fanInputText[sizeof(view.fanInputText) - 1] = '\0';
+  view.fanManualOverrideActive = state.fanManualOverrideActive;
+  view.fanManualStateOn = state.fanManualStateOn;
   view.batterySetupStage = state.batterySetupStage;
   std::strncpy(view.batteryInputText, state.batteryInputText, sizeof(view.batteryInputText) - 1);
   view.batteryInputText[sizeof(view.batteryInputText) - 1] = '\0';
@@ -57,8 +64,8 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.calibrationMenuOption = state.calibrationMenuOption;
   view.menuRootSelection = state.menuRootSelection;
   view.protectionMenuSelection = state.protectionMenuSelection;
+  view.updateMenuSelection = state.updateMenuSelection;
   view.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
-  view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
 }
 }
@@ -68,4 +75,3 @@ void ui_render(const SystemState &state) {
   ui_state_cache_set(view);
   ui_state_machine_tick(state.uiScreen, view);
 }
-

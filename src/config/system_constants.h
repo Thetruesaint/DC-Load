@@ -7,15 +7,14 @@ enum ModeType { CC, CP, CR, BC, TC, TL, CA, UNKNOWN };
 
 //---------------- I/O Pins ----------------------------------------------
 const uint8_t TEMP_SNSR = 36;
-const uint8_t FAN_CTRL = 25;
+const uint8_t FAN_CTRL = 16;
 const uint8_t BUZZER = 17;
 const uint8_t ENC_A = 14;
 const uint8_t ENC_B = 13;
 const uint8_t ENC_BTN = 32;
-const uint8_t LOADONOFF = 16;
-#ifdef WOKWI_SIMULATION
-const uint8_t VSIM = 4;
-#else
+const uint8_t LOADONOFF = 39;
+const uint8_t MOSFONOFF = 25;
+#ifndef WOKWI_SIMULATION
 const uint8_t CRR_SNSR = 1;
 const uint8_t VLTG_SNSR = 3;
 #endif
@@ -32,6 +31,9 @@ const float SNS_CURR_FACT = 4.0f;
 const float OUT_CURR_FACT = 0.3375f;
 
 const unsigned long LCD_RFSH_TIME = 100;
+#ifdef WOKWI_SIMULATION
+const float SIM_DEFAULT_VOLTAGE = 9.999f;
+#endif
 
 const float LIPO_DISC_CELL_VLTG = 3.6f;
 const float LION_DISC_CELL_VLTG = 3.5f;

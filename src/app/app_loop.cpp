@@ -1,8 +1,10 @@
 #include "app_loop.h"
+
 #include <cstddef>
 
 #include "../core/core_engine.h"
 #include "../ui/ui_renderer.h"
+#include "app_ota.h"
 #include "app_startup.h"
 #include "app_runtime_sync.h"
 
@@ -44,6 +46,22 @@ bool drain_action_queue() {
 
   return dispatched;
 }
+
+void apply_core_cycle() {
+  core_tick_10ms();
+  app_runtime_sync_apply(core_get_state());
+
+  if (core_get_state().uiScreen == UiScreen::MenuFwUpdate) {
+    app_ota_handle();
+  }
+}
+
+void sync_and_process_actions() {
+  core_sync_from_runtime(app_runtime_sync_capture());
+  core_begin_cycle();
+  (void)drain_action_queue();
+  apply_core_cycle();
+}
 }
 
 void app_init() {
@@ -57,32 +75,17 @@ void app_push_action(const UserAction &action) {
 }
 
 void app_tick() {
-  core_sync_from_legacy(app_runtime_sync_capture());
-  core_begin_cycle();
-
   if (app_startup_consume_limits_setup_request()) {
     app_push_action(make_open_limits_setup_action());
   }
 
-  (void)drain_action_queue();
+  sync_and_process_actions();
 
-  core_tick_10ms();
-  app_runtime_sync_apply(core_get_state());
-
-  // Re-sync after possible blocking legacy flows so core keeps
-  // side effects done in legacy context (e.g. modeInitialized reset).
-  core_sync_from_legacy(app_runtime_sync_capture());
-
-  // Process actions queued from blocking legacy flows in the same cycle
-  // (for example exiting limits config with mode hotkeys) to avoid stale UI frames.
-  // Start a fresh one-shot window before dispatching post-flow actions so
-  // completed config flows are not re-entered in this same tick.
+  core_sync_from_runtime(app_runtime_sync_capture());
   core_begin_cycle();
   if (drain_action_queue()) {
-    core_tick_10ms();
-    app_runtime_sync_apply(core_get_state());
+    apply_core_cycle();
   }
 
   ui_render(core_get_state());
 }
-

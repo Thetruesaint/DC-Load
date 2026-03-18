@@ -6,7 +6,7 @@
 #include "../config/system_constants.h"
 #include "../hw/hw_objects.h"
 #include "../storage_eeprom.h"
-#include "../ui_lcd.h"
+#include "../ui_display.h"
 #include "app_fan_context.h"
 #include "app_health_context.h"
 #include "app_limits_bootstrap.h"
@@ -16,6 +16,7 @@
 
 namespace {
 bool g_startupNeedsLimitsSetup = false;
+bool g_rtcDetected = false;
 
 void init_io() {
   encoder.attachFullQuad(ENC_B, ENC_A);
@@ -26,89 +27,83 @@ void init_io() {
   pinMode(TEMP_SNSR, INPUT);
   analogReadResolution(12);
   analogSetPinAttenuation(TEMP_SNSR, ADC_0db);
-  pinMode(LOADONOFF, INPUT_PULLUP);
+  pinMode(LOADONOFF, INPUT);
   pinMode(FAN_CTRL, OUTPUT);
+  digitalWrite(FAN_CTRL, LOW);
   pinMode(BUZZER, OUTPUT);
-
-#ifdef WOKWI_SIMULATION
-  pinMode(VSIM, INPUT);
-#endif
+  digitalWrite(BUZZER, LOW);
+  pinMode(MOSFONOFF, OUTPUT);
+  digitalWrite(MOSFONOFF, HIGH);
 }
 
 void init_peripherals() {
   EEPROM.begin(64);
   Serial.begin(115200);
   Wire.begin(21, 22);
-  initLCD();
+  uiDisplayInit();
   app_beep_buzzer();
 }
 
 void run_peripheral_health_check() {
   app_health_set_ok(true);
+  bool dacDetected = true;
+  bool adsDetected = true;
+  bool sensorOk = false;
 
 #ifndef WOKWI_SIMULATION
   if (dac.begin(0x60)) {
-    printLCD(0, 0, F("dac OK"));
-    Serial.print("dac OK");
+    Serial.print("DAC detected");
     ads.setGain(GAIN_TWOTHIRDS);
   } else {
-    printLCD(0, 0, F("dac NDT"));
+    dacDetected = false;
     app_health_set_ok(false);
-    Serial.print("dac NDT");
+    Serial.print("DAC not detected");
   }
 
   if (ads.begin()) {
     ads.setGain(GAIN_TWOTHIRDS);
-    printLCD(0, 1, F("ads OK"));
+    Serial.print(" ADS detected");
   } else {
-    printLCD(0, 1, F("ads NDT"));
+    adsDetected = false;
     app_health_set_ok(false);
-    Serial.print("ads NDT");
+    Serial.print(" ADS not detected");
   }
 #endif
 
-  if (rtc.begin()) {
-    printLCD(8, 0, F("RTC OK"));
-    Serial.print("RTC OK");
+  g_rtcDetected = rtc.begin();
+  if (g_rtcDetected) {
+    Serial.print(" RTC detected");
   } else {
-    printLCD(8, 0, F("RTC NDT"));
     app_health_set_ok(false);
-    Serial.print("RTC NDT");
+    Serial.print(" RTC not detected");
   }
 
   app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
-  printLCD_S(11, 1, String(app_measurements_temp_c()) + String((char)0xDF) + "C");
+  sensorOk = app_health_is_ok() && app_measurements_temp_c() <= 99;
 
-  if (app_health_is_ok() && app_measurements_temp_c() <= 99) {
-    printLCD(0, 2, F("Sensor Test OK"));
+  if (sensorOk) {
+    digitalWrite(MOSFONOFF, LOW);
   } else {
-    printLCD(0, 2, F("Sensor Test FAIL"));
+    digitalWrite(MOSFONOFF, HIGH);
   }
 
+  uiDisplayRenderStartupHealthCheck(dacDetected, adsDetected, g_rtcDetected, app_measurements_temp_c(), sensorOk);
   delay(2000);
 }
 
 void ensure_rtc_running() {
-  if (!rtc.isrunning()) {
+  if (g_rtcDetected && !rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 }
 
 void show_startup_splash() {
-  DateTime now = rtc.now();
-  String date = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year());
-  String time = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
-
-  clearLCD();
-  printLCD(0, 0, F("*DC Electronic Load*"));
-  printLCD_S(0, 1, date + " - " + time);
-  printLCD(0, 2, F("By Guy & Codex"));
+  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+  uiDisplayRenderStartupSplash(false, app_measurements_temp_c());
 
 #ifndef WOKWI_SIMULATION
-  printLCD(0, 3, F("v2.11"));
   delay(2000);
 #else
-  printLCD(0, 3, F("v2.11 sim"));
   delay(1000);
 #endif
 }
@@ -144,17 +139,18 @@ void load_runtime_configuration() {
 #endif
 
   Load_Calibration();
-  clearLCD();
+  uiDisplayClear();
 }
 }
 
 void app_startup_run() {
   g_startupNeedsLimitsSetup = false;
+  g_rtcDetected = false;
   init_io();
   init_peripherals();
+  show_startup_splash();
   run_peripheral_health_check();
   ensure_rtc_running();
-  show_startup_splash();
   load_runtime_configuration();
 }
 

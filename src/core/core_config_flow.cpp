@@ -13,6 +13,14 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuProtection;
   }
 
+  if (state.currentConfigMenu == ConfigMenu::Update) {
+    return UiScreen::MenuUpdate;
+  }
+
+  if (state.currentConfigMenu == ConfigMenu::FwUpdate) {
+    return UiScreen::MenuFwUpdate;
+  }
+
   if (state.currentConfigMenu == ConfigMenu::FanSettings) {
     return UiScreen::MenuFanSettings;
   }
@@ -25,9 +33,7 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuCalibration;
   }
 
-  if (state.currentConfigMenu == ConfigMenu::Root ||
-      state.pendingConfigSection == ConfigSection::Limits ||
-      state.pendingConfigSection == ConfigSection::Calibration) {
+  if (state.currentConfigMenu == ConfigMenu::Root) {
     return UiScreen::MenuRoot;
   }
 

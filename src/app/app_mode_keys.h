@@ -9,5 +9,6 @@ enum class MscKeyDecision {
 };
 
 MscKeyDecision app_route_msc_key(char key, bool configAllowed);
+bool app_mode_shift_active();
 
 #endif

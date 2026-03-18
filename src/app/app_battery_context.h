@@ -8,6 +8,7 @@ float& app_battery_life_previous_ref();
 float& app_battery_cutoff_volts_ref();
 float& app_battery_current_ref();
 String& app_battery_type_ref();
+bool& app_battery_done_ref();
 
 #endif
 

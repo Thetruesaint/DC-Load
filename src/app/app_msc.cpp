@@ -5,10 +5,13 @@
 #include "app_mode_keys.h"
 #include "app_ui_context.h"
 
-bool app_handle_msc_keys(char key) {
+MscKeyDecision app_handle_msc_key_decision(char key) {
   const bool configAllowed = app_mode_config_allowed();
+  return app_route_msc_key(key, configAllowed);
+}
 
-  switch (app_route_msc_key(key, configAllowed)) {
+bool app_handle_msc_keys(char key) {
+  switch (app_handle_msc_key_decision(key)) {
     case MscKeyDecision::ExitMode:
       app_ui_request_clear_cursor_blink();
       return false;
@@ -21,6 +24,10 @@ bool app_handle_msc_keys(char key) {
     default:
       return true;
   }
+}
+
+bool app_msc_shift_active() {
+  return app_mode_shift_active();
 }
 
 

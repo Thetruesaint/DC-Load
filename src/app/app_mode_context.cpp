@@ -5,7 +5,7 @@
 
 bool app_mode_config_allowed() {
   const uint8_t mode = app_mode_state_mode();
-  return (mode != TC && mode != TL);
+  return (mode != CA);
 }
 
 bool app_mode_is_transient() {

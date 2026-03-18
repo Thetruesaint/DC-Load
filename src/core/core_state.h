@@ -15,21 +15,19 @@ enum class UiScreen : uint8_t {
   TransientListSetupStep,
   MenuRoot,
   MenuProtection,
+  MenuUpdate,
+  MenuFwUpdate,
   MenuFanSettings,
   MenuLimits,
   MenuCalibration
-};
-
-enum class ConfigSection : uint8_t {
-  None = 0,
-  Limits,
-  Calibration
 };
 
 enum class ConfigMenu : uint8_t {
   None = 0,
   Root,
   Protection,
+  Update,
+  FwUpdate,
   FanSettings,
   Limits,
   Calibration
@@ -56,10 +54,13 @@ struct SystemState {
   float fanHoldSeconds;
   float batteryCutoffVolts;
   float batteryLife;
+  bool batteryDone;
   char batteryType[8];
   float transientLowCurrentA;
   float transientHighCurrentA;
   float transientPeriodMs;
+  uint8_t transientListActiveStep;
+  uint8_t transientListTotalSteps;
 
   float limitsDraftCurrentA;
   float limitsDraftPowerW;
@@ -74,6 +75,8 @@ struct SystemState {
   bool fanEditActive;
   char fanInputText[8];
   uint8_t fanInputLength;
+  bool fanManualOverrideActive;
+  bool fanManualStateOn;
 
   uint8_t batterySetupStage;
   char batteryInputText[8];
@@ -97,6 +100,7 @@ struct SystemState {
   uint8_t calibrationMenuOption;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
+  uint8_t updateMenuSelection;
   uint8_t fanSettingsMenuSelection;
 
   int cursorPosition;
@@ -123,7 +127,6 @@ struct SystemState {
   bool modeConfigured;
 
   UiScreen uiScreen;
-  ConfigSection pendingConfigSection;
   ConfigMenu currentConfigMenu;
   ConfigMenu parentConfigMenu;
 };
@@ -131,12 +134,12 @@ struct SystemState {
 inline SystemState core_state_make_default() {
   SystemState state = {0};
   state.uiScreen = UiScreen::Home;
-  state.pendingConfigSection = ConfigSection::None;
   state.currentConfigMenu = ConfigMenu::None;
   state.parentConfigMenu = ConfigMenu::None;
   state.limitsMenuField = 0;
   state.calibrationMenuOption = 1;
   state.protectionMenuSelection = 0;
+  state.updateMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;
@@ -158,4 +161,3 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
 }
 
 #endif
-

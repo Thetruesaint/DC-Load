@@ -6,6 +6,9 @@
 namespace {
 int fanTempOnC = DEFAULT_FAN_TEMP_ON_C;
 unsigned long fanHoldMs = DEFAULT_FAN_HOLD_MS;
+bool fanManualOverrideActive = false;
+bool fanManualStateOn = false;
+bool fanOutputOn = false;
 }
 
 int app_fan_temp_on_c() {
@@ -37,4 +40,30 @@ void app_fan_save_settings(int tempOnC, uint8_t holdSeconds) {
   app_fan_set_hold_seconds(holdSeconds);
   Save_EEPROM(ADD_FAN_TEMP_ON, static_cast<float>(app_fan_temp_on_c()));
   Save_EEPROM(ADD_FAN_HOLD_MS, static_cast<float>(app_fan_hold_ms()));
+}
+
+bool app_fan_output_is_on() {
+  return fanOutputOn;
+}
+
+void app_fan_set_output_state(bool on) {
+  fanOutputOn = on;
+}
+
+bool app_fan_manual_override_active() {
+  return fanManualOverrideActive;
+}
+
+bool app_fan_manual_state_on() {
+  return fanManualStateOn;
+}
+
+void app_fan_set_manual_override(bool active, bool on) {
+  fanManualOverrideActive = active;
+  fanManualStateOn = on;
+}
+
+void app_fan_clear_manual_override() {
+  fanManualOverrideActive = false;
+  fanManualStateOn = false;
 }
