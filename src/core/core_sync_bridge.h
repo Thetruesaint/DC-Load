@@ -22,6 +22,11 @@ struct RuntimeSnapshot {
   float tempCutOffC;
   float fanTempOnC;
   float fanHoldSeconds;
+  uint8_t rtcDay;
+  uint8_t rtcMonth;
+  uint8_t rtcYear;
+  uint8_t rtcHour;
+  uint8_t rtcMinute;
   bool fanManualOverrideActive;
   bool fanManualStateOn;
   float batteryCutoffVolts;

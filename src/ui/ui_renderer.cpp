@@ -47,6 +47,19 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanInputText[sizeof(view.fanInputText) - 1] = '\0';
   view.fanManualOverrideActive = state.fanManualOverrideActive;
   view.fanManualStateOn = state.fanManualStateOn;
+  view.rtcDay = state.rtcDay;
+  view.rtcMonth = state.rtcMonth;
+  view.rtcYear = state.rtcYear;
+  view.rtcHour = state.rtcHour;
+  view.rtcMinute = state.rtcMinute;
+  view.clockDraftDay = state.clockDraftDay;
+  view.clockDraftMonth = state.clockDraftMonth;
+  view.clockDraftYear = state.clockDraftYear;
+  view.clockDraftHour = state.clockDraftHour;
+  view.clockDraftMinute = state.clockDraftMinute;
+  view.clockEditActive = state.clockEditActive;
+  std::strncpy(view.clockInputText, state.clockInputText, sizeof(view.clockInputText) - 1);
+  view.clockInputText[sizeof(view.clockInputText) - 1] = '\0';
   view.batterySetupStage = state.batterySetupStage;
   std::strncpy(view.batteryInputText, state.batteryInputText, sizeof(view.batteryInputText) - 1);
   view.batteryInputText[sizeof(view.batteryInputText) - 1] = '\0';
@@ -66,6 +79,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.protectionMenuSelection = state.protectionMenuSelection;
   view.updateMenuSelection = state.updateMenuSelection;
   view.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
+  view.clockMenuSelection = state.clockMenuSelection;
   return view;
 }
 }

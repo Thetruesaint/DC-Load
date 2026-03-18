@@ -76,6 +76,13 @@ void dispatch_encoder_delta(int32_t value) {
         config_menu_step_selection(&g_state, ConfigMenu::FanSettings, direction);
       }
       return;
+    case UiScreen::MenuClock:
+      if (g_state.clockEditActive) {
+        clock_menu_adjust_field(&g_state, direction);
+      } else {
+        config_menu_step_selection(&g_state, ConfigMenu::Clock, direction);
+      }
+      return;
     case UiScreen::MenuLimits:
       if (!g_state.limitsEditActive) {
         limits_menu_move_field(&g_state, direction);
@@ -125,6 +132,9 @@ void dispatch_encoder_button_press() {
       return;
     case UiScreen::MenuFanSettings:
       config_menu_activate_selection(&g_state, ConfigMenu::FanSettings);
+      return;
+    case UiScreen::MenuClock:
+      config_menu_activate_selection(&g_state, ConfigMenu::Clock);
       return;
     case UiScreen::MenuLimits:
       if (g_state.limitsEditActive) {
@@ -267,6 +277,8 @@ void dispatch_key_for_config_menu(char key) {
         config_menu_select_index(&g_state, ConfigMenu::Root, 2);
       } else if (key == '4') {
         config_menu_select_index(&g_state, ConfigMenu::Root, 3);
+      } else if (key == '5') {
+        config_menu_select_index(&g_state, ConfigMenu::Root, 4);
       } else if (key == 'U' || key == 'L') {
         config_menu_step_selection(&g_state, ConfigMenu::Root, -1);
       } else if (key == 'D' || key == 'R') {
@@ -317,6 +329,41 @@ void dispatch_key_for_config_menu(char key) {
         app_ota_restart();
       } else if ((key == '<' || key == 'M') && !app_ota_is_uploading()) {
         config_menu_back(&g_state, ConfigMenu::FwUpdate);
+      }
+      return;
+
+    case UiScreen::MenuClock:
+      if (g_state.clockEditActive) {
+        if (key == 'U') {
+          clock_menu_adjust_field(&g_state, 1);
+        } else if (key == 'D') {
+          clock_menu_adjust_field(&g_state, -1);
+        } else if (key == '<') {
+          if (!clock_menu_backspace(&g_state)) {
+            clock_menu_cancel_edit(&g_state);
+          }
+        } else if (key == 'E') {
+          clock_menu_commit_edit(&g_state);
+        } else if (key == 'M') {
+          clock_menu_cancel_edit(&g_state);
+        } else {
+          (void)clock_menu_append_digit(&g_state, key);
+        }
+        return;
+      }
+
+      if (key == '1') {
+        config_menu_select_index(&g_state, ConfigMenu::Clock, 5);
+      } else if (key == '2') {
+        config_menu_select_index(&g_state, ConfigMenu::Clock, 6);
+      } else if (key == 'U' || key == 'L') {
+        config_menu_step_selection(&g_state, ConfigMenu::Clock, -1);
+      } else if (key == 'D' || key == 'R') {
+        config_menu_step_selection(&g_state, ConfigMenu::Clock, 1);
+      } else if (key == 'E') {
+        config_menu_activate_selection(&g_state, ConfigMenu::Clock);
+      } else if (key == '<' || key == 'M') {
+        config_menu_back(&g_state, ConfigMenu::Clock);
       }
       return;
 
@@ -439,6 +486,7 @@ void dispatch_key_pressed(char key) {
     case UiScreen::MenuFanSettings:
     case UiScreen::MenuLimits:
     case UiScreen::MenuCalibration:
+    case UiScreen::MenuClock:
       dispatch_key_for_config_menu(key);
       return;
     default:

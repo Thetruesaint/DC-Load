@@ -1390,7 +1390,22 @@ ManagedZoneLayout managed_zone_layout() {
 
 void clear_config_content_zone() {
   const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = layout.isLargeDisplay ? 2 : 1;
+  const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const String footerVersion = "v2.13a";
+  const String footerDateTime = rtc_timestamp_text();
+
   uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
+  uiDisplayFillRect(0, layout.footerY, layout.displayW, layout.bottomBarH, kUiAccent);
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  uiDisplayPrintStyledAt(layout.displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                         footerTextY,
+                         footerDateTime,
+                         kUiText,
+                         kUiAccent,
+                         footerTextSize,
+                         footerTextFont);
   uiDisplayDrawRect(0, 0, layout.displayW, layout.displayH, kUiBorder);
   draw_horizontal_separator(layout.topBarH, layout.displayW, kUiBorder);
   draw_horizontal_separator(layout.contentY, layout.displayW, kUiBorder);
@@ -1475,7 +1490,7 @@ void uiDisplayRenderConfigRootMenu(const UiViewState &state) {
   int rightX = 0;
   compute_two_column_positions(layout,
                                uiDisplayTextWidth("2 Calibration", itemSize, font),
-                               uiDisplayTextWidth("4 Exit", itemSize, font),
+                               uiDisplayTextWidth("4 Clock", itemSize, font),
                                columnGap,
                                leftX,
                                rightX);
@@ -1485,7 +1500,9 @@ void uiDisplayRenderConfigRootMenu(const UiViewState &state) {
   draw_config_column_item(layout, leftX, startY, "1 Protection", state.menuRootSelection == 0, itemSize);
   draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Calibration", state.menuRootSelection == 1, itemSize);
   draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 FW Update", state.menuRootSelection == 2, itemSize);
-  draw_config_column_item(layout, rightX, startY, "4 Exit", state.menuRootSelection == 3, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Clock", state.menuRootSelection == 3, itemSize);
+  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Exit", state.menuRootSelection == 4, itemSize);
+  draw_battery_setup_set_zone("", "");
 }
 
 void uiDisplayRenderProtectionMenu(const UiViewState &state) {
@@ -1512,6 +1529,7 @@ void uiDisplayRenderProtectionMenu(const UiViewState &state) {
   draw_config_column_item(layout, leftX, startY, "1 Limits", state.protectionMenuSelection == 0, itemSize);
   draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Fan", state.protectionMenuSelection == 1, itemSize);
   draw_config_column_item(layout, rightX, startY, "3 Back", state.protectionMenuSelection == 2, itemSize);
+  draw_battery_setup_set_zone("", "");
 }
 
 void uiDisplayRenderUpdateMenu(const UiViewState &state) {
@@ -1536,6 +1554,7 @@ void uiDisplayRenderUpdateMenu(const UiViewState &state) {
   draw_config_title(layout, "FW UPDATE", titleSize);
   draw_config_column_item(layout, leftX, startY, "1 Start OTA", state.updateMenuSelection == 0, itemSize);
   draw_config_column_item(layout, rightX, startY, "2 Back", state.updateMenuSelection == 1, itemSize);
+  draw_battery_setup_set_zone("", "");
 }
 
 void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLine, const char *hintLine) {
@@ -1556,6 +1575,7 @@ void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLin
   draw_config_line(layout, startY, status, false, textSize);
   draw_config_line(layout, startY + (lineHeight + gap), detail, false, textSize);
   draw_config_line(layout, startY + ((lineHeight + gap) * 2), hint, true, textSize);
+  draw_battery_setup_set_zone("", "");
 }
 
 void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
@@ -1593,6 +1613,7 @@ void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
   draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Hold: " + holdValue + "s", state.fanSettingsMenuSelection == 1, itemSize);
   draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Fan: " + fanState, state.fanSettingsMenuSelection == 2, itemSize);
   draw_config_column_item(layout, rightX, startY, "4 Back", state.fanSettingsMenuSelection == 3, itemSize);
+  draw_battery_setup_set_zone("SET> ", state.fanEditActive ? String(state.fanInputText) : String(""));
 }
 
 void uiDisplayRenderLimitsMenu(const UiViewState &state) {
@@ -1619,6 +1640,7 @@ void uiDisplayRenderLimitsMenu(const UiViewState &state) {
   draw_config_line(layout, startY, "1 Current: " + currValue, state.limitsMenuField == 0, itemSize);
   draw_config_line(layout, startY + (lineHeight + gap), "2 Power: " + powerValue, state.limitsMenuField == 1, itemSize);
   draw_config_line(layout, startY + ((lineHeight + gap) * 2), "3 Temp: " + tempValue, state.limitsMenuField == 2, itemSize);
+  draw_battery_setup_set_zone("SET> ", state.limitsEditActive ? String(state.limitsInputText) : String(""));
 }
 
 void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
@@ -1648,6 +1670,108 @@ void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
   draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Load", selected == 2, itemSize);
   draw_config_column_item(layout, rightX, startY, "4 Save", selected == 3, itemSize);
   draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Back", selected == 4, itemSize);
+  draw_battery_setup_set_zone("", "");
+}
+
+void uiDisplayRenderClockMenu(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t itemSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t font = 2;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
+  const int lineHeight = uiDisplayFontHeight(itemSize, font);
+  const int gap = layout.isLargeDisplay ? 4 : 6;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 8 : 10);
+  const String dayValue = (state.clockEditActive && state.clockMenuSelection == 0 && state.clockInputText[0] != '\0')
+                              ? String(state.clockInputText)
+                              : two_digits(state.clockDraftDay);
+  const String monthValue = (state.clockEditActive && state.clockMenuSelection == 1 && state.clockInputText[0] != '\0')
+                                ? String(state.clockInputText)
+                                : two_digits(state.clockDraftMonth);
+  const String yearValue = (state.clockEditActive && state.clockMenuSelection == 2 && state.clockInputText[0] != '\0')
+                               ? String(state.clockInputText)
+                               : two_digits(state.clockDraftYear);
+  const String hourValue = (state.clockEditActive && state.clockMenuSelection == 3 && state.clockInputText[0] != '\0')
+                               ? String(state.clockInputText)
+                               : two_digits(state.clockDraftHour);
+  const String minuteValue = (state.clockEditActive && state.clockMenuSelection == 4 && state.clockInputText[0] != '\0')
+                                 ? String(state.clockInputText)
+                                 : two_digits(state.clockDraftMinute);
+  const String preview = two_digits(state.clockDraftDay) + "/" + two_digits(state.clockDraftMonth) + "/" +
+                         two_digits(state.clockDraftYear) + " " + two_digits(state.clockDraftHour) + ":" +
+                         two_digits(state.clockDraftMinute);
+  const int previewY = startY + (layout.isLargeDisplay ? 8 : 4);
+  const int controlsY = previewY + lineHeight + (layout.isLargeDisplay ? 20 : 14);
+  const int highlightPadX = layout.isLargeDisplay ? 2 : 1;
+  const int highlightPadY = 0;
+  const String slash = "/";
+  const String spacePair = "  ";
+  const String colon = ":";
+  const int dayW = uiDisplayTextWidth(dayValue, itemSize, font);
+  const int monthW = uiDisplayTextWidth(monthValue, itemSize, font);
+  const int yearW = uiDisplayTextWidth(yearValue, itemSize, font);
+  const int hourW = uiDisplayTextWidth(hourValue, itemSize, font);
+  const int minuteW = uiDisplayTextWidth(minuteValue, itemSize, font);
+  const int slashW = uiDisplayTextWidth(slash, itemSize, font);
+  const int spaceW = uiDisplayTextWidth(spacePair, itemSize, font);
+  const int colonW = uiDisplayTextWidth(colon, itemSize, font);
+  const int previewW = dayW + slashW + monthW + slashW + yearW + spaceW + hourW + colonW + minuteW;
+  const int previewX = (layout.displayW - previewW) / 2;
+  const String saveLabel = "1 Save";
+  const String backLabel = "2 Back";
+  const int controlsGap = layout.isLargeDisplay ? 24 : 16;
+  int saveX = 0;
+  int backX = 0;
+  compute_two_column_positions(layout,
+                               uiDisplayTextWidth(saveLabel, itemSize, font),
+                               uiDisplayTextWidth(backLabel, itemSize, font),
+                               controlsGap,
+                               saveX,
+                               backX);
+
+  const auto draw_clock_segment = [&](int x, const String &text, bool selected, bool editing) {
+    const uint16_t segmentBg = editing ? kUiSetColor : kUiHighlight;
+    const uint16_t segmentFg = kUiDark;
+    if (selected) {
+      uiDisplayFillRect(x - highlightPadX,
+                        previewY - highlightPadY,
+                        uiDisplayTextWidth(text, itemSize, font) + (highlightPadX * 2),
+                        lineHeight + (highlightPadY * 2),
+                        segmentBg);
+    }
+    uiDisplayPrintStyledAt(x,
+                           previewY,
+                           text,
+                           selected ? segmentFg : kUiText,
+                           selected ? segmentBg : kUiModeAreaBg,
+                           itemSize,
+                           font);
+  };
+
+  clear_config_content_zone();
+  draw_config_title(layout, "CLOCK", titleSize);
+  int x = previewX;
+  draw_clock_segment(x, dayValue, state.clockMenuSelection == 0, state.clockEditActive && state.clockMenuSelection == 0);
+  x += dayW;
+  uiDisplayPrintStyledAt(x, previewY, slash, kUiText, kUiModeAreaBg, itemSize, font);
+  x += slashW;
+  draw_clock_segment(x, monthValue, state.clockMenuSelection == 1, state.clockEditActive && state.clockMenuSelection == 1);
+  x += monthW;
+  uiDisplayPrintStyledAt(x, previewY, slash, kUiText, kUiModeAreaBg, itemSize, font);
+  x += slashW;
+  draw_clock_segment(x, yearValue, state.clockMenuSelection == 2, state.clockEditActive && state.clockMenuSelection == 2);
+  x += yearW;
+  uiDisplayPrintStyledAt(x, previewY, spacePair, kUiText, kUiModeAreaBg, itemSize, font);
+  x += spaceW;
+  draw_clock_segment(x, hourValue, state.clockMenuSelection == 3, state.clockEditActive && state.clockMenuSelection == 3);
+  x += hourW;
+  uiDisplayPrintStyledAt(x, previewY, colon, kUiText, kUiModeAreaBg, itemSize, font);
+  x += colonW;
+  draw_clock_segment(x, minuteValue, state.clockMenuSelection == 4, state.clockEditActive && state.clockMenuSelection == 4);
+
+  draw_config_column_item(layout, saveX, controlsY, saveLabel, state.clockMenuSelection == 5, itemSize);
+  draw_config_column_item(layout, backX, controlsY, backLabel, state.clockMenuSelection == 6, itemSize);
+  draw_battery_setup_set_zone("SET> ", state.clockEditActive ? String(state.clockInputText) : String(""));
 }
 
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText) {

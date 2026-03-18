@@ -28,4 +28,10 @@ bool fan_menu_backspace(SystemState *state);
 void fan_menu_cancel_edit(SystemState *state);
 void fan_menu_commit_edit(SystemState *state);
 
+bool clock_menu_append_digit(SystemState *state, char key);
+bool clock_menu_backspace(SystemState *state);
+void clock_menu_cancel_edit(SystemState *state);
+void clock_menu_commit_edit(SystemState *state);
+void clock_menu_adjust_field(SystemState *state, int direction);
+
 #endif

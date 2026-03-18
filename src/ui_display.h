@@ -41,6 +41,7 @@ void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLin
 void uiDisplayRenderFanSettingsMenu(const UiViewState &state);
 void uiDisplayRenderLimitsMenu(const UiViewState &state);
 void uiDisplayRenderCalibrationMenu(const UiViewState &state);
+void uiDisplayRenderClockMenu(const UiViewState &state);
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);

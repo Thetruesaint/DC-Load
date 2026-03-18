@@ -56,6 +56,33 @@ struct CalibrationRenderCache {
   bool valid;
 };
 
+struct ClockRenderCache {
+  uint8_t option;
+  uint8_t rtcDay;
+  uint8_t rtcMonth;
+  uint8_t rtcYear;
+  uint8_t rtcHour;
+  uint8_t rtcMinute;
+  uint8_t day;
+  uint8_t month;
+  uint8_t year;
+  uint8_t hour;
+  uint8_t minute;
+  bool editActive;
+  char inputText[3];
+  bool valid;
+};
+
+struct ConfigRtcRenderCache {
+  uint8_t day;
+  uint8_t month;
+  uint8_t year;
+  uint8_t hour;
+  uint8_t minute;
+  bool shiftActive;
+  bool valid;
+};
+
 struct BatterySetupRenderCache {
   uint8_t stage;
   char batteryType[8];
@@ -92,6 +119,8 @@ FwUpdateRenderCache g_fwUpdateCache = {{'\0'}, {'\0'}, {'\0'}, false};
 FanSettingsRenderCache g_fanSettingsCache = {0, 0.0f, 0.0f, false, false, {'\0'}, false};
 LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
+ClockRenderCache g_clockCache = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, {'\0'}, false};
+ConfigRtcRenderCache g_configRtcCache = {0, 0, 0, 0, 0, false, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false, false};
 TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false, false};
 TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false, false};
@@ -268,6 +297,92 @@ void draw_calibration_if_needed(const UiViewState &viewState) {
   g_calibrationCache.valid = true;
 }
 
+void draw_clock_if_needed(const UiViewState &viewState) {
+  if (g_clockCache.valid &&
+      g_clockCache.option == viewState.clockMenuSelection &&
+      g_clockCache.rtcDay == viewState.rtcDay &&
+      g_clockCache.rtcMonth == viewState.rtcMonth &&
+      g_clockCache.rtcYear == viewState.rtcYear &&
+      g_clockCache.rtcHour == viewState.rtcHour &&
+      g_clockCache.rtcMinute == viewState.rtcMinute &&
+      g_clockCache.day == viewState.clockDraftDay &&
+      g_clockCache.month == viewState.clockDraftMonth &&
+      g_clockCache.year == viewState.clockDraftYear &&
+      g_clockCache.hour == viewState.clockDraftHour &&
+      g_clockCache.minute == viewState.clockDraftMinute &&
+      g_clockCache.editActive == viewState.clockEditActive &&
+      std::strcmp(g_clockCache.inputText, viewState.clockInputText) == 0) {
+    return;
+  }
+
+  uiDisplayRenderClockMenu(viewState);
+  g_clockCache.option = viewState.clockMenuSelection;
+  g_clockCache.rtcDay = viewState.rtcDay;
+  g_clockCache.rtcMonth = viewState.rtcMonth;
+  g_clockCache.rtcYear = viewState.rtcYear;
+  g_clockCache.rtcHour = viewState.rtcHour;
+  g_clockCache.rtcMinute = viewState.rtcMinute;
+  g_clockCache.day = viewState.clockDraftDay;
+  g_clockCache.month = viewState.clockDraftMonth;
+  g_clockCache.year = viewState.clockDraftYear;
+  g_clockCache.hour = viewState.clockDraftHour;
+  g_clockCache.minute = viewState.clockDraftMinute;
+  g_clockCache.editActive = viewState.clockEditActive;
+  std::strncpy(g_clockCache.inputText, viewState.clockInputText, sizeof(g_clockCache.inputText) - 1);
+  g_clockCache.inputText[sizeof(g_clockCache.inputText) - 1] = '\0';
+  g_clockCache.valid = true;
+}
+
+void invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiViewState &viewState) {
+  const bool shiftActive = app_msc_shift_active();
+  const bool sameRtc = g_configRtcCache.valid &&
+                       g_configRtcCache.day == viewState.rtcDay &&
+                       g_configRtcCache.month == viewState.rtcMonth &&
+                       g_configRtcCache.year == viewState.rtcYear &&
+                       g_configRtcCache.hour == viewState.rtcHour &&
+                       g_configRtcCache.minute == viewState.rtcMinute &&
+                       g_configRtcCache.shiftActive == shiftActive;
+
+  if (!sameRtc) {
+    switch (screen) {
+      case UiScreen::MenuRoot:
+        g_lastMenuRootSelection = 0xFF;
+        break;
+      case UiScreen::MenuProtection:
+        g_protectionCache.valid = false;
+        break;
+      case UiScreen::MenuUpdate:
+        g_updateCache.valid = false;
+        break;
+      case UiScreen::MenuFwUpdate:
+        g_fwUpdateCache.valid = false;
+        break;
+      case UiScreen::MenuFanSettings:
+        g_fanSettingsCache.valid = false;
+        break;
+      case UiScreen::MenuLimits:
+        g_limitsCache.valid = false;
+        break;
+      case UiScreen::MenuCalibration:
+        g_calibrationCache.valid = false;
+        break;
+      case UiScreen::MenuClock:
+        g_clockCache.valid = false;
+        break;
+      default:
+        break;
+    }
+
+    g_configRtcCache.day = viewState.rtcDay;
+    g_configRtcCache.month = viewState.rtcMonth;
+    g_configRtcCache.year = viewState.rtcYear;
+    g_configRtcCache.hour = viewState.rtcHour;
+    g_configRtcCache.minute = viewState.rtcMinute;
+    g_configRtcCache.shiftActive = shiftActive;
+    g_configRtcCache.valid = true;
+  }
+}
+
 void screen_enter_home(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
@@ -276,6 +391,7 @@ void screen_enter_home(const UiViewState &viewState) {
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_clockCache.valid = false;
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
@@ -492,6 +608,17 @@ void screen_update_menu_calibration(const UiViewState &viewState) {
 
 void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewState; }
 
+void screen_enter_menu_clock(const UiViewState &viewState) {
+  g_clockCache.valid = false;
+  draw_clock_if_needed(viewState);
+}
+
+void screen_update_menu_clock(const UiViewState &viewState) {
+  draw_clock_if_needed(viewState);
+}
+
+void screen_render_menu_clock(const UiViewState &viewState) { (void)viewState; }
+
 void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
     case UiScreen::Home: screen_enter_home(viewState); break;
@@ -510,11 +637,13 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::MenuFanSettings: screen_enter_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_enter_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_enter_menu_calibration(viewState); break;
+    case UiScreen::MenuClock: screen_enter_menu_clock(viewState); break;
     default: break;
   }
 }
 
 void run_screen_update(UiScreen screen, const UiViewState &viewState) {
+  invalidate_active_config_screen_if_rtc_changed(screen, viewState);
   switch (screen) {
     case UiScreen::Home: screen_update_home(viewState); break;
     case UiScreen::BatterySetupTask: screen_update_battery_setup_task(viewState); break;
@@ -532,6 +661,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::MenuFanSettings: screen_update_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_update_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_update_menu_calibration(viewState); break;
+    case UiScreen::MenuClock: screen_update_menu_clock(viewState); break;
     default: break;
   }
 }
@@ -554,6 +684,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
     case UiScreen::MenuFanSettings: screen_render_menu_fan_settings(viewState); break;
     case UiScreen::MenuLimits: screen_render_menu_limits(viewState); break;
     case UiScreen::MenuCalibration: screen_render_menu_calibration(viewState); break;
+    case UiScreen::MenuClock: screen_render_menu_clock(viewState); break;
     default: break;
   }
 }
@@ -569,6 +700,8 @@ void ui_state_machine_reset() {
   g_fanSettingsCache.valid = false;
   g_limitsCache.valid = false;
   g_calibrationCache.valid = false;
+  g_clockCache.valid = false;
+  g_configRtcCache.valid = false;
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;

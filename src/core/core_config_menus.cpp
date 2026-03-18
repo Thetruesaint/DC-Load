@@ -13,6 +13,7 @@ ConfigMenu menu_root_menu_for_index(uint8_t index) {
     case 0: return ConfigMenu::Protection;
     case 1: return ConfigMenu::Calibration;
     case 2: return ConfigMenu::Update;
+    case 3: return ConfigMenu::Clock;
     default: return ConfigMenu::None;
   }
 }
@@ -20,7 +21,8 @@ ConfigMenu menu_root_menu_for_index(uint8_t index) {
 uint8_t menu_root_index_for_menu(ConfigMenu menu) {
   if (menu == ConfigMenu::Calibration) return 1;
   if (menu == ConfigMenu::Update) return 2;
-  if (menu == ConfigMenu::None) return 3;
+  if (menu == ConfigMenu::Clock) return 3;
+  if (menu == ConfigMenu::None) return 4;
   return 0;
 }
 
@@ -34,7 +36,8 @@ ConfigMenu protection_menu_for_index(uint8_t index) {
 
 uint8_t config_menu_item_count(ConfigMenu menu) {
   switch (menu) {
-    case ConfigMenu::Root: return 4;
+    case ConfigMenu::Root: return 5;
+    case ConfigMenu::Clock: return 7;
     case ConfigMenu::Protection: return 3;
     case ConfigMenu::Update: return 2;
     case ConfigMenu::FanSettings: return 4;
@@ -48,6 +51,7 @@ uint8_t config_menu_selection_index(const SystemState &state, ConfigMenu menu) {
   if (menu == ConfigMenu::Protection) return state.protectionMenuSelection;
   if (menu == ConfigMenu::Update) return state.updateMenuSelection;
   if (menu == ConfigMenu::FanSettings) return state.fanSettingsMenuSelection;
+  if (menu == ConfigMenu::Clock) return state.clockMenuSelection;
   if (menu == ConfigMenu::Calibration) {
     return (state.calibrationMenuOption > 0) ? static_cast<uint8_t>(state.calibrationMenuOption - 1) : 0;
   }
@@ -65,6 +69,8 @@ void config_menu_set_selection_index(SystemState *state, ConfigMenu menu, uint8_
     state->updateMenuSelection = index;
   } else if (menu == ConfigMenu::FanSettings) {
     state->fanSettingsMenuSelection = index;
+  } else if (menu == ConfigMenu::Clock) {
+    state->clockMenuSelection = index;
   } else if (menu == ConfigMenu::Calibration) {
     state->calibrationMenuOption = static_cast<uint8_t>(index + 1);
   }
@@ -124,6 +130,158 @@ void fan_input_reset(SystemState *state) {
   if (state == nullptr) return;
   state->fanInputText[0] = '\0';
   state->fanInputLength = 0;
+}
+
+void clock_input_reset(SystemState *state) {
+  if (state == nullptr) return;
+  state->clockInputText[0] = '\0';
+  state->clockInputLength = 0;
+}
+
+uint8_t days_in_month(uint8_t month, uint8_t year) {
+  switch (month) {
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+      return 30;
+    case 2: {
+      const uint16_t fullYear = static_cast<uint16_t>(2000 + year);
+      const bool leapYear = ((fullYear % 4U) == 0U && (fullYear % 100U) != 0U) || ((fullYear % 400U) == 0U);
+      return leapYear ? 29 : 28;
+    }
+    default:
+      return 31;
+  }
+}
+
+void clock_menu_begin(SystemState *state) {
+  if (state == nullptr) return;
+  state->currentConfigMenu = ConfigMenu::Clock;
+  state->parentConfigMenu = ConfigMenu::Root;
+  state->clockMenuSelection = 0;
+  state->clockDraftDay = (state->rtcDay > 0) ? state->rtcDay : 1;
+  state->clockDraftMonth = (state->rtcMonth > 0) ? state->rtcMonth : 1;
+  state->clockDraftYear = state->rtcYear;
+  state->clockDraftHour = state->rtcHour;
+  state->clockDraftMinute = state->rtcMinute;
+  state->clockEditActive = false;
+  clock_input_reset(state);
+}
+
+void clock_menu_finish(SystemState *state, bool save, bool returnToParent = false) {
+  if (state == nullptr) return;
+  const ConfigMenu parent = state->parentConfigMenu;
+  state->clockSaveEvent = save;
+  state->clockEditActive = false;
+  clock_input_reset(state);
+
+  if (returnToParent && parent != ConfigMenu::None) {
+    config_menu_leave_to_parent(state, parent, ConfigMenu::Clock);
+    return;
+  }
+
+  state->currentConfigMenu = ConfigMenu::None;
+  state->parentConfigMenu = ConfigMenu::None;
+  if (core_should_reset_mode_init(*state)) state->modeInitialized = false;
+}
+
+void clock_menu_start_edit(SystemState *state) {
+  if (state == nullptr) return;
+  if (state->clockMenuSelection >= 5) return;
+  state->clockEditActive = true;
+  clock_input_reset(state);
+}
+
+uint8_t clock_field_max_value(const SystemState &state) {
+  switch (state.clockMenuSelection) {
+    case 0: return days_in_month(state.clockDraftMonth, state.clockDraftYear);
+    case 1: return 12;
+    case 2: return 99;
+    case 3: return 23;
+    case 4: return 59;
+    default: return 99;
+  }
+}
+
+uint8_t clock_field_min_value(const SystemState &state) {
+  switch (state.clockMenuSelection) {
+    case 0:
+    case 1:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+void clock_menu_cancel_edit_impl(SystemState *state) {
+  if (state == nullptr) return;
+  state->clockEditActive = false;
+  clock_input_reset(state);
+}
+
+bool clock_menu_append_digit_impl(SystemState *state, char key) {
+  if (state == nullptr) return false;
+  return numeric_input_append_digit(state->clockInputText, &state->clockInputLength, 2, key);
+}
+
+bool clock_menu_backspace_impl(SystemState *state) {
+  if (state == nullptr) return false;
+  return numeric_input_backspace(state->clockInputText, &state->clockInputLength);
+}
+
+void clock_menu_commit_edit_impl(SystemState *state) {
+  if (state == nullptr) return;
+  if (state->clockInputLength == 0) {
+    clock_menu_cancel_edit_impl(state);
+    return;
+  }
+  const uint8_t rawValue = static_cast<uint8_t>(atoi(state->clockInputText));
+  const uint8_t clampedValue = static_cast<uint8_t>(constrain(rawValue,
+                                                              static_cast<int>(clock_field_min_value(*state)),
+                                                              static_cast<int>(clock_field_max_value(*state))));
+
+  switch (state->clockMenuSelection) {
+    case 0: state->clockDraftDay = clampedValue; break;
+    case 1:
+      state->clockDraftMonth = clampedValue;
+      state->clockDraftDay = min(state->clockDraftDay, days_in_month(state->clockDraftMonth, state->clockDraftYear));
+      break;
+    case 2:
+      state->clockDraftYear = clampedValue;
+      state->clockDraftDay = min(state->clockDraftDay, days_in_month(state->clockDraftMonth, state->clockDraftYear));
+      break;
+    case 3: state->clockDraftHour = clampedValue; break;
+    case 4: state->clockDraftMinute = clampedValue; break;
+    default: break;
+  }
+
+  clock_menu_cancel_edit_impl(state);
+}
+
+void clock_menu_adjust_field_impl(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0 || state->clockMenuSelection >= 5) return;
+
+  uint8_t *field = nullptr;
+  switch (state->clockMenuSelection) {
+    case 0: field = &state->clockDraftDay; break;
+    case 1: field = &state->clockDraftMonth; break;
+    case 2: field = &state->clockDraftYear; break;
+    case 3: field = &state->clockDraftHour; break;
+    case 4: field = &state->clockDraftMinute; break;
+    default: return;
+  }
+
+  int next = static_cast<int>(*field) + direction;
+  const int minValue = static_cast<int>(clock_field_min_value(*state));
+  const int maxValue = static_cast<int>(clock_field_max_value(*state));
+  if (next > maxValue) next = minValue;
+  if (next < minValue) next = maxValue;
+  *field = static_cast<uint8_t>(next);
+
+  if (state->clockMenuSelection == 1 || state->clockMenuSelection == 2) {
+    state->clockDraftDay = min(state->clockDraftDay, days_in_month(state->clockDraftMonth, state->clockDraftYear));
+  }
 }
 
 bool limits_field_allows_decimal(const SystemState &state) {
@@ -249,6 +407,28 @@ void clear_config_runtime_flags(SystemState *state) {
   state->fanManualOverrideActive = false;
   state->fanManualStateOn = false;
   fan_input_reset(state);
+  state->clockEditActive = false;
+  clock_input_reset(state);
+}
+
+bool clock_menu_append_digit(SystemState *state, char key) {
+  return clock_menu_append_digit_impl(state, key);
+}
+
+bool clock_menu_backspace(SystemState *state) {
+  return clock_menu_backspace_impl(state);
+}
+
+void clock_menu_cancel_edit(SystemState *state) {
+  clock_menu_cancel_edit_impl(state);
+}
+
+void clock_menu_commit_edit(SystemState *state) {
+  clock_menu_commit_edit_impl(state);
+}
+
+void clock_menu_adjust_field(SystemState *state, int direction) {
+  clock_menu_adjust_field_impl(state, direction);
 }
 
 void reset_config_navigation(SystemState *state) {
@@ -257,6 +437,7 @@ void reset_config_navigation(SystemState *state) {
   state->protectionMenuSelection = 0;
   state->updateMenuSelection = 0;
   state->fanSettingsMenuSelection = 0;
+  state->clockMenuSelection = 0;
   state->currentConfigMenu = ConfigMenu::None;
   state->parentConfigMenu = ConfigMenu::None;
 }
@@ -423,6 +604,20 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
     return;
   }
 
+  if (menu == ConfigMenu::Clock) {
+    const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::Clock);
+    if (state->clockEditActive) {
+      clock_menu_commit_edit(state);
+    } else if (selection == 5) {
+      clock_menu_finish(state, true, true);
+    } else if (selection == 6) {
+      clock_menu_finish(state, false, true);
+    } else {
+      clock_menu_start_edit(state);
+    }
+    return;
+  }
+
   if (menu == ConfigMenu::FanSettings) {
     const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::FanSettings);
     if (state->fanEditActive) {
@@ -470,6 +665,11 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
     return;
   }
 
+  if (target == ConfigMenu::Clock) {
+    clock_menu_begin(state);
+    return;
+  }
+
   if (target == ConfigMenu::FwUpdate) {
     config_menu_enter(state, ConfigMenu::FwUpdate, ConfigMenu::Update);
     return;
@@ -514,6 +714,15 @@ void config_menu_back(SystemState *state, ConfigMenu menu) {
 
   if (menu == ConfigMenu::Update) {
     update_menu_finish(state, true);
+    return;
+  }
+
+  if (menu == ConfigMenu::Clock) {
+    if (state->clockEditActive) {
+      clock_menu_cancel_edit(state);
+    } else {
+      clock_menu_finish(state, false, true);
+    }
     return;
   }
 

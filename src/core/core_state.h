@@ -19,7 +19,8 @@ enum class UiScreen : uint8_t {
   MenuFwUpdate,
   MenuFanSettings,
   MenuLimits,
-  MenuCalibration
+  MenuCalibration,
+  MenuClock
 };
 
 enum class ConfigMenu : uint8_t {
@@ -30,7 +31,8 @@ enum class ConfigMenu : uint8_t {
   FwUpdate,
   FanSettings,
   Limits,
-  Calibration
+  Calibration,
+  Clock
 };
 
 struct SystemState {
@@ -78,6 +80,21 @@ struct SystemState {
   bool fanManualOverrideActive;
   bool fanManualStateOn;
 
+  uint8_t rtcDay;
+  uint8_t rtcMonth;
+  uint8_t rtcYear;
+  uint8_t rtcHour;
+  uint8_t rtcMinute;
+
+  uint8_t clockDraftDay;
+  uint8_t clockDraftMonth;
+  uint8_t clockDraftYear;
+  uint8_t clockDraftHour;
+  uint8_t clockDraftMinute;
+  bool clockEditActive;
+  char clockInputText[3];
+  uint8_t clockInputLength;
+
   uint8_t batterySetupStage;
   char batteryInputText[8];
   uint8_t batteryInputLength;
@@ -102,6 +119,7 @@ struct SystemState {
   uint8_t protectionMenuSelection;
   uint8_t updateMenuSelection;
   uint8_t fanSettingsMenuSelection;
+  uint8_t clockMenuSelection;
 
   int cursorPosition;
   int functionIndex;
@@ -118,6 +136,7 @@ struct SystemState {
   bool calibrationMenuActive;
   bool calibrationMenuApplyEvent;
   bool fanSaveEvent;
+  bool clockSaveEvent;
   float calibrationRealValue;
   uint32_t actionCounter;
 
@@ -141,6 +160,7 @@ inline SystemState core_state_make_default() {
   state.protectionMenuSelection = 0;
   state.updateMenuSelection = 0;
   state.fanSettingsMenuSelection = 0;
+  state.clockMenuSelection = 0;
   state.batterySetupStage = 0;
   state.transientSetupStage = 0;
   state.transientListSetupStage = 0;
@@ -157,6 +177,7 @@ inline void core_state_clear_one_shot_events(SystemState *state) {
   state->limitsSaveEvent = false;
   state->calibrationMenuApplyEvent = false;
   state->fanSaveEvent = false;
+  state->clockSaveEvent = false;
   state->calibrationRealValue = 0.0f;
 }
 

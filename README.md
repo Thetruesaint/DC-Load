@@ -1,19 +1,20 @@
 ## v2.13 ##
 
 **Trabajando:**
-- Introduciendo mejoras con TFT
+
 
 **A Trabajar:**
-- Setear hora y fecha del RTC: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); y que no se pise con cada update de FW.
 - Seguir optimizando la arquitectura
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los dígitos
 
 **Fixes**
+- indicacion de "sf" en menues de configuración
 
 **Mejoras**
 - Mejoras esteticas en setups de TC, TL y Menues de Configuración
+- ya se puede setear fecha y hora del RTC.
 
 **Posibles Mejoras SW:**
 - Unificar template para cuando se supera mas de un límite.
