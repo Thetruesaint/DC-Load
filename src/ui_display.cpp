@@ -163,7 +163,7 @@ void draw_startup_base(const char *title, bool rtcDetected, int tempC, bool show
   const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
   const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
-  const String footerVersion = "v2.12";
+  const String footerVersion = "v2.13a";
   uiDisplayClear();
   uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
   uiDisplayFillRect(1, topBarH + 1, displayW - 2, footerY - topBarH - 1, kUiModeAreaBg);
@@ -300,7 +300,7 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
   const int metricsStartX = ((displayW - metricsTotalW) / 2) + (isLargeDisplay ? 8 : 0);
   const int metricsTextY = topBarH + ((metricsH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
-  const String footerVersion = "v2.12";
+  const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
 
@@ -427,7 +427,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const int metricsStartX = ((displayW - metricsTotalW) / 2) + metricsLeftBias;
   const int metricsTextY = metricsBoxY + ((metricsBoxH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
   const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(sectionTextSize, sectionTextFont)) / 2);
-  const String footerVersion = "v2.12";
+  const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const char *liveInput = app_input_text();
@@ -1657,7 +1657,7 @@ void draw_calibration_overlay_chrome(const char *title) {
   const int indicatorX = (layout.displayW / 6) + 9;
   const int indicatorY = layout.topBarH / 2;
   const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
-  const String footerVersion = "v2.12";
+  const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
 
@@ -1702,7 +1702,7 @@ void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {
   const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
   const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
-  const String footerVersion = "v2.12";
+  const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
 
