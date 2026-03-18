@@ -24,6 +24,7 @@ constexpr int TFT_STATUS_COLS = 4;
 constexpr int TFT_STATUS_ROWS = 1;
 constexpr uint16_t kUiBg = TFT_BLACK;
 constexpr uint16_t kUiAccent = TFT_DARKGREY;
+constexpr uint16_t kUiBorder = TFT_WHITE;
 constexpr uint16_t kUiText = TFT_WHITE;
 constexpr uint16_t kUiDark = TFT_BLACK;
 constexpr uint16_t kUiModeAreaBg = TFT_BLUE;
@@ -31,10 +32,26 @@ constexpr uint16_t kUiLoadOn = TFT_RED;
 constexpr uint16_t kUiLoadOff = TFT_GREEN;
 constexpr uint16_t kUiHighlight = TFT_YELLOW;
 constexpr uint16_t kUiSetColor = TFT_MAGENTA;
+
+void draw_horizontal_separator(int y, int width, uint16_t color) {
+  tft.drawLine(0, y, width - 1, y, color);
+}
+
+void draw_home_zone_borders(int displayW, int displayH, int topBarH, int contentY, int setZoneY, int footerY) {
+  uiDisplayDrawRect(0, 0, displayW, displayH, kUiBorder);
+  draw_horizontal_separator(topBarH, displayW, kUiBorder);
+  draw_horizontal_separator(contentY, displayW, kUiBorder);
+  draw_horizontal_separator(setZoneY, displayW, kUiBorder);
+  draw_horizontal_separator(footerY, displayW, kUiBorder);
+}
+
 bool g_ccLayoutDrawn = false;
 int g_ccLastDisplayW = 0;
 int g_ccLastDisplayH = 0;
 bool g_ccLastLoadEnabled = false;
+uint8_t g_ccLastMode = 0xFF;
+bool g_ccLastCursorVisible = true;
+int g_ccLastCursorPosition = -1;
 String g_ccLastMetric1;
 String g_ccLastMetric2;
 String g_ccLastMetric3;
@@ -96,6 +113,17 @@ String format_cc_setpoint(float readingValue) {
   return String("SET> ") + String(readingValue, 3) + "A";
 }
 
+String format_cp_value(float readingValue) {
+  String valueText = String(readingValue, 1);
+  if (readingValue < 100.0f) valueText = "0" + valueText;
+  if (readingValue < 10.0f) valueText = "0" + valueText;
+  return valueText;
+}
+
+String format_cr_value(float readingValue) {
+  return String(readingValue, 1);
+}
+
 String two_digits(int value) {
   if (value < 10) return String("0") + String(value);
   return String(value);
@@ -119,16 +147,41 @@ int cc_cursor_text_index(const String &valueText, int cursorPosition) {
   }
 }
 
+int cp_cursor_text_index(const String &valueText, int cursorPosition) {
+  const int decimal = valueText.indexOf('.');
+  switch (cursorPosition) {
+    case 6: return 0;
+    case 7: return 1;
+    case 8: return (decimal > 0) ? (decimal - 1) : 2;
+    case 10: return (decimal >= 0 && decimal + 1 < valueText.length()) ? (decimal + 1) : -1;
+    default: return -1;
+  }
+}
+
+int cr_cursor_text_index(const String &valueText, int cursorPosition) {
+  const int decimal = valueText.indexOf('.');
+  switch (cursorPosition) {
+    case 6: return 0;
+    case 7: return 1;
+    case 8: return 2;
+    case 10: return (decimal >= 0 && decimal + 1 < valueText.length()) ? (decimal + 1) : -1;
+    default: return -1;
+  }
+}
+
 void draw_degree_c_symbol(int x, int y, uint16_t color, uint16_t bg, uint8_t textSize, uint8_t textFont) {
   const int radius = (textSize >= 2) ? 3 : 2;
   uiDisplayDrawCircle(x, y + radius + 1, radius, color);
   uiDisplayPrintStyledAt(x + 5, y - 1, "C", color, bg, textSize, textFont);
 }
 
-bool render_cc_home(const UiViewState &state, bool cursorVisible) {
+bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const int displayW = uiDisplayWidthPx();
   const int displayH = uiDisplayHeightPx();
   const bool isLargeDisplay = displayW >= 400;
+  const bool isCcMode = state.mode == CC;
+  const bool isCpMode = state.mode == CP;
+  const bool isCrMode = state.mode == CR;
   const int topBarH = (displayH * 10) / 100;
   const int metricsH = (displayH * 20) / 100;
   const int setZoneH = (displayH * 10) / 100;
@@ -148,6 +201,7 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
   const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
 
   const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
+  const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : "CR";
   const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
   const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
   const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
@@ -163,7 +217,7 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
     metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
     metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
     metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
-    metricGap = isLargeDisplay ? uiDisplayTextWidth(" ", metricTextSize, metricTextFont)
+    metricGap = isLargeDisplay ? (uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2)
                                : (uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2);
     const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
     if (totalW <= metricsAvailableW || metricTextSize == 1) {
@@ -172,7 +226,8 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
   }
 
   const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
-  const int metricsStartX = (displayW - metricsTotalW) / 2;
+  const int metricsLeftBias = isLargeDisplay ? 8 : 0;
+  const int metricsStartX = ((displayW - metricsTotalW) / 2) + metricsLeftBias;
   const int metricsTextY = metricsBoxY + ((metricsBoxH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
   const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(sectionTextSize, sectionTextFont)) / 2);
   const String footerVersion = "v2.12";
@@ -180,22 +235,28 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const char *liveInput = app_input_text();
   const bool hasLiveInput = (liveInput != nullptr) && (liveInput[0] != '\0');
-  const String setValueText = hasLiveInput ? String(liveInput) : String(state.readingValue, 3);
-  const String setText = String("SET> ") + setValueText + "A";
+  const String setValueText = hasLiveInput
+                                  ? String(liveInput)
+                                  : (isCcMode ? String(state.readingValue, 3)
+                                              : isCpMode ? format_cp_value(state.readingValue)
+                                                         : format_cr_value(state.readingValue));
+  const String setText = String("SET> ") + setValueText + (isCrMode ? " ohms" : (isCcMode ? "A" : "W"));
 
-  const bool layoutChanged = !g_ccLayoutDrawn || g_ccLastDisplayW != displayW || g_ccLastDisplayH != displayH;
+  const bool modeChanged = g_ccLastMode != state.mode;
+  const bool layoutChanged = !g_ccLayoutDrawn || g_ccLastDisplayW != displayW || g_ccLastDisplayH != displayH || modeChanged;
   if (layoutChanged) {
     uiDisplayClear();
     uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
-    uiDisplayDrawRect(0, metricsBoxY, displayW, metricsH, kUiAccent);
-    uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 2, kUiModeAreaBg);
-    uiDisplayDrawRect(0, contentY, displayW, contentH, kUiAccent);
-    uiDisplayDrawRect(0, setZoneY, displayW, setZoneH, kUiAccent);
+    uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
     uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
+    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
     g_ccLayoutDrawn = true;
     g_ccLastDisplayW = displayW;
     g_ccLastDisplayH = displayH;
+    g_ccLastMode = state.mode;
     g_ccLastLoadEnabled = !state.loadEnabled;
+    g_ccLastCursorVisible = !cursorVisible;
+    g_ccLastCursorPosition = -1;
     g_ccLastMetric1 = "";
     g_ccLastMetric2 = "";
     g_ccLastMetric3 = "";
@@ -210,7 +271,7 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
   if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
     uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
-    uiDisplayPrintStyledAt(displayW / 50, topBarTextY, "CC", kUiHighlight, kUiAccent, barTextSize, barTextFont);
+    uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
     const uint16_t loadColor = state.loadEnabled ? kUiLoadOn : kUiLoadOff;
     uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
     uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
@@ -234,40 +295,62 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
                          barTextFont);
     g_ccLastLoadEnabled = state.loadEnabled;
     g_ccLastTempText = tempText;
+    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
 
-  if (layoutChanged || g_ccLastMetric1 != metric1 || g_ccLastMetric2 != metric2 || g_ccLastMetric3 != metric3) {
+  const int metricPadding = isLargeDisplay ? 10 : 6;
+  const int metric1X = metricsStartX - metricGap;
+  const int metric2X = metricsStartX + metric1W + metricGap;
+  const int metric3X = metricsStartX + metric1W + metricGap + metric2W + metricGap;
+  const int metricAreaY = metricsBoxY + 1;
+  const int metricAreaH = metricsH - 2;
+  if (layoutChanged) {
     uiDisplayFillRect(1, metricsBoxY + 1, displayW - 2, metricsH - 2, kUiBg);
-    uiDisplayDrawRect(0, metricsBoxY, displayW, metricsH, kUiAccent);
-    uiDisplayPrintStyledAt(metricsStartX - uiDisplayTextWidth(" ", metricTextSize, metricTextFont),
+  }
+  if (layoutChanged || g_ccLastMetric1 != metric1) {
+    const int clearX = max(1, metric1X - metricPadding);
+    const int clearW = min(displayW - clearX - 1, metric1W + (metricPadding * 2));
+    uiDisplayFillRect(clearX, metricAreaY, clearW, metricAreaH, kUiBg);
+    uiDisplayPrintStyledAt(metric1X,
                            metricsTextY,
                            metric1,
                            kUiText,
                            kUiBg,
                            metricTextSize,
                            metricTextFont);
-    uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap,
+    g_ccLastMetric1 = metric1;
+  }
+  if (layoutChanged || g_ccLastMetric2 != metric2) {
+    const int clearX = max(1, metric2X - metricPadding);
+    const int clearW = min(displayW - clearX - 1, metric2W + (metricPadding * 2));
+    uiDisplayFillRect(clearX, metricAreaY, clearW, metricAreaH, kUiBg);
+    uiDisplayPrintStyledAt(metric2X,
                            metricsTextY,
                            metric2,
                            kUiText,
                            kUiBg,
                            metricTextSize,
                            metricTextFont);
-    uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap + uiDisplayTextWidth(" ", metricTextSize, metricTextFont),
+    g_ccLastMetric2 = metric2;
+  }
+  if (layoutChanged || g_ccLastMetric3 != metric3) {
+    const int clearX = max(1, metric3X - metricPadding);
+    const int clearW = min(displayW - clearX - 1, metric3W + (metricPadding * 2));
+    uiDisplayFillRect(clearX, metricAreaY, clearW, metricAreaH, kUiBg);
+    uiDisplayPrintStyledAt(metric3X,
                            metricsTextY,
                            metric3,
                            kUiText,
                            kUiBg,
                            metricTextSize,
                            metricTextFont);
-    g_ccLastMetric1 = metric1;
-    g_ccLastMetric2 = metric2;
     g_ccLastMetric3 = metric3;
   }
 
-  if (layoutChanged || g_ccLastSetText != setText) {
+  if (layoutChanged || g_ccLastSetText != setText ||
+      (!hasLiveInput &&
+       (g_ccLastCursorVisible != cursorVisible || g_ccLastCursorPosition != state.cursorPosition))) {
     uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
-    uiDisplayDrawRect(0, setZoneY, displayW, setZoneH, kUiAccent);
     const int setTextX = displayW / 50;
     const String prefixText = "SET> ";
     const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
@@ -276,13 +359,16 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
     if (hasLiveInput) {
       uiDisplayPrintStyledAt(setTextX + prefixWidth,
                              setTextY,
-                             setValueText + "A",
+                             setText.substring(5),
                              kUiSetColor,
                              kUiBg,
                              sectionTextSize,
                              sectionTextFont);
     } else {
-      const int highlightedIndex = cc_cursor_text_index(setValueText, state.cursorPosition);
+      const int highlightedIndex = isCcMode
+                                       ? cc_cursor_text_index(setValueText, state.cursorPosition)
+                                       : isCpMode ? cp_cursor_text_index(setValueText, state.cursorPosition)
+                                                  : cr_cursor_text_index(setValueText, state.cursorPosition);
       int currentX = setTextX + prefixWidth;
       for (int i = 0; i < setValueText.length(); ++i) {
         const String digitText = String(setValueText.charAt(i));
@@ -298,13 +384,15 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
       }
       uiDisplayPrintStyledAt(currentX,
                              setTextY,
-                             "A",
+                             isCrMode ? " ohms" : (isCcMode ? "A" : "W"),
                              kUiSetColor,
                              kUiBg,
                              sectionTextSize,
                              sectionTextFont);
     }
     g_ccLastSetText = setText;
+    g_ccLastCursorVisible = cursorVisible;
+    g_ccLastCursorPosition = state.cursorPosition;
   }
 
   if (layoutChanged || g_ccLastFooterText != footerDateTime) {
@@ -318,6 +406,7 @@ bool render_cc_home(const UiViewState &state, bool cursorVisible) {
                            footerTextSize,
                            footerTextFont);
     g_ccLastFooterText = footerDateTime;
+    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
   return true;
 }
@@ -401,6 +490,8 @@ void uiDisplayClear(void) {
 
 void uiDisplayInvalidateHomeLayout(void) {
   g_ccLayoutDrawn = false;
+  g_ccLastMode = 0xFF;
+  g_ccLastCursorPosition = -1;
   g_ccLastMetric1 = "";
   g_ccLastMetric2 = "";
   g_ccLastMetric3 = "";
@@ -475,7 +566,6 @@ void printLCDRaw(float value, int decimals) { tft.print(value, decimals); }
 
 void uiDisplayUpdate(void) {
   static unsigned long lastUpdateTime = 0;
-  static int blink_cntr = 0;
 
   (void)app_ui_consume_clear_cursor_blink_request();
 
@@ -493,9 +583,17 @@ void uiDisplayUpdate(void) {
   lastUpdateTime = millis();
 
   if (state.mode == CC) {
-    blink_cntr = (blink_cntr + 1) % 5;
-    g_ccLastSetText = "";
-    render_cc_home(state, blink_cntr != 4);
+    render_managed_home(state, true);
+    return;
+  }
+
+  if (state.mode == CP) {
+    render_managed_home(state, true);
+    return;
+  }
+
+  if (state.mode == CR) {
+    render_managed_home(state, true);
     return;
   }
 
@@ -540,8 +638,9 @@ void uiDisplayUpdate(void) {
     }
     uiGridSetCursor(state.cursorPosition, 2);
 
-    blink_cntr = (blink_cntr + 1) % 5;
     uiGridSetCursor(state.cursorPosition, 2);
+    static int blink_cntr = 0;
+    blink_cntr = (blink_cntr + 1) % 5;
     if (blink_cntr == 4) {
       clear_cursor_cell(state.cursorPosition, 2);
     }

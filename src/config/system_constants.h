@@ -32,7 +32,7 @@ const float OUT_CURR_FACT = 0.3375f;
 
 const unsigned long LCD_RFSH_TIME = 100;
 #ifdef WOKWI_SIMULATION
-const float SIM_DEFAULT_VOLTAGE = 12.0f;
+const float SIM_DEFAULT_VOLTAGE = 9.999f;
 #endif
 
 const float LIPO_DISC_CELL_VLTG = 3.6f;

@@ -86,7 +86,10 @@ void app_update_fan_control() {
       fan_on_time = currentMillis;
     }
     was_manual_override_active = true;
-    if (ui_state_machine_current_screen() == UiScreen::Home && app_mode_state_mode() != CC) {
+    if (ui_state_machine_current_screen() == UiScreen::Home &&
+        app_mode_state_mode() != CC &&
+        app_mode_state_mode() != CP &&
+        app_mode_state_mode() != CR) {
       ui_draw_header_temperature(app_measurements_temp_c());
     }
     return;
@@ -113,7 +116,10 @@ void app_update_fan_control() {
 
   was_manual_override_active = false;
 
-  if (ui_state_machine_current_screen() == UiScreen::Home && app_mode_state_mode() != CC) {
+  if (ui_state_machine_current_screen() == UiScreen::Home &&
+      app_mode_state_mode() != CC &&
+      app_mode_state_mode() != CP &&
+      app_mode_state_mode() != CR) {
     ui_draw_header_temperature(app_measurements_temp_c());
   }
 }

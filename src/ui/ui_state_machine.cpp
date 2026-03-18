@@ -108,7 +108,7 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
 }
 
 bool home_mode_uses_ui_template(uint8_t mode) {
-  return mode == 1 || mode == 2 || mode == 3;
+  return mode == 3;
 }
 
 void draw_home_template_for_mode(const UiViewState &viewState) {
