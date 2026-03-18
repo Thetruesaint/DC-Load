@@ -60,6 +60,7 @@ struct SystemState {
   float fanHoldSeconds;
   float batteryCutoffVolts;
   float batteryLife;
+  bool batteryDone;
   char batteryType[8];
   float transientLowCurrentA;
   float transientHighCurrentA;

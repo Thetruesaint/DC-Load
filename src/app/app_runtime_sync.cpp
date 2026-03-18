@@ -68,6 +68,7 @@ SystemState app_runtime_sync_capture() {
                               : app_fan_output_is_on();
   state.batteryCutoffVolts = app_battery_cutoff_volts_ref();
   state.batteryLife = app_battery_life_ref();
+  state.batteryDone = app_battery_done_ref();
   std::strncpy(state.batteryType, app_battery_type_ref().c_str(), sizeof(state.batteryType) - 1);
   state.batteryType[sizeof(state.batteryType) - 1] = '\0';
   state.transientLowCurrentA = app_transient_low_current_ref();
@@ -103,6 +104,7 @@ void app_runtime_sync_apply(const SystemState &state) {
   app_setpoint_set_reading(state.readingValue);
   app_load_set_enabled(state.loadEnabled);
   app_battery_cutoff_volts_ref() = state.batteryCutoffVolts;
+  app_battery_done_ref() = state.batteryDone;
   app_battery_type_ref() = String(state.batteryType);
   app_transient_apply_from_state(state);
   app_fan_set_manual_override(state.fanManualOverrideActive, state.fanManualStateOn);

@@ -39,8 +39,6 @@ void app_read_keypad(int col, int row) {
 
   if (app_mode_is_transient()) return;
 
-  if (app_mode_is_battery()) return;
-
   app_input_append_digit(key, maxDigits);
 
   if (key == '.') {

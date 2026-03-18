@@ -24,6 +24,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanHoldSeconds = state.fanHoldSeconds;
   view.batteryCutoffVolts = state.batteryCutoffVolts;
   view.batteryLife = state.batteryLife;
+  view.batteryDone = state.batteryDone;
   std::strncpy(view.batteryType, state.batteryType, sizeof(view.batteryType) - 1);
   view.batteryType[sizeof(view.batteryType) - 1] = '\0';
   view.transientLowCurrentA = state.transientLowCurrentA;

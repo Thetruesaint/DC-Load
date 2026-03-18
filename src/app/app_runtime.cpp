@@ -53,6 +53,7 @@ void prepare_core_managed_home_mode() {
       app_timer_reset();
       app_battery_life_ref() = 0.0f;
       app_battery_life_previous_ref() = 0.0f;
+      app_battery_done_ref() = false;
       app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
@@ -95,6 +96,7 @@ void run_core_managed_battery_mode() {
   float &batteryLifePrevious = app_battery_life_previous_ref();
   float &batteryCutoffVolts = app_battery_cutoff_volts_ref();
   float &batteryCurrent = app_battery_current_ref();
+  bool &batteryDone = app_battery_done_ref();
   bool &timerRunning = app_timer_running_ref();
 
   static unsigned long lastUpdate = 0;
@@ -109,14 +111,11 @@ void run_core_managed_battery_mode() {
 
   if (currentMillis - lastUpdate >= 500) {
     lastUpdate = currentMillis;
-    ui_update_battery_timer(app_timer_get_time());
-
     const float loadCurrent = (!timerRunning) ? 0.0f : app_measurements_current_a();
     batteryLife += (loadCurrent * 1000.0f) / 7200.0f;
   }
 
   if (batteryLife > batteryLifePrevious) {
-    ui_update_battery_life(batteryLife);
     batteryLifePrevious = batteryLife;
   }
 
@@ -148,7 +147,7 @@ void run_core_managed_battery_mode() {
     app_load_output_off();
     app_timer_stop();
     app_beep_buzzer();
-    ui_show_battery_done();
+    batteryDone = true;
   }
 }
 

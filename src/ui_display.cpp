@@ -1,9 +1,11 @@
 #include "ui_display.h"
 
 #include "app/app_input_buffer.h"
+#include "app/app_timing_alerts.h"
 #include "app/app_ui_context.h"
 #include "config/system_constants.h"
 #include "hw/hw_objects.h"
+#include "ui/ui_view_state.h"
 #include "ui/ui_state_cache.h"
 #include "ui/ui_state_machine.h"
 
@@ -58,6 +60,11 @@ String g_ccLastMetric3;
 String g_ccLastSetText;
 String g_ccLastFooterText;
 String g_ccLastTempText;
+String g_ccLastModeLine1;
+String g_ccLastModeLine2;
+String g_ccLastModeLine3;
+String g_ccLastModeLine4;
+String g_ccLastModeLine5;
 
 int cell_origin_x(int col) {
   return kGrid.originXPx + (col * kGrid.cellWidthPx);
@@ -133,7 +140,7 @@ String rtc_timestamp_text() {
   const DateTime now = rtc.now();
   return two_digits(now.day()) + "/" + two_digits(now.month()) + "/" +
          two_digits(now.year() % 100) + " " + two_digits(now.hour()) + ":" +
-         two_digits(now.minute()) + ":" + two_digits(now.second());
+         two_digits(now.minute());
 }
 
 int cc_cursor_text_index(const String &valueText, int cursorPosition) {
@@ -169,10 +176,126 @@ int cr_cursor_text_index(const String &valueText, int cursorPosition) {
   }
 }
 
+int bc_cursor_text_index(const String &valueText, int cursorPosition) {
+  return cc_cursor_text_index(valueText, cursorPosition);
+}
+
 void draw_degree_c_symbol(int x, int y, uint16_t color, uint16_t bg, uint8_t textSize, uint8_t textFont) {
   const int radius = (textSize >= 2) ? 3 : 2;
   uiDisplayDrawCircle(x, y + radius + 1, radius, color);
   uiDisplayPrintStyledAt(x + 5, y - 1, "C", color, bg, textSize, textFont);
+}
+
+void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = isLargeDisplay ? 2 : 1;
+  const uint8_t metricTextFont = 1;
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
+  const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
+  const int indicatorX = (displayW / 6) + 9;
+  const int indicatorY = topBarH / 2;
+  const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
+  const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
+  const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
+  const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
+  uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
+  int metric1W = 0;
+  int metric2W = 0;
+  int metric3W = 0;
+  int metricGap = 0;
+  const int metricsMargin = isLargeDisplay ? 12 : 8;
+  const int metricsAvailableW = displayW - (metricsMargin * 2);
+  for (; metricTextSize > 0; --metricTextSize) {
+    metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
+    metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
+    metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
+    metricGap = uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2;
+    const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
+    if (totalW <= metricsAvailableW || metricTextSize == 1) break;
+  }
+  const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
+  const int metricsStartX = ((displayW - metricsTotalW) / 2) + (isLargeDisplay ? 8 : 0);
+  const int metricsTextY = topBarH + ((metricsH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
+  const String footerVersion = "v2.12";
+  const String footerDateTime = rtc_timestamp_text();
+  const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+
+  uiDisplayClear();
+  uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
+  uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
+  uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+
+  uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  const uint16_t loadColor = state.loadEnabled ? kUiLoadOn : kUiLoadOff;
+  uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
+  uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
+  uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
+                         topBarTextY,
+                         state.loadEnabled ? "ON" : "OFF",
+                         kUiHighlight,
+                         kUiAccent,
+                         barTextSize,
+                         barTextFont);
+  const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
+                       topBarTextY + (isLargeDisplay ? 3 : 1),
+                       kUiHighlight,
+                       kUiAccent,
+                       barTextSize,
+                       barTextFont);
+
+  uiDisplayFillRect(1, topBarH + 1, displayW - 2, metricsH - 2, kUiBg);
+  uiDisplayPrintStyledAt(metricsStartX - metricGap, metricsTextY, metric1, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap, metricsTextY, metric2, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap, metricsTextY, metric3, kUiText, kUiBg, metricTextSize, metricTextFont);
+
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  uiDisplayPrintStyledAt(displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                         footerTextY,
+                         footerDateTime,
+                         kUiText,
+                         kUiAccent,
+                         footerTextSize,
+                         footerTextFont);
+}
+
+void draw_battery_setup_set_zone(const String &prefix, const String &valueText) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(textSize, textFont)) / 2);
+  const int setTextX = displayW / 50;
+
+  uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
+  uiDisplayPrintStyledAt(setTextX, setTextY, prefix, kUiSetColor, kUiBg, textSize, textFont);
+  uiDisplayPrintStyledAt(setTextX + uiDisplayTextWidth(prefix, textSize, textFont),
+                         setTextY,
+                         valueText,
+                         kUiSetColor,
+                         kUiBg,
+                         textSize,
+                         textFont);
 }
 
 bool render_managed_home(const UiViewState &state, bool cursorVisible) {
@@ -182,6 +305,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const bool isCcMode = state.mode == CC;
   const bool isCpMode = state.mode == CP;
   const bool isCrMode = state.mode == CR;
+  const bool isBcMode = state.mode == BC;
   const int topBarH = (displayH * 10) / 100;
   const int metricsH = (displayH * 20) / 100;
   const int setZoneH = (displayH * 10) / 100;
@@ -201,7 +325,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
 
   const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
-  const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : "CR";
+  const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : isCrMode ? "CR" : "BC";
   const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
   const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
   const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
@@ -237,10 +361,18 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const bool hasLiveInput = (liveInput != nullptr) && (liveInput[0] != '\0');
   const String setValueText = hasLiveInput
                                   ? String(liveInput)
-                                  : (isCcMode ? String(state.readingValue, 3)
+                                  : ((isCcMode || isBcMode) ? String(state.readingValue, 3)
                                               : isCpMode ? format_cp_value(state.readingValue)
                                                          : format_cr_value(state.readingValue));
-  const String setText = String("SET> ") + setValueText + (isCrMode ? " ohms" : (isCcMode ? "A" : "W"));
+  const String setPrefix = isBcMode ? "CURR> " : "SET> ";
+  const String setUnit = isCrMode ? " ohms" : ((isCcMode || isBcMode) ? "A" : "W");
+  const String setText = setPrefix + setValueText + setUnit;
+  const String bcStatus = state.batteryDone ? "DONE" : state.loadEnabled ? "DISCHARGING" : "READY";
+  const String modeLine1 = isBcMode ? String("Status: ") + bcStatus : "";
+  const String modeLine2 = isBcMode ? String("Cutoff: ") + String(state.batteryCutoffVolts, 2) + "v" : "";
+  const String modeLine3 = isBcMode ? String("Type: ") + String(state.batteryType) : "";
+  const String modeLine4 = isBcMode ? String("Capacity: ") + String(state.batteryLife, 0) + " mAh" : "";
+  const String modeLine5 = isBcMode ? String("Elapsed: ") + app_timer_get_time() : "";
 
   const bool modeChanged = g_ccLastMode != state.mode;
   const bool layoutChanged = !g_ccLayoutDrawn || g_ccLastDisplayW != displayW || g_ccLastDisplayH != displayH || modeChanged;
@@ -263,6 +395,11 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastSetText = "";
     g_ccLastFooterText = "";
     g_ccLastTempText = "";
+    g_ccLastModeLine1 = "";
+    g_ccLastModeLine2 = "";
+    g_ccLastModeLine3 = "";
+    g_ccLastModeLine4 = "";
+    g_ccLastModeLine5 = "";
   }
 
   const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
@@ -347,12 +484,91 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastMetric3 = metric3;
   }
 
+  if (isBcMode &&
+      (layoutChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
+       g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
+    const uint8_t infoTitleFont = 2;
+    const uint8_t infoTitleSize = isLargeDisplay ? 2 : 1;
+    const uint8_t infoTextFont = 2;
+    const uint8_t infoTextSize = isLargeDisplay ? 2 : 1;
+    const int titleH = uiDisplayFontHeight(infoTitleSize, infoTitleFont);
+    const int textH = uiDisplayFontHeight(infoTextSize, infoTextFont);
+    const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+    const int titleY = contentY + verticalGap;
+    const String titleText = "BATTERY CAPACITY";
+    const int titleX = (displayW - uiDisplayTextWidth(titleText, infoTitleSize, infoTitleFont)) / 2;
+    const int statusY = titleY + titleH + verticalGap;
+    const int statusX = (displayW - uiDisplayTextWidth(modeLine1, infoTextSize, infoTextFont)) / 2;
+    const int row2Y = statusY + textH + verticalGap;
+    const int row3Y = row2Y + textH + verticalGap;
+    const int pairGap = isLargeDisplay ? 28 : 18;
+    const int row2LeftW = uiDisplayTextWidth(modeLine3, infoTextSize, infoTextFont);
+    const int row2RightW = uiDisplayTextWidth(modeLine2, infoTextSize, infoTextFont);
+    const int row2TotalW = row2LeftW + pairGap + row2RightW;
+    const int row2StartX = (displayW - row2TotalW) / 2;
+    const int row2RightX = row2StartX + row2LeftW + pairGap;
+    const int row3LeftW = uiDisplayTextWidth(modeLine4, infoTextSize, infoTextFont);
+    const int row3RightW = uiDisplayTextWidth(modeLine5, infoTextSize, infoTextFont);
+    const int row3TotalW = row3LeftW + pairGap + row3RightW;
+    const int row3StartX = (displayW - row3TotalW) / 2;
+    const int row3RightX = row3StartX + row3LeftW + pairGap;
+    uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
+    uiDisplayPrintStyledAt(titleX,
+                           titleY,
+                           titleText,
+                           kUiHighlight,
+                           kUiModeAreaBg,
+                           infoTitleSize,
+                           infoTitleFont);
+    uiDisplayPrintStyledAt(statusX,
+                           statusY,
+                           modeLine1,
+                           kUiText,
+                           kUiModeAreaBg,
+                           infoTextSize,
+                           infoTextFont);
+    uiDisplayPrintStyledAt(row2StartX,
+                           row2Y,
+                           modeLine3,
+                           kUiText,
+                           kUiModeAreaBg,
+                           infoTextSize,
+                           infoTextFont);
+    uiDisplayPrintStyledAt(row2RightX,
+                           row2Y,
+                           modeLine2,
+                           kUiText,
+                           kUiModeAreaBg,
+                           infoTextSize,
+                           infoTextFont);
+    uiDisplayPrintStyledAt(row3StartX,
+                           row3Y,
+                           modeLine4,
+                           kUiText,
+                           kUiModeAreaBg,
+                           infoTextSize,
+                           infoTextFont);
+    uiDisplayPrintStyledAt(row3RightX,
+                           row3Y,
+                           modeLine5,
+                           kUiText,
+                           kUiModeAreaBg,
+                           infoTextSize,
+                           infoTextFont);
+    g_ccLastModeLine1 = modeLine1;
+    g_ccLastModeLine2 = modeLine2;
+    g_ccLastModeLine3 = modeLine3;
+    g_ccLastModeLine4 = modeLine4;
+    g_ccLastModeLine5 = modeLine5;
+    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+  }
+
   if (layoutChanged || g_ccLastSetText != setText ||
       (!hasLiveInput &&
        (g_ccLastCursorVisible != cursorVisible || g_ccLastCursorPosition != state.cursorPosition))) {
     uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
     const int setTextX = displayW / 50;
-    const String prefixText = "SET> ";
+    const String prefixText = setPrefix;
     const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
     uiDisplayPrintStyledAt(setTextX, setTextY, prefixText, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
 
@@ -368,7 +584,8 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
       const int highlightedIndex = isCcMode
                                        ? cc_cursor_text_index(setValueText, state.cursorPosition)
                                        : isCpMode ? cp_cursor_text_index(setValueText, state.cursorPosition)
-                                                  : cr_cursor_text_index(setValueText, state.cursorPosition);
+                                       : isCrMode ? cr_cursor_text_index(setValueText, state.cursorPosition)
+                                                  : bc_cursor_text_index(setValueText, state.cursorPosition);
       int currentX = setTextX + prefixWidth;
       for (int i = 0; i < setValueText.length(); ++i) {
         const String digitText = String(setValueText.charAt(i));
@@ -384,7 +601,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
       }
       uiDisplayPrintStyledAt(currentX,
                              setTextY,
-                             isCrMode ? " ohms" : (isCcMode ? "A" : "W"),
+                             setUnit,
                              kUiSetColor,
                              kUiBg,
                              sectionTextSize,
@@ -408,6 +625,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastFooterText = footerDateTime;
     draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   return true;
 }
 
@@ -498,6 +716,11 @@ void uiDisplayInvalidateHomeLayout(void) {
   g_ccLastSetText = "";
   g_ccLastFooterText = "";
   g_ccLastTempText = "";
+  g_ccLastModeLine1 = "";
+  g_ccLastModeLine2 = "";
+  g_ccLastModeLine3 = "";
+  g_ccLastModeLine4 = "";
+  g_ccLastModeLine5 = "";
 }
 
 void uiDisplayFillRect(int x, int y, int w, int h, uint16_t color) {
@@ -540,6 +763,143 @@ void uiDisplayPrintStyledAt(int x, int y, const String &text, uint16_t fg, uint1
   tft.setCursor(x, y);
   tft.print(text);
   restore_tft_text_style();
+}
+
+void uiDisplayRenderBatterySetupTask(const UiViewState &state) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const uint8_t titleFont = 2;
+  const uint8_t titleSize = isLargeDisplay ? 2 : 1;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int titleH = uiDisplayFontHeight(titleSize, titleFont);
+  const int textH = uiDisplayFontHeight(textSize, textFont);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+  const int titleY = contentY + verticalGap;
+  const String title = "BATTERY SETUP";
+  const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
+  const int gap = isLargeDisplay ? 34 : 18;
+  const int leftColW = max(uiDisplayTextWidth("1 Stor Li-Po", textSize, textFont),
+                           max(uiDisplayTextWidth("3 Disc Li-Po", textSize, textFont),
+                               uiDisplayTextWidth("5 Custom Cutoff", textSize, textFont)));
+  const int rightColW = max(uiDisplayTextWidth("2 Stor Li-Ion", textSize, textFont),
+                            uiDisplayTextWidth("4 Disc Li-Ion", textSize, textFont));
+  const int blockW = leftColW + gap + rightColW;
+  const int leftX = (displayW - blockW) / 2;
+  const int rightX = leftX + leftColW + gap;
+  const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(textSize, textFont)) / 2);
+  const int row1Y = titleY + titleH + verticalGap;
+  const int row2Y = row1Y + textH + verticalGap;
+  const int row3Y = row2Y + textH + verticalGap;
+
+  draw_setup_screen_base(state, "BC");
+  uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
+  uiDisplayPrintStyledAt(leftX, row1Y, "1 Stor Li-Po", kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(rightX, row1Y, "2 Stor Li-Ion", kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(leftX, row2Y, "3 Disc Li-Po", kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(rightX, row2Y, "4 Disc Li-Ion", kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(leftX, row3Y, "5 Custom Cutoff", kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(displayW / 50, setTextY, "SEL> 1..5", kUiSetColor, kUiBg, textSize, textFont);
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+}
+
+void uiDisplayRenderBatterySetupCustom(const UiViewState &state) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const uint8_t titleFont = 2;
+  const uint8_t titleSize = isLargeDisplay ? 2 : 1;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int titleH = uiDisplayFontHeight(titleSize, titleFont);
+  const int textH = uiDisplayFontHeight(textSize, textFont);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+  const int titleY = contentY + verticalGap;
+  const String title = "CUSTOM CUTOFF";
+  const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
+  const String line1 = String("Battery: ") + String(state.batteryType);
+  const String line2 = "Enter cutoff voltage";
+  const String line3 = "Range: 0.1v to 25.0v";
+  const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
+  const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
+  const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
+  const int row1Y = titleY + titleH + verticalGap;
+  const int row2Y = row1Y + textH + verticalGap;
+  const int row3Y = row2Y + textH + verticalGap;
+  draw_setup_screen_base(state, "BC");
+  uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
+  uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(line2X, row2Y, line2, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(line3X, row3Y, line3, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayUpdateBatterySetupCustomValue(state);
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+}
+
+void uiDisplayRenderBatterySetupCells(const UiViewState &state) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const uint8_t titleFont = 2;
+  const uint8_t titleSize = isLargeDisplay ? 2 : 1;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int titleH = uiDisplayFontHeight(titleSize, titleFont);
+  const int textH = uiDisplayFontHeight(textSize, textFont);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+  const int titleY = contentY + verticalGap;
+  const String title = "CELL COUNT";
+  const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
+  const String line1 = String("Battery: ") + String(state.batteryType);
+  const String line2 = "Enter cells in series";
+  const String line3 = "Range: 1 to 6";
+  const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
+  const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
+  const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
+  const int row1Y = titleY + titleH + verticalGap;
+  const int row2Y = row1Y + textH + verticalGap;
+  const int row3Y = row2Y + textH + verticalGap;
+  draw_setup_screen_base(state, "BC");
+  uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
+  uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(line2X, row2Y, line2, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayPrintStyledAt(line3X, row3Y, line3, kUiText, kUiModeAreaBg, textSize, textFont);
+  uiDisplayUpdateBatterySetupCellsValue(state);
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+}
+
+void uiDisplayUpdateBatterySetupCustomValue(const UiViewState &state) {
+  const String setValue = (state.batteryInputText[0] != '\0') ? String(state.batteryInputText) + "v" : "";
+  draw_battery_setup_set_zone("SET> ", setValue);
+}
+
+void uiDisplayUpdateBatterySetupCellsValue(const UiViewState &state) {
+  const String setValue = (state.batteryInputText[0] != '\0') ? String(state.batteryInputText) + "S" : "";
+  draw_battery_setup_set_zone("SEL> ", setValue);
 }
 
 void uiGridSetCursor(int col, int row) {
@@ -593,6 +953,11 @@ void uiDisplayUpdate(void) {
   }
 
   if (state.mode == CR) {
+    render_managed_home(state, true);
+    return;
+  }
+
+  if (state.mode == BC) {
     render_managed_home(state, true);
     return;
   }

@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+struct UiViewState;
+
 struct UiGridMetrics {
   uint16_t cols;
   uint16_t rows;
@@ -34,6 +36,11 @@ void uiDisplayPrintAt(int x, int y, const char *text, uint16_t fg, uint16_t bg, 
 void uiDisplayPrintAt(int x, int y, const String &text, uint16_t fg, uint16_t bg, uint8_t textSize);
 void uiDisplayPrintStyledAt(int x, int y, const char *text, uint16_t fg, uint16_t bg, uint8_t textSize, uint8_t textFont);
 void uiDisplayPrintStyledAt(int x, int y, const String &text, uint16_t fg, uint16_t bg, uint8_t textSize, uint8_t textFont);
+void uiDisplayRenderBatterySetupTask(const UiViewState &state);
+void uiDisplayRenderBatterySetupCustom(const UiViewState &state);
+void uiDisplayRenderBatterySetupCells(const UiViewState &state);
+void uiDisplayUpdateBatterySetupCustomValue(const UiViewState &state);
+void uiDisplayUpdateBatterySetupCellsValue(const UiViewState &state);
 
 void uiGridSetCursor(int col, int row);
 void uiClearCells(int col, int row, byte count = 1);

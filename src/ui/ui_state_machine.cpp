@@ -108,7 +108,8 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
 }
 
 bool home_mode_uses_ui_template(uint8_t mode) {
-  return mode == 3;
+  (void)mode;
+  return false;
 }
 
 void draw_home_template_for_mode(const UiViewState &viewState) {
@@ -146,27 +147,30 @@ void draw_home_if_needed(const UiViewState &viewState) {
   g_homeCache.valid = true;
 }
 
-void draw_battery_setup_task_if_needed() {
+void draw_battery_setup_task_if_needed(const UiViewState &viewState) {
   if (g_batterySetupCache.valid && g_batterySetupCache.stage == 0) {
     return;
   }
 
-  ui_draw_battery_task_menu();
+  uiDisplayRenderBatterySetupTask(viewState);
   g_batterySetupCache.stage = 0;
   g_batterySetupCache.valid = true;
 }
 
 void draw_battery_setup_custom_if_needed(const UiViewState &viewState) {
-  if (g_batterySetupCache.valid &&
-      g_batterySetupCache.stage == 1 &&
-      std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0 &&
-      std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0) {
+  const bool sameStage = g_batterySetupCache.valid && g_batterySetupCache.stage == 1;
+  const bool sameType = std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0;
+  const bool sameInput = std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0;
+
+  if (sameStage && sameType && sameInput) {
     return;
   }
 
-  ui_draw_battery_custom_cutoff_prompt(String(viewState.batteryType));
-  ui_prepare_value_input_prompt(7, 3, 5);
-  printLCD_S(7, 3, String(viewState.batteryInputText));
+  if (!sameStage || !sameType) {
+    uiDisplayRenderBatterySetupCustom(viewState);
+  } else {
+    uiDisplayUpdateBatterySetupCustomValue(viewState);
+  }
   std::strncpy(g_batterySetupCache.batteryType, viewState.batteryType, sizeof(g_batterySetupCache.batteryType) - 1);
   g_batterySetupCache.batteryType[sizeof(g_batterySetupCache.batteryType) - 1] = '\0';
   std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
@@ -176,16 +180,19 @@ void draw_battery_setup_custom_if_needed(const UiViewState &viewState) {
 }
 
 void draw_battery_setup_cells_if_needed(const UiViewState &viewState) {
-  if (g_batterySetupCache.valid &&
-      g_batterySetupCache.stage == 2 &&
-      std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0 &&
-      std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0) {
+  const bool sameStage = g_batterySetupCache.valid && g_batterySetupCache.stage == 2;
+  const bool sameType = std::strcmp(g_batterySetupCache.batteryType, viewState.batteryType) == 0;
+  const bool sameInput = std::strcmp(g_batterySetupCache.inputText, viewState.batteryInputText) == 0;
+
+  if (sameStage && sameType && sameInput) {
     return;
   }
 
-  ui_draw_battery_cell_count_prompt(String(viewState.batteryType));
-  ui_prepare_value_input_prompt(9, 2, 1);
-  printLCD_S(9, 2, String(viewState.batteryInputText));
+  if (!sameStage || !sameType) {
+    uiDisplayRenderBatterySetupCells(viewState);
+  } else {
+    uiDisplayUpdateBatterySetupCellsValue(viewState);
+  }
   std::strncpy(g_batterySetupCache.batteryType, viewState.batteryType, sizeof(g_batterySetupCache.batteryType) - 1);
   g_batterySetupCache.batteryType[sizeof(g_batterySetupCache.batteryType) - 1] = '\0';
   std::strncpy(g_batterySetupCache.inputText, viewState.batteryInputText, sizeof(g_batterySetupCache.inputText) - 1);
@@ -383,14 +390,12 @@ void screen_update_home(const UiViewState &viewState) {
 void screen_render_home(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_battery_setup_task(const UiViewState &viewState) {
-  (void)viewState;
   g_batterySetupCache.valid = false;
-  draw_battery_setup_task_if_needed();
+  draw_battery_setup_task_if_needed(viewState);
 }
 
 void screen_update_battery_setup_task(const UiViewState &viewState) {
-  (void)viewState;
-  draw_battery_setup_task_if_needed();
+  draw_battery_setup_task_if_needed(viewState);
 }
 
 void screen_render_battery_setup_task(const UiViewState &viewState) { (void)viewState; }
