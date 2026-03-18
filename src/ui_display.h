@@ -5,16 +5,6 @@
 
 struct UiViewState;
 
-struct UiGridMetrics {
-  uint16_t cols;
-  uint16_t rows;
-  uint16_t cellWidthPx;
-  uint16_t cellHeightPx;
-  uint16_t originXPx;
-  uint16_t originYPx;
-  uint8_t textSize;
-};
-
 int uiDisplayWidthPx();
 int uiDisplayHeightPx();
 int uiDisplayTextWidth(const char *text, uint8_t textSize = 1, uint8_t textFont = 1);
@@ -56,21 +46,5 @@ void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);
 void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail);
 void uiDisplayRenderProtectionModal(const char *message, char causeCode);
-void uiDisplayRenderLegacyLimitsSummary(float currentCutoff, float powerCutoff, float tempCutoff);
-void uiDisplayDrawLegacyHeaderTemperature(int tempC);
-
-void uiGridSetCursor(int col, int row);
-void uiClearCells(int col, int row, byte count = 1);
-void uiGridPrintString(int col, int row, const String &message);
-void uiGridPrint(int col, int row, const __FlashStringHelper *message);
-void uiGridPrintNumber(int col, int row, float number, char unit = '\0', int decimals = 2);
-
-void printLCDRaw(const String &message);
-void printLCDRaw(const char *message);
-void printLCDRaw(const __FlashStringHelper *message);
-void printLCDRaw(char value);
-void printLCDRaw(int value);
-void printLCDRaw(unsigned long value);
-void printLCDRaw(float value, int decimals = 2);
 
 #endif

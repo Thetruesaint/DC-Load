@@ -22,12 +22,6 @@ enum class UiScreen : uint8_t {
   MenuCalibration
 };
 
-enum class ConfigSection : uint8_t {
-  None = 0,
-  Limits,
-  Calibration
-};
-
 enum class ConfigMenu : uint8_t {
   None = 0,
   Root,
@@ -133,7 +127,6 @@ struct SystemState {
   bool modeConfigured;
 
   UiScreen uiScreen;
-  ConfigSection pendingConfigSection;
   ConfigMenu currentConfigMenu;
   ConfigMenu parentConfigMenu;
 };
@@ -141,7 +134,6 @@ struct SystemState {
 inline SystemState core_state_make_default() {
   SystemState state = {0};
   state.uiScreen = UiScreen::Home;
-  state.pendingConfigSection = ConfigSection::None;
   state.currentConfigMenu = ConfigMenu::None;
   state.parentConfigMenu = ConfigMenu::None;
   state.limitsMenuField = 0;

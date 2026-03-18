@@ -33,9 +33,7 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuCalibration;
   }
 
-  if (state.currentConfigMenu == ConfigMenu::Root ||
-      state.pendingConfigSection == ConfigSection::Limits ||
-      state.pendingConfigSection == ConfigSection::Calibration) {
+  if (state.currentConfigMenu == ConfigMenu::Root) {
     return UiScreen::MenuRoot;
   }
 

@@ -66,7 +66,6 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.protectionMenuSelection = state.protectionMenuSelection;
   view.updateMenuSelection = state.updateMenuSelection;
   view.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
-  view.pendingConfigSection = static_cast<uint8_t>(state.pendingConfigSection);
   return view;
 }
 }

@@ -14,18 +14,10 @@
 #include "app_mode_state_context.h"
 #include "app_runtime_context.h"
 #include "app_setpoint_context.h"
-#include "app_value_input.h"
 
 namespace {
 constexpr unsigned long RUNOUT_SETTLE_MS = 200UL;
 constexpr unsigned long PROTECTION_BLINK_MS = 250UL;
-
-bool uses_legacy_home_temperature_overlay() {
-  if (ui_state_machine_current_screen() != UiScreen::Home) return false;
-
-  const uint8_t mode = app_mode_state_mode();
-  return mode != CC && mode != CP && mode != CR && mode != BC && mode != TC && mode != TL && mode != CA;
-}
 
 void set_fan_output(bool on) {
   digitalWrite(FAN_CTRL, on ? HIGH : LOW);
@@ -41,7 +33,7 @@ char protection_cause_code(bool vlimit, bool ilimit, bool plimit, bool climit) {
 }
 
 void wait_for_protection_ack(const char *message, char causeCode) {
-  app_reset_input_pointers();
+  app_input_reset();
 
   bool encoderWasPressed = false;
   int lastTempC = app_measurements_temp_c();
@@ -51,7 +43,7 @@ void wait_for_protection_ack(const char *message, char causeCode) {
   while (true) {
     const char key = app_input_read_key();
     if (!app_input_is_no_key(key) && key == 'E') {
-      app_reset_input_pointers();
+      app_input_reset();
       return;
     }
 
@@ -60,7 +52,7 @@ void wait_for_protection_ack(const char *message, char causeCode) {
       while (hal_encoder_button_low()) {
         hal_delay_ms(10);
       }
-      app_reset_input_pointers();
+      app_input_reset();
       return;
     }
     encoderWasPressed = encoderPressed;
@@ -100,9 +92,6 @@ void app_update_fan_control() {
       fan_on_time = currentMillis;
     }
     was_manual_override_active = true;
-    if (uses_legacy_home_temperature_overlay()) {
-      uiDisplayDrawLegacyHeaderTemperature(app_measurements_temp_c());
-    }
     return;
   }
 
@@ -126,10 +115,6 @@ void app_update_fan_control() {
   }
 
   was_manual_override_active = false;
-
-  if (uses_legacy_home_temperature_overlay()) {
-    uiDisplayDrawLegacyHeaderTemperature(app_measurements_temp_c());
-  }
 }
 
 void app_check_limits() {
@@ -182,7 +167,7 @@ void app_check_limits() {
 
     wait_for_protection_ack(message, protection_cause_code(vlimit, ilimit, plimit, climit));
 
-    app_reset_input_pointers();
+    app_input_reset();
     app_mode_state_set_initialized(false);
     ui_state_machine_reset();
   }

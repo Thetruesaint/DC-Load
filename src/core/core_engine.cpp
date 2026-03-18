@@ -471,15 +471,14 @@ void dispatch_load_toggle() {
   g_state.loadToggleEvent = true;
 }
 
-void dispatch_open_config_section(int32_t rawSection) {
+void dispatch_open_config_menu(int32_t rawRootTarget) {
   if (!can_open_config_from_screen(g_state.uiScreen)) {
     return;
   }
 
-  const ConfigSection section = decode_config_section(rawSection);
+  const ConfigMenu rootTarget = decode_config_root_target(rawRootTarget);
   g_state.loadEnabled = false;
-  g_state.pendingConfigSection = default_config_selection(section);
-  g_state.menuRootSelection = (section == ConfigSection::Calibration) ? 1 : 0;
+  g_state.menuRootSelection = (rootTarget == ConfigMenu::Calibration) ? 1 : 0;
   g_state.protectionMenuSelection = 0;
   g_state.updateMenuSelection = 0;
   g_state.fanSettingsMenuSelection = 0;
@@ -499,7 +498,6 @@ void core_sync_from_runtime(const RuntimeSnapshot &snapshot) {
   if (calibrationMenuReturnRequested) {
     g_state.currentConfigMenu = ConfigMenu::Calibration;
     g_state.parentConfigMenu = ConfigMenu::Root;
-    g_state.pendingConfigSection = ConfigSection::Calibration;
     g_state.calibrationMenuActive = true;
     if (g_state.calibrationMenuOption < 1 || g_state.calibrationMenuOption > 5) {
       g_state.calibrationMenuOption = 1;
@@ -548,8 +546,8 @@ void core_dispatch(const UserAction &action) {
       }
       break;
 
-    case ActionType::OpenConfigSection:
-      dispatch_open_config_section(action.value);
+    case ActionType::OpenConfigMenu:
+      dispatch_open_config_menu(action.value);
       break;
 
     case ActionType::None:

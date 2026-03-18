@@ -8,7 +8,6 @@ namespace {
 struct PreservedUiState {
   uint32_t actionCounter;
   UiScreen uiScreen;
-  ConfigSection pendingConfigSection;
   uint8_t menuRootSelection;
   uint8_t protectionMenuSelection;
   uint8_t updateMenuSelection;
@@ -59,7 +58,6 @@ PreservedUiState capture_preserved_ui_state(const SystemState &state) {
   PreservedUiState preserved = {};
   preserved.actionCounter = state.actionCounter;
   preserved.uiScreen = state.uiScreen;
-  preserved.pendingConfigSection = state.pendingConfigSection;
   preserved.menuRootSelection = state.menuRootSelection;
   preserved.protectionMenuSelection = state.protectionMenuSelection;
   preserved.updateMenuSelection = state.updateMenuSelection;
@@ -154,7 +152,6 @@ void apply_runtime_snapshot(SystemState *current, const RuntimeSnapshot &incomin
 void restore_preserved_ui_state(SystemState *current, const PreservedUiState &preserved, const RuntimeSnapshot &incoming) {
   current->actionCounter = preserved.actionCounter;
   current->uiScreen = preserved.uiScreen;
-  current->pendingConfigSection = preserved.pendingConfigSection;
   current->menuRootSelection = preserved.menuRootSelection;
   current->protectionMenuSelection = preserved.protectionMenuSelection;
   current->updateMenuSelection = preserved.updateMenuSelection;

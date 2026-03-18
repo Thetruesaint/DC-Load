@@ -13,7 +13,7 @@ enum class ActionType : uint8_t {
   LoadToggle,
   ModeSelect,
   ValueConfirm,
-  OpenConfigSection,
+  OpenConfigMenu,
   OpenLimitsSetup
 };
 
@@ -51,16 +51,16 @@ constexpr UserAction make_value_confirm_action(int32_t valueMilli) {
   return {ActionType::ValueConfirm, valueMilli, '\0'};
 }
 
-constexpr UserAction make_open_config_section_action(ConfigSection section) {
-  return {ActionType::OpenConfigSection, static_cast<int32_t>(section), '\0'};
+constexpr UserAction make_open_config_menu_action(ConfigMenu rootTarget) {
+  return {ActionType::OpenConfigMenu, static_cast<int32_t>(rootTarget), '\0'};
 }
 
 constexpr UserAction make_open_limits_config_action() {
-  return make_open_config_section_action(ConfigSection::Limits);
+  return make_open_config_menu_action(ConfigMenu::Protection);
 }
 
 constexpr UserAction make_open_calibration_config_action() {
-  return make_open_config_section_action(ConfigSection::Calibration);
+  return make_open_config_menu_action(ConfigMenu::Calibration);
 }
 
 constexpr UserAction make_open_limits_setup_action() {

@@ -62,8 +62,6 @@ struct UiViewState {
   uint8_t protectionMenuSelection;
   uint8_t updateMenuSelection;
   uint8_t fanSettingsMenuSelection;
-
-  uint8_t pendingConfigSection;
 };
 
 inline UiViewState ui_view_state_make_default() {

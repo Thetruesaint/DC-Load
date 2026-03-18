@@ -3,8 +3,7 @@
 
 #include "core_state.h"
 
-ConfigSection decode_config_section(int32_t raw);
-ConfigSection default_config_selection(ConfigSection section);
+ConfigMenu decode_config_root_target(int32_t raw);
 
 void clear_config_runtime_flags(SystemState *state);
 void reset_config_navigation(SystemState *state);

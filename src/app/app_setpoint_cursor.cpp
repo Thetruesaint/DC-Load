@@ -2,7 +2,6 @@
 
 #include "../config/system_constants.h"
 #include "../core/core_modes.h"
-#include "../ui_display.h"
 #include "app_inputs.h"
 #include "app_io_context.h"
 #include "app_loop.h"
@@ -56,6 +55,5 @@ void app_setpoint_cursor_update() {
   app_runtime_set_cursor_position(cursor);
   lastCursor = cursor;
 
-  uiGridSetCursor(cursor, 2);
 }
 

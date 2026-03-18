@@ -17,18 +17,8 @@
 #include <cstring>
 
 namespace {
-#if defined(TFT_WIDTH) && (TFT_WIDTH <= 240)
-constexpr UiGridMetrics kGrid = {20, 4, 12, 16, 0, 0, 2};
-#else
-constexpr UiGridMetrics kGrid = {20, 4, 18, 24, 0, 0, 3};
-#endif
-
 constexpr uint16_t TFT_TEXT_COLOR = TFT_CYAN;
 constexpr uint16_t TFT_BG_COLOR = TFT_BLACK;
-constexpr int TFT_STATUS_COL = 8;
-constexpr int TFT_STATUS_ROW = 0;
-constexpr int TFT_STATUS_COLS = 4;
-constexpr int TFT_STATUS_ROWS = 1;
 constexpr uint16_t kUiBg = TFT_BLACK;
 constexpr uint16_t kUiAccent = TFT_DARKGREY;
 constexpr uint16_t kUiBorder = TFT_WHITE;
@@ -74,32 +64,10 @@ String g_ccLastModeLine4;
 String g_ccLastModeLine5;
 bool g_ccLastShiftActive = false;
 
-int cell_origin_x(int col) {
-  return kGrid.originXPx + (col * kGrid.cellWidthPx);
-}
-
-int cell_origin_y(int row) {
-  return kGrid.originYPx + (row * kGrid.cellHeightPx);
-}
-
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
   tft.setTextFont(1);
-  tft.setTextSize(kGrid.textSize);
-}
-
-void draw_tft_load_status(bool enabled) {
-  const uint16_t bg = enabled ? TFT_RED : TFT_GREEN;
-  const int statusX = cell_origin_x(TFT_STATUS_COL);
-  const int statusY = cell_origin_y(TFT_STATUS_ROW);
-  const int statusW = TFT_STATUS_COLS * kGrid.cellWidthPx;
-  const int statusH = (TFT_STATUS_ROWS * kGrid.cellHeightPx) - 2;
-
-  tft.fillRect(statusX, statusY, statusW, statusH, bg);
-  tft.setTextColor(TFT_WHITE, bg);
-  tft.setCursor(statusX, statusY);
-  tft.print(enabled ? "ON  " : "OFF ");
-  restore_tft_text_style();
+  tft.setTextSize(1);
 }
 
 void draw_centered_load_status(int displayW, int topBarH, bool enabled, bool isLargeDisplay, uint8_t textSize, uint8_t textFont) {
@@ -118,10 +86,6 @@ void draw_centered_load_status(int displayW, int topBarH, bool enabled, bool isL
                          kUiAccent,
                          textSize,
                          textFont);
-}
-
-void clear_cursor_cell(int col, int row) {
-  tft.fillRect(cell_origin_x(col), cell_origin_y(row), kGrid.cellWidthPx, kGrid.cellHeightPx - 2, TFT_BG_COLOR);
 }
 
 String format_fixed(float value, int decimals) {
@@ -873,9 +837,12 @@ void render_keypad_input(uint8_t mode, bool calibrationMode) {
     return;
   }
 
-  uiClearCells(inputCol, inputRow, maxDigits);
-  uiGridSetCursor(inputCol, inputRow);
-  printLCDRaw(currentInput);
+  const int inputX = inputCol * 18;
+  const int inputY = inputRow * 24;
+  tft.fillRect(inputX, inputY, maxDigits * 18, 22, TFT_BG_COLOR);
+  tft.setCursor(inputX, inputY);
+  tft.print(currentInput);
+  restore_tft_text_style();
 
   strncpy(lastInput, currentInput, sizeof(lastInput) - 1);
   lastInput[sizeof(lastInput) - 1] = '\0';
@@ -918,7 +885,7 @@ void uiDisplayInit(void) {
 
 void uiDisplayClear(void) {
   tft.fillScreen(TFT_BG_COLOR);
-  tft.setCursor(kGrid.originXPx, kGrid.originYPx);
+  tft.setCursor(0, 0);
   restore_tft_text_style();
 }
 
@@ -1881,131 +1848,6 @@ void uiDisplayRenderProtectionModal(const char *message, char causeCode) {
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 
-void uiDisplayRenderLegacyLimitsSummary(float currentCutoff, float powerCutoff, float tempCutoff) {
-  uiDisplayClear();
-  uiGridPrint(1, 0, F("Limits"));
-  uiGridPrint(0, 1, F("Current:"));
-  uiGridPrintNumber(9, 1, currentCutoff, ' ', 3);
-  printLCDRaw(F("A"));
-  uiGridPrint(0, 2, F("Power:"));
-  uiGridPrintNumber(9, 2, powerCutoff, 'W', 2);
-  uiGridPrint(0, 3, F("Temp.:"));
-  uiGridPrintNumber(9, 3, tempCutoff, ' ', 0);
-  printLCDRaw(char(0xDF));
-  printLCDRaw("C");
-}
-
-void uiDisplayDrawLegacyHeaderTemperature(int tempC) {
-  uiGridSetCursor(16, 0);
-  if (tempC < 10) {
-    printLCDRaw(" ");
-  }
-  printLCDRaw(tempC);
-  printLCDRaw(char(0xDF));
-  printLCDRaw("C");
-}
-
-void uiGridSetCursor(int col, int row) {
-  tft.setCursor(cell_origin_x(col), cell_origin_y(row));
-}
-
-void uiClearCells(int col, int row, byte count) {
-  tft.fillRect(cell_origin_x(col), cell_origin_y(row), count * kGrid.cellWidthPx, kGrid.cellHeightPx - 2, TFT_BG_COLOR);
-}
-
-void printLCDRaw(const String &message) { tft.print(message); }
-
-void printLCDRaw(const char *message) { tft.print(message); }
-
-void printLCDRaw(const __FlashStringHelper *message) { tft.print(message); }
-
-void printLCDRaw(char value) { tft.print(value); }
-
-void printLCDRaw(int value) { tft.print(value); }
-
-void printLCDRaw(unsigned long value) { tft.print(value); }
-
-void printLCDRaw(float value, int decimals) { tft.print(value, decimals); }
-
-bool home_mode_uses_managed_renderer(uint8_t mode) {
-  switch (mode) {
-    case CC:
-    case CP:
-    case CR:
-    case BC:
-    case CA:
-    case TC:
-    case TL:
-      return true;
-    default:
-      return false;
-  }
-}
-
-void render_legacy_home_metrics(const UiViewState &state, float measuredCurrent, float measuredVoltage) {
-  const float power = state.measuredPower_W;
-  const uint8_t mode = state.mode;
-
-  draw_tft_load_status(state.loadEnabled);
-  uiGridPrintNumber(0, 1, measuredCurrent, 'A', (measuredCurrent <= 9.999f) ? 3 : 2);
-  uiGridPrintNumber(7, 1, measuredVoltage, 'v', (measuredVoltage <= 9.999f) ? 3 : (measuredVoltage <= 99.99f) ? 2 : 1);
-
-  if (mode == BC || mode == CA) {
-    return;
-  }
-
-  uiGridSetCursor(14, 1);
-  if (power < 10) {
-    uiClearCells(14, 1);
-    printLCDRaw(power, 2);
-  } else if (power < 100) {
-    printLCDRaw(power, 2);
-  } else {
-    printLCDRaw(power, 1);
-  }
-  uiGridSetCursor(19, 1);
-  printLCDRaw(F("w"));
-}
-
-void render_legacy_home_setpoint(const UiViewState &state) {
-  const uint8_t mode = state.mode;
-  if (mode == TC || mode == TL) {
-    return;
-  }
-
-  uiGridSetCursor(6, 2);
-  const float readingValue = state.readingValue;
-  if (mode == CC || mode == BC || mode == CA) {
-    if (readingValue < 100) uiClearCells(6, 2);
-    if (readingValue < 10) uiClearCells(7, 2);
-    printLCDRaw(readingValue, 3);
-  } else {
-    if (readingValue < 100) printLCDRaw("0");
-    if (readingValue < 10) printLCDRaw("0");
-    printLCDRaw(readingValue, 1);
-  }
-
-  uiGridSetCursor(state.cursorPosition, 2);
-  static int blink_cntr = 0;
-  blink_cntr = (blink_cntr + 1) % 5;
-  if (blink_cntr == 4) {
-    clear_cursor_cell(state.cursorPosition, 2);
-  }
-}
-
-void render_legacy_home(const UiViewState &state) {
-  g_ccLayoutDrawn = false;
-
-  float measuredVoltage = state.measuredVoltage_V;
-  float measuredCurrent = state.measuredCurrent_A;
-  if (measuredVoltage < 0.011f && state.mode != CA) measuredVoltage = 0.0f;
-  if (measuredCurrent < 0.006f && state.mode != CA) measuredCurrent = 0.0f;
-
-  render_legacy_home_metrics(state, measuredCurrent, measuredVoltage);
-  render_legacy_home_setpoint(state);
-  render_keypad_input(state.mode, state.mode == CA);
-}
-
 void uiDisplayUpdate(void) {
   static unsigned long lastUpdateTime = 0;
 
@@ -2023,30 +1865,5 @@ void uiDisplayUpdate(void) {
 
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
   lastUpdateTime = millis();
-
-  if (home_mode_uses_managed_renderer(state.mode)) {
-    render_managed_home(state, true);
-    return;
-  }
-
-  render_legacy_home(state);
-}
-
-void uiGridPrintString(int col, int row, const String &message) {
-  uiGridSetCursor(col, row);
-  printLCDRaw(message);
-}
-
-void uiGridPrint(int col, int row, const __FlashStringHelper *message) {
-  uiGridSetCursor(col, row);
-  printLCDRaw(message);
-}
-
-void uiGridPrintNumber(int col, int row, float number, char unit, int decimals) {
-  uiGridSetCursor(col, row);
-  printLCDRaw(number, decimals);
-
-  if (unit != '\0' && unit != ' ') {
-    printLCDRaw(unit);
-  }
+  render_managed_home(state, true);
 }
