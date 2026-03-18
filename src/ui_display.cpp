@@ -2,6 +2,8 @@
 
 #include "app/app_input_buffer.h"
 #include "app/app_calibration_context.h"
+#include "app/app_fan_context.h"
+#include "app/app_limits_context.h"
 #include "app/app_measurements_context.h"
 #include "app/app_msc.h"
 #include "app/app_load_context.h"
@@ -76,16 +78,33 @@ void draw_centered_load_status(int displayW, int topBarH, bool enabled, bool isL
   const int indicatorY = topBarH / 2;
   const int textY = ((topBarH - uiDisplayFontHeight(textSize, textFont)) / 2) + (isLargeDisplay ? 1 : 0);
   const uint16_t loadColor = enabled ? kUiLoadOn : kUiLoadOff;
+  const uint16_t statusTextColor = enabled ? kUiText : kUiHighlight;
 
   uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
   uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
   uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
                          textY,
                          enabled ? "ON" : "OFF",
-                         kUiHighlight,
+                         statusTextColor,
                          kUiAccent,
                          textSize,
                          textFont);
+}
+
+uint16_t temperature_status_color(float tempC, float fanOnC, float tempCutoffC) {
+  const float safeFanOn = max(0.0f, fanOnC);
+  const float safeCutoff = max(safeFanOn, tempCutoffC);
+
+  if (tempC <= safeFanOn) return kUiText;
+  if (tempC >= safeCutoff) return kUiAlertBg;
+
+  const float range = max(0.1f, safeCutoff - safeFanOn);
+  const float progress = constrain((tempC - safeFanOn) / range, 0.0f, 1.0f);
+
+  const uint8_t red = 255;
+  const uint8_t green = static_cast<uint8_t>(255.0f * (1.0f - progress));
+  const uint8_t blue = 0;
+  return tft.color565(red, green, blue);
 }
 
 String format_fixed(float value, int decimals) {
@@ -279,6 +298,7 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   const int indicatorX = (displayW / 6) + 9;
   const int indicatorY = topBarH / 2;
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
+  const uint16_t tempColor = temperature_status_color(state.tempC, state.fanTempOnC, state.tempCutOffC);
   const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
   const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
   const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
@@ -313,10 +333,10 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
   draw_centered_load_status(displayW, topBarH, state.loadEnabled, isLargeDisplay, barTextSize, barTextFont);
   const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
-  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
   draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
                        topBarTextY + (isLargeDisplay ? 3 : 1),
-                       kUiHighlight,
+                       tempColor,
                        kUiAccent,
                        barTextSize,
                        barTextFont);
@@ -507,6 +527,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   }
 
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
+  const uint16_t tempColor = temperature_status_color(state.tempC, state.fanTempOnC, state.tempCutOffC);
   if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
     uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
     uiDisplayPrintStyledAt(displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
@@ -515,10 +536,10 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
 
   const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
   if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
-    uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+    uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
     draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
                          topBarTextY + (isLargeDisplay ? 3 : 1),
-                         kUiHighlight,
+                         tempColor,
                          kUiAccent,
                          barTextSize,
                          barTextFont);
@@ -1814,6 +1835,9 @@ void draw_calibration_overlay_chrome(const char *title) {
   const int indicatorX = (layout.displayW / 6) + 9;
   const int indicatorY = layout.topBarH / 2;
   const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
+                                                      static_cast<float>(app_fan_temp_on_c()),
+                                                      app_limits_temp_cutoff());
   const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
@@ -1833,10 +1857,10 @@ void draw_calibration_overlay_chrome(const char *title) {
                          kUiAccent,
                          barTextSize,
                          barTextFont);
-  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
   draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
                        topBarTextY + (layout.isLargeDisplay ? 3 : 1),
-                       kUiHighlight,
+                       tempColor,
                        kUiAccent,
                        barTextSize,
                        barTextFont);
@@ -1859,6 +1883,9 @@ void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {
   const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
   const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
+                                                      static_cast<float>(app_fan_temp_on_c()),
+                                                      app_limits_temp_cutoff());
   const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
@@ -1870,10 +1897,10 @@ void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {
 
   uiDisplayPrintStyledAt(layout.displayW / 50, topBarTextY, title, kUiHighlight, kUiAccent, barTextSize, barTextFont);
   draw_centered_load_status(layout.displayW, layout.topBarH, loadEnabled, layout.isLargeDisplay, barTextSize, barTextFont);
-  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
   draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
                        topBarTextY + (layout.isLargeDisplay ? 3 : 1),
-                       kUiHighlight,
+                       tempColor,
                        kUiAccent,
                        barTextSize,
                        barTextFont);

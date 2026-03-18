@@ -15,6 +15,7 @@
 **Mejoras**
 - Mejoras esteticas en setups de TC, TL y Menues de Configuración
 - ya se puede setear fecha y hora del RTC.
+- Indicador de ON en blanco y Temp con grado de color de amarillo al rojo al incrementarse.
 
 **Posibles Mejoras SW:**
 - Unificar template para cuando se supera mas de un límite.
