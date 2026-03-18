@@ -25,6 +25,7 @@ int uiDisplayFontHeight(uint8_t textSize = 1, uint8_t textFont = 1);
 void uiDisplayInit(void);
 void uiDisplayClear(void);
 void uiDisplayUpdate(void);
+void uiDisplayInvalidateHomeLayout(void);
 void uiDisplayFillRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayDrawRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayFillCircle(int x, int y, int r, uint16_t color);

@@ -9,7 +9,6 @@
 #include "../ui_display.h"
 #include "app_fan_context.h"
 #include "app_health_context.h"
-#include "app_input_buffer.h"
 #include "app_limits_bootstrap.h"
 #include "app_limits_context.h"
 #include "app_measurements_context.h"
@@ -17,127 +16,6 @@
 
 namespace {
 bool g_startupNeedsLimitsSetup = false;
-
-constexpr uint16_t kUiBg = TFT_BLACK;
-constexpr uint16_t kUiAccent = TFT_DARKGREY;
-constexpr uint16_t kUiText = TFT_WHITE;
-constexpr uint16_t kUiDark = TFT_BLACK;
-constexpr uint16_t kUiBorder = TFT_WHITE;
-constexpr uint16_t kUiModeAreaBg = TFT_BLUE;
-constexpr uint16_t kUiLoadOn = TFT_RED;
-constexpr uint16_t kUiLoadOff = TFT_GREEN;
-constexpr uint16_t kUiHighlight = TFT_YELLOW;
-constexpr uint16_t kUiSetColor = TFT_MAGENTA;
-
-void draw_degree_c_symbol(int x, int y, uint16_t color, uint16_t bg, uint8_t textSize, uint8_t textFont) {
-  const int radius = (textSize >= 2) ? 3 : 2;
-  uiDisplayDrawCircle(x, y + radius + 1, radius, color);
-  uiDisplayPrintStyledAt(x + 5, y - 1, "C", color, bg, textSize, textFont);
-}
-
-void show_static_cc_template_preview() {
-  const int displayW = uiDisplayWidthPx();
-  const int displayH = uiDisplayHeightPx();
-  const bool isLargeDisplay = displayW >= 400;
-  const int topBarH = (displayH * 10) / 100;
-  const int metricsH = (displayH * 20) / 100;
-  const int setZoneH = (displayH * 10) / 100;
-  const int bottomBarH = (displayH * 10) / 100;
-  const int footerY = displayH - bottomBarH;
-  const int setZoneY = footerY - setZoneH;
-  const int contentY = topBarH + metricsH;
-  const int contentH = setZoneY - contentY;
-  const int metricsY = topBarH;
-  const int metricsBoxX = 0;
-  const int metricsBoxY = metricsY;
-  const int metricsBoxW = displayW;
-  const int metricsBoxH = metricsH;
-  const uint8_t barTextFont = 2;
-  const uint8_t barTextSize = isLargeDisplay ? 2 : 1;
-  const uint8_t metricTextFont = 1;
-  const uint8_t sectionTextFont = 2;
-  const uint8_t sectionTextSize = isLargeDisplay ? 2 : 1;
-  const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
-  const String metric1 = "10.000a";
-  const String metric2 = "32.00v";
-  const String metric3 = "320.00w";
-  uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
-  int metric1W = 0;
-  int metric2W = 0;
-  int metric3W = 0;
-  int metricGap = 0;
-  const int metricsMargin = isLargeDisplay ? 12 : 8;
-  const int metricsAvailableW = metricsBoxW - (metricsMargin * 2);
-
-  for (; metricTextSize > 0; --metricTextSize) {
-    metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
-    metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
-    metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
-    metricGap = isLargeDisplay ? uiDisplayTextWidth(" ", metricTextSize, metricTextFont)
-                               : (uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2);
-
-    const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
-    if (totalW <= metricsAvailableW || metricTextSize == 1) {
-      break;
-    }
-  }
-
-  const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
-  const int metricsStartX = (displayW - metricsTotalW) / 2;
-  const int metricsTextY = metricsBoxY + ((metricsBoxH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
-  const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(sectionTextSize, sectionTextFont)) / 2);
-  const int contentLabelY = contentY + (contentH / 3);
-  const String footerVersion = "v2.12";
-  const String footerDateTime = "17/03/26 12:34:56";
-  const uint8_t footerTextFont = 2;
-  const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
-  const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
-
-  uiDisplayClear();
-
-  uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
-  uiDisplayPrintStyledAt(displayW / 50, topBarTextY, "CC", kUiHighlight, kUiAccent, barTextSize, barTextFont);
-
-  const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
-  const int indicatorX = (displayW / 6) + 9;
-  const int indicatorY = topBarH / 2;
-  uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, kUiLoadOn);
-  uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
-  uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8, topBarTextY, "ON", kUiHighlight, kUiAccent, barTextSize, barTextFont);
-
-  const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
-  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, "99", kUiHighlight, kUiAccent, barTextSize, barTextFont);
-  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth("99", barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6), topBarTextY + (isLargeDisplay ? 3 : 1), kUiHighlight, kUiAccent, barTextSize, barTextFont);
-
-  uiDisplayDrawRect(metricsBoxX, metricsBoxY, metricsBoxW, metricsBoxH, kUiAccent);
-  uiDisplayPrintStyledAt(metricsStartX - uiDisplayTextWidth(" ", metricTextSize, metricTextFont), metricsTextY, metric1, kUiText, kUiBg, metricTextSize, metricTextFont);
-  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap, metricsTextY, metric2, kUiText, kUiBg, metricTextSize, metricTextFont);
-  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap + uiDisplayTextWidth(" ", metricTextSize, metricTextFont), metricsTextY, metric3, kUiText, kUiBg, metricTextSize, metricTextFont);
-
-  uiDisplayDrawRect(0, setZoneY, displayW, setZoneH, kUiAccent);
-  uiDisplayPrintStyledAt(displayW / 50, setTextY, "SET> 10.000A", kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
-
-  uiDisplayDrawRect(0, contentY, displayW, contentH, kUiAccent);
-  uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 2, kUiModeAreaBg);
-  uiDisplayDrawRect(0, contentY, displayW, contentH, kUiAccent);
-  uiDisplayPrintStyledAt(displayW / 50, contentLabelY, "MODE AREA / CC SPECIFIC INFO", kUiAccent, kUiBg, sectionTextSize, sectionTextFont);
-  uiDisplayPrintStyledAt(displayW / 50, contentLabelY, "MODE AREA / CC SPECIFIC INFO", kUiAccent, kUiModeAreaBg, sectionTextSize, sectionTextFont);
-  uiDisplayPrintStyledAt(displayW / 50, contentLabelY + uiDisplayFontHeight(sectionTextSize, sectionTextFont) + 4, "Static mock preview - press E", kUiText, kUiModeAreaBg, sectionTextSize, sectionTextFont);
-
-  uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
-  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
-  uiDisplayPrintStyledAt(displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4, footerTextY, footerDateTime, kUiText, kUiAccent, footerTextSize, footerTextFont);
-
-  while (true) {
-    const char key = app_input_read_key();
-    if (!app_input_is_no_key(key) && key == 'E') {
-      break;
-    }
-    delay(25);
-  }
-
-  uiDisplayClear();
-}
 
 void init_io() {
   encoder.attachFullQuad(ENC_B, ENC_A);
@@ -276,7 +154,6 @@ void app_startup_run() {
   g_startupNeedsLimitsSetup = false;
   init_io();
   init_peripherals();
-  show_static_cc_template_preview();
   run_peripheral_health_check();
   ensure_rtc_running();
   show_startup_splash();

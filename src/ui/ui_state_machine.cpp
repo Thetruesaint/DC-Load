@@ -108,7 +108,7 @@ void draw_menu_root_if_needed(const UiViewState &viewState) {
 }
 
 bool home_mode_uses_ui_template(uint8_t mode) {
-  return mode == 0 || mode == 1 || mode == 2 || mode == 3;
+  return mode == 1 || mode == 2 || mode == 3;
 }
 
 void draw_home_template_for_mode(const UiViewState &viewState) {
@@ -679,6 +679,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 }
 
 void ui_state_machine_reset() {
+  uiDisplayInvalidateHomeLayout();
   g_currentScreen = UiScreen::Home;
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
@@ -695,6 +696,9 @@ void ui_state_machine_reset() {
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
   if (targetScreen != g_currentScreen) {
+    if (g_currentScreen == UiScreen::Home || targetScreen != UiScreen::Home) {
+      uiDisplayInvalidateHomeLayout();
+    }
     if (g_currentScreen == UiScreen::MenuFwUpdate && targetScreen != UiScreen::MenuFwUpdate) {
       app_ota_stop();
       g_fwUpdateCache.valid = false;

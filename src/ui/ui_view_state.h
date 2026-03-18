@@ -12,6 +12,7 @@ struct UiViewState {
   float measuredCurrent_A;
   float measuredVoltage_V;
   float measuredPower_W;
+  float tempC;
   float readingValue;
 
   float currentCutOffA;

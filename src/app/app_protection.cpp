@@ -3,6 +3,7 @@
 #include "../config/system_constants.h"
 #include "../hal/hal_inputs.h"
 #include "../hw/hw_objects.h"
+#include "../ui_display.h"
 #include "../ui/ui_mode_templates.h"
 #include "../ui/ui_state_machine.h"
 #include "app_fan_context.h"
@@ -37,6 +38,7 @@ void wait_for_protection_ack(const char *message, char causeCode) {
   app_reset_input_pointers();
 
   bool encoderWasPressed = false;
+  uiDisplayInvalidateHomeLayout();
   ui_draw_protection_modal(message, causeCode);
 
   while (true) {
@@ -84,7 +86,7 @@ void app_update_fan_control() {
       fan_on_time = currentMillis;
     }
     was_manual_override_active = true;
-    if (ui_state_machine_current_screen() == UiScreen::Home) {
+    if (ui_state_machine_current_screen() == UiScreen::Home && app_mode_state_mode() != CC) {
       ui_draw_header_temperature(app_measurements_temp_c());
     }
     return;
@@ -111,7 +113,7 @@ void app_update_fan_control() {
 
   was_manual_override_active = false;
 
-  if (ui_state_machine_current_screen() == UiScreen::Home) {
+  if (ui_state_machine_current_screen() == UiScreen::Home && app_mode_state_mode() != CC) {
     ui_draw_header_temperature(app_measurements_temp_c());
   }
 }

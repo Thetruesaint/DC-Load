@@ -22,6 +22,25 @@ constexpr int TFT_STATUS_COL = 8;
 constexpr int TFT_STATUS_ROW = 0;
 constexpr int TFT_STATUS_COLS = 4;
 constexpr int TFT_STATUS_ROWS = 1;
+constexpr uint16_t kUiBg = TFT_BLACK;
+constexpr uint16_t kUiAccent = TFT_DARKGREY;
+constexpr uint16_t kUiText = TFT_WHITE;
+constexpr uint16_t kUiDark = TFT_BLACK;
+constexpr uint16_t kUiModeAreaBg = TFT_BLUE;
+constexpr uint16_t kUiLoadOn = TFT_RED;
+constexpr uint16_t kUiLoadOff = TFT_GREEN;
+constexpr uint16_t kUiHighlight = TFT_YELLOW;
+constexpr uint16_t kUiSetColor = TFT_MAGENTA;
+bool g_ccLayoutDrawn = false;
+int g_ccLastDisplayW = 0;
+int g_ccLastDisplayH = 0;
+bool g_ccLastLoadEnabled = false;
+String g_ccLastMetric1;
+String g_ccLastMetric2;
+String g_ccLastMetric3;
+String g_ccLastSetText;
+String g_ccLastFooterText;
+String g_ccLastTempText;
 
 int cell_origin_x(int col) {
   return kGrid.originXPx + (col * kGrid.cellWidthPx);
@@ -53,6 +72,254 @@ void draw_tft_load_status(bool enabled) {
 
 void clear_cursor_cell(int col, int row) {
   tft.fillRect(cell_origin_x(col), cell_origin_y(row), kGrid.cellWidthPx, kGrid.cellHeightPx - 2, TFT_BG_COLOR);
+}
+
+String format_fixed(float value, int decimals) {
+  return String(value, decimals);
+}
+
+String format_measured_current(float currentA) {
+  return format_fixed(currentA, (currentA <= 9.999f) ? 3 : 2) + "a";
+}
+
+String format_measured_voltage(float voltageV) {
+  const int decimals = (voltageV <= 9.999f) ? 3 : (voltageV <= 99.99f) ? 2 : 1;
+  return format_fixed(voltageV, decimals) + "v";
+}
+
+String format_measured_power(float powerW) {
+  const int decimals = (powerW < 100.0f) ? 2 : 1;
+  return format_fixed(powerW, decimals) + "w";
+}
+
+String format_cc_setpoint(float readingValue) {
+  return String("SET> ") + String(readingValue, 3) + "A";
+}
+
+String two_digits(int value) {
+  if (value < 10) return String("0") + String(value);
+  return String(value);
+}
+
+String rtc_timestamp_text() {
+  const DateTime now = rtc.now();
+  return two_digits(now.day()) + "/" + two_digits(now.month()) + "/" +
+         two_digits(now.year() % 100) + " " + two_digits(now.hour()) + ":" +
+         two_digits(now.minute()) + ":" + two_digits(now.second());
+}
+
+int cc_cursor_text_index(const String &valueText, int cursorPosition) {
+  const int decimal = valueText.indexOf('.');
+  switch (cursorPosition) {
+    case 8: return (decimal > 0) ? (decimal - 1) : 0;
+    case 10: return (decimal >= 0 && decimal + 1 < valueText.length()) ? (decimal + 1) : -1;
+    case 11: return (decimal >= 0 && decimal + 2 < valueText.length()) ? (decimal + 2) : -1;
+    case 12: return (decimal >= 0 && decimal + 3 < valueText.length()) ? (decimal + 3) : -1;
+    default: return -1;
+  }
+}
+
+void draw_degree_c_symbol(int x, int y, uint16_t color, uint16_t bg, uint8_t textSize, uint8_t textFont) {
+  const int radius = (textSize >= 2) ? 3 : 2;
+  uiDisplayDrawCircle(x, y + radius + 1, radius, color);
+  uiDisplayPrintStyledAt(x + 5, y - 1, "C", color, bg, textSize, textFont);
+}
+
+bool render_cc_home(const UiViewState &state, bool cursorVisible) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = (displayH * 10) / 100;
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const int metricsBoxY = topBarH;
+  const int metricsBoxH = metricsH;
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = isLargeDisplay ? 2 : 1;
+  const uint8_t metricTextFont = 1;
+  const uint8_t sectionTextFont = 2;
+  const uint8_t sectionTextSize = isLargeDisplay ? 2 : 1;
+  const uint8_t footerTextFont = 2;
+  const uint8_t footerTextSize = isLargeDisplay ? 2 : 1;
+
+  const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
+  const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
+  const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
+  const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
+  uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
+  int metric1W = 0;
+  int metric2W = 0;
+  int metric3W = 0;
+  int metricGap = 0;
+  const int metricsMargin = isLargeDisplay ? 12 : 8;
+  const int metricsAvailableW = displayW - (metricsMargin * 2);
+
+  for (; metricTextSize > 0; --metricTextSize) {
+    metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
+    metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
+    metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
+    metricGap = isLargeDisplay ? uiDisplayTextWidth(" ", metricTextSize, metricTextFont)
+                               : (uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2);
+    const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
+    if (totalW <= metricsAvailableW || metricTextSize == 1) {
+      break;
+    }
+  }
+
+  const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
+  const int metricsStartX = (displayW - metricsTotalW) / 2;
+  const int metricsTextY = metricsBoxY + ((metricsBoxH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
+  const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(sectionTextSize, sectionTextFont)) / 2);
+  const String footerVersion = "v2.12";
+  const String footerDateTime = rtc_timestamp_text();
+  const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const char *liveInput = app_input_text();
+  const bool hasLiveInput = (liveInput != nullptr) && (liveInput[0] != '\0');
+  const String setValueText = hasLiveInput ? String(liveInput) : String(state.readingValue, 3);
+  const String setText = String("SET> ") + setValueText + "A";
+
+  const bool layoutChanged = !g_ccLayoutDrawn || g_ccLastDisplayW != displayW || g_ccLastDisplayH != displayH;
+  if (layoutChanged) {
+    uiDisplayClear();
+    uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
+    uiDisplayDrawRect(0, metricsBoxY, displayW, metricsH, kUiAccent);
+    uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 2, kUiModeAreaBg);
+    uiDisplayDrawRect(0, contentY, displayW, contentH, kUiAccent);
+    uiDisplayDrawRect(0, setZoneY, displayW, setZoneH, kUiAccent);
+    uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
+    g_ccLayoutDrawn = true;
+    g_ccLastDisplayW = displayW;
+    g_ccLastDisplayH = displayH;
+    g_ccLastLoadEnabled = !state.loadEnabled;
+    g_ccLastMetric1 = "";
+    g_ccLastMetric2 = "";
+    g_ccLastMetric3 = "";
+    g_ccLastSetText = "";
+    g_ccLastFooterText = "";
+    g_ccLastTempText = "";
+  }
+
+  const int indicatorRadius = isLargeDisplay ? 10 : ((topBarH >= 30) ? 8 : 6);
+  const int indicatorX = (displayW / 6) + 9;
+  const int indicatorY = topBarH / 2;
+  const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
+  if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
+    uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
+    uiDisplayPrintStyledAt(displayW / 50, topBarTextY, "CC", kUiHighlight, kUiAccent, barTextSize, barTextFont);
+    const uint16_t loadColor = state.loadEnabled ? kUiLoadOn : kUiLoadOff;
+    uiDisplayFillCircle(indicatorX, indicatorY, indicatorRadius, loadColor);
+    uiDisplayDrawCircle(indicatorX, indicatorY, indicatorRadius, kUiDark);
+    uiDisplayPrintStyledAt(indicatorX + indicatorRadius + 8,
+                           topBarTextY,
+                           state.loadEnabled ? "ON" : "OFF",
+                           kUiHighlight,
+                           kUiAccent,
+                           barTextSize,
+                           barTextFont);
+  }
+
+  const int tempBlockX = displayW - (isLargeDisplay ? 86 : 38);
+  if (layoutChanged || g_ccLastLoadEnabled != state.loadEnabled || g_ccLastTempText != tempText) {
+    uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+    draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (isLargeDisplay ? 8 : 6),
+                         topBarTextY + (isLargeDisplay ? 3 : 1),
+                         kUiHighlight,
+                         kUiAccent,
+                         barTextSize,
+                         barTextFont);
+    g_ccLastLoadEnabled = state.loadEnabled;
+    g_ccLastTempText = tempText;
+  }
+
+  if (layoutChanged || g_ccLastMetric1 != metric1 || g_ccLastMetric2 != metric2 || g_ccLastMetric3 != metric3) {
+    uiDisplayFillRect(1, metricsBoxY + 1, displayW - 2, metricsH - 2, kUiBg);
+    uiDisplayDrawRect(0, metricsBoxY, displayW, metricsH, kUiAccent);
+    uiDisplayPrintStyledAt(metricsStartX - uiDisplayTextWidth(" ", metricTextSize, metricTextFont),
+                           metricsTextY,
+                           metric1,
+                           kUiText,
+                           kUiBg,
+                           metricTextSize,
+                           metricTextFont);
+    uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap,
+                           metricsTextY,
+                           metric2,
+                           kUiText,
+                           kUiBg,
+                           metricTextSize,
+                           metricTextFont);
+    uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap + uiDisplayTextWidth(" ", metricTextSize, metricTextFont),
+                           metricsTextY,
+                           metric3,
+                           kUiText,
+                           kUiBg,
+                           metricTextSize,
+                           metricTextFont);
+    g_ccLastMetric1 = metric1;
+    g_ccLastMetric2 = metric2;
+    g_ccLastMetric3 = metric3;
+  }
+
+  if (layoutChanged || g_ccLastSetText != setText) {
+    uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
+    uiDisplayDrawRect(0, setZoneY, displayW, setZoneH, kUiAccent);
+    const int setTextX = displayW / 50;
+    const String prefixText = "SET> ";
+    const int prefixWidth = uiDisplayTextWidth(prefixText, sectionTextSize, sectionTextFont);
+    uiDisplayPrintStyledAt(setTextX, setTextY, prefixText, kUiSetColor, kUiBg, sectionTextSize, sectionTextFont);
+
+    if (hasLiveInput) {
+      uiDisplayPrintStyledAt(setTextX + prefixWidth,
+                             setTextY,
+                             setValueText + "A",
+                             kUiSetColor,
+                             kUiBg,
+                             sectionTextSize,
+                             sectionTextFont);
+    } else {
+      const int highlightedIndex = cc_cursor_text_index(setValueText, state.cursorPosition);
+      int currentX = setTextX + prefixWidth;
+      for (int i = 0; i < setValueText.length(); ++i) {
+        const String digitText = String(setValueText.charAt(i));
+        const bool highlighted = (i == highlightedIndex) && cursorVisible;
+        uiDisplayPrintStyledAt(currentX,
+                               setTextY,
+                               digitText,
+                               highlighted ? kUiBg : kUiSetColor,
+                               highlighted ? kUiSetColor : kUiBg,
+                               sectionTextSize,
+                               sectionTextFont);
+        currentX += uiDisplayTextWidth(digitText, sectionTextSize, sectionTextFont);
+      }
+      uiDisplayPrintStyledAt(currentX,
+                             setTextY,
+                             "A",
+                             kUiSetColor,
+                             kUiBg,
+                             sectionTextSize,
+                             sectionTextFont);
+    }
+    g_ccLastSetText = setText;
+  }
+
+  if (layoutChanged || g_ccLastFooterText != footerDateTime) {
+    uiDisplayFillRect(0, footerY, displayW, bottomBarH, kUiAccent);
+    uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+    uiDisplayPrintStyledAt(displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                           footerTextY,
+                           footerDateTime,
+                           kUiText,
+                           kUiAccent,
+                           footerTextSize,
+                           footerTextFont);
+    g_ccLastFooterText = footerDateTime;
+  }
+  return true;
 }
 
 void render_keypad_input(uint8_t mode, bool calibrationMode) {
@@ -132,6 +399,16 @@ void uiDisplayClear(void) {
   restore_tft_text_style();
 }
 
+void uiDisplayInvalidateHomeLayout(void) {
+  g_ccLayoutDrawn = false;
+  g_ccLastMetric1 = "";
+  g_ccLastMetric2 = "";
+  g_ccLastMetric3 = "";
+  g_ccLastSetText = "";
+  g_ccLastFooterText = "";
+  g_ccLastTempText = "";
+}
+
 void uiDisplayFillRect(int x, int y, int w, int h, uint16_t color) {
   tft.fillRect(x, y, w, h, color);
 }
@@ -203,11 +480,26 @@ void uiDisplayUpdate(void) {
   (void)app_ui_consume_clear_cursor_blink_request();
 
   const UiViewState &state = ui_state_cache_get();
-  if (ui_state_machine_current_screen() != UiScreen::Home) return;
-  if (!state.modeInitialized) return;
+  if (ui_state_machine_current_screen() != UiScreen::Home) {
+    g_ccLayoutDrawn = false;
+    return;
+  }
+  if (!state.modeInitialized) {
+    g_ccLayoutDrawn = false;
+    return;
+  }
 
   if (millis() - lastUpdateTime < LCD_RFSH_TIME) return;
   lastUpdateTime = millis();
+
+  if (state.mode == CC) {
+    blink_cntr = (blink_cntr + 1) % 5;
+    g_ccLastSetText = "";
+    render_cc_home(state, blink_cntr != 4);
+    return;
+  }
+
+  g_ccLayoutDrawn = false;
 
   float measuredVoltage = state.measuredVoltage_V;
   float measuredCurrent = state.measuredCurrent_A;

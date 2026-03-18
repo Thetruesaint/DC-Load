@@ -15,6 +15,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.measuredCurrent_A = state.measuredCurrent_A;
   view.measuredVoltage_V = state.measuredVoltage_V;
   view.measuredPower_W = state.measuredPower_W;
+  view.tempC = state.temp_C;
   view.readingValue = state.readingValue;
   view.currentCutOffA = state.currentCutOffA;
   view.powerCutOffW = state.powerCutOffW;
