@@ -571,6 +571,7 @@ void screen_render_menu_update(const UiViewState &viewState) { (void)viewState; 
 void screen_enter_menu_fw_update(const UiViewState &viewState) {
   (void)viewState;
   g_fwUpdateCache.valid = false;
+  uiDisplayInvalidateFwUpdateLayout();
   app_ota_begin();
   draw_fw_update_if_needed();
 }
@@ -656,12 +657,13 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
       case UiScreen::MenuRoot:
       case UiScreen::MenuProtection:
       case UiScreen::MenuUpdate:
-      case UiScreen::MenuFwUpdate:
       case UiScreen::MenuFanSettings:
       case UiScreen::MenuLimits:
       case UiScreen::MenuCalibration:
       case UiScreen::MenuClock:
         uiDisplayUpdateConfigChrome();
+        break;
+      case UiScreen::MenuFwUpdate:
         break;
       default:
         break;
@@ -736,6 +738,7 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
     if (g_currentScreen == UiScreen::MenuFwUpdate && targetScreen != UiScreen::MenuFwUpdate) {
       app_ota_stop();
       g_fwUpdateCache.valid = false;
+      uiDisplayInvalidateFwUpdateLayout();
     }
     g_currentScreen = targetScreen;
     run_screen_enter(g_currentScreen, viewState);

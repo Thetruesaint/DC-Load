@@ -15,6 +15,7 @@ void uiDisplayInit(void);
 void uiDisplayClear(void);
 void uiDisplayUpdate(void);
 void uiDisplayInvalidateHomeLayout(void);
+void uiDisplayInvalidateFwUpdateLayout(void);
 void uiDisplayFillRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayDrawRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayFillCircle(int x, int y, int r, uint16_t color);

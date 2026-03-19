@@ -1,4 +1,5 @@
 #include "app_ota.h"
+#include "ui_display.h"
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -26,10 +27,16 @@ char g_status[21] = "Inactive";
 char g_detail[21] = "";
 char g_hint[21] = "";
 
+void refresh_ota_ui_if_active() {
+  if (!g_active) return;
+  uiDisplayRenderFwUpdateScreen(g_status, g_detail, g_hint);
+}
+
 void set_texts(const char *status, const char *detail, const char *hint) {
   std::snprintf(g_status, sizeof(g_status), "%s", status);
   std::snprintf(g_detail, sizeof(g_detail), "%s", detail);
   std::snprintf(g_hint, sizeof(g_hint), "%s", hint);
+  refresh_ota_ui_if_active();
 }
 
 void begin_wifi_connect() {
@@ -41,7 +48,7 @@ void begin_wifi_connect() {
   g_otaBegun = false;
   g_uploading = false;
   g_error = false;
-  set_texts("Connecting WiFi...", "Host: DC_LOAD", "CLR-Back");
+  set_texts("Connecting WiFi...", "Host: DC_LOAD", "CLR-Cancel");
 }
 
 void ensure_ota_started() {
@@ -67,14 +74,14 @@ void ensure_ota_started() {
     g_uploading = false;
     g_error = true;
     std::snprintf(detail, sizeof(detail), "Err %d", static_cast<int>(error));
-    set_texts("Upload failed", detail, "E-Retry   CLR-Back");
+    set_texts("Upload failed", detail, "E-Retry   CLR-Cancel");
   });
   ArduinoOTA.begin();
   g_otaBegun = true;
 
   char ipLine[21];
   std::snprintf(ipLine, sizeof(ipLine), "IP: %s", WiFi.localIP().toString().c_str());
-  set_texts(ipLine, "Host: DC_LOAD", "CLR-Back");
+  set_texts(ipLine, "Host: DC_LOAD", "CLR-Cancel");
 }
 }
 
@@ -84,14 +91,14 @@ void app_ota_begin() {
   g_otaBegun = false;
   g_uploading = false;
   g_error = true;
-  set_texts("OTA not in sim", "", "CLR-Back");
+  set_texts("OTA not in sim", "", "CLR-Cancel");
   return;
 #endif
   if (g_active) return;
   if (std::strlen(APP_OTA_WIFI_SSID) == 0U) {
     g_active = true;
     g_error = true;
-    set_texts("OTA not config'd", "", "CLR-Back");
+    set_texts("OTA not config'd", "", "CLR-Cancel");
     return;
   }
   begin_wifi_connect();
@@ -107,7 +114,7 @@ void app_ota_handle() {
     if ((millis() - g_wifiStartMs) >= WIFI_CONNECT_TIMEOUT_MS) {
       g_error = true;
       g_uploading = false;
-      set_texts("WiFi failed", "", "E-Retry   CLR-Back");
+      set_texts("WiFi failed", "", "E-Retry   CLR-Cancel");
     }
     return;
   }
