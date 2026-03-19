@@ -7,7 +7,9 @@
 #include "app/app_measurements_context.h"
 #include "app/app_msc.h"
 #include "app/app_load_context.h"
+#include "app/app_mode_state_context.h"
 #include "app/app_setpoint_context.h"
+#include "app/app_trace_context.h"
 #include "app/app_timing_alerts.h"
 #include "app/app_ui_context.h"
 #include "config/system_constants.h"
@@ -65,6 +67,7 @@ String g_ccLastModeLine3;
 String g_ccLastModeLine4;
 String g_ccLastModeLine5;
 bool g_ccLastShiftActive = false;
+uint32_t g_ccLastTraceToken = 0;
 
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
@@ -123,6 +126,154 @@ String format_measured_voltage(float voltageV) {
 String format_measured_power(float powerW) {
   const int decimals = (powerW < 100.0f) ? 2 : 1;
   return format_fixed(powerW, decimals) + "w";
+}
+
+void draw_cc_trace_graph(int x, int y, int w, int h, bool isLargeDisplay) {
+  const uint16_t axisColor = kUiBorder;
+  const uint16_t currentColor = TFT_GREEN;
+  const uint16_t voltageColor = TFT_RED;
+  const uint16_t textBg = kUiModeAreaBg;
+  const uint8_t textFont = 1;
+  const uint8_t textSize = 2;
+  const size_t sampleCount = app_trace_sample_count();
+  const int leftPad = isLargeDisplay ? 24 : 18;
+  const int rightPad = leftPad;
+  const int topPad = isLargeDisplay ? 18 : 14;
+  const int bottomPad = isLargeDisplay ? 18 : 14;
+  const int plotX = x + leftPad;
+  const int plotY = y + topPad;
+  const int plotW = max(10, w - leftPad - rightPad);
+  const int plotH = max(10, h - topPad - bottomPad);
+
+  uiDisplayFillRect(x, y, w, h, kUiModeAreaBg);
+  tft.drawLine(plotX, plotY, plotX, plotY + plotH, axisColor);
+  tft.drawLine(plotX, plotY + plotH, plotX + plotW, plotY + plotH, axisColor);
+
+  float maxCurrentA = 0.0f;
+  float maxVoltageV = 0.0f;
+  float currentA = 0.0f;
+  float voltageV = 0.0f;
+  for (size_t i = 0; i < sampleCount; ++i) {
+    if (!app_trace_read_sample(i, &currentA, &voltageV)) continue;
+    maxCurrentA = max(maxCurrentA, currentA);
+    maxVoltageV = max(maxVoltageV, voltageV);
+  }
+  const float elapsedSeconds = app_trace_duration_seconds();
+
+  float timeScaleSeconds = 5.0f;
+  while (timeScaleSeconds < 240.0f && elapsedSeconds >= (timeScaleSeconds * 0.8f)) {
+    if (timeScaleSeconds < 40.0f) {
+      timeScaleSeconds *= 2.0f;
+    } else if (timeScaleSeconds < 80.0f) {
+      timeScaleSeconds = 80.0f;
+    } else if (timeScaleSeconds < 160.0f) {
+      timeScaleSeconds = 160.0f;
+    } else {
+      timeScaleSeconds = 240.0f;
+    }
+  }
+
+  float currentScaleMax = 1.0f;
+  while (currentScaleMax < 10.0f && maxCurrentA > currentScaleMax) {
+    currentScaleMax += 1.0f;
+  }
+  currentScaleMax = constrain(currentScaleMax, 1.0f, 10.0f);
+
+  float voltageScaleMax = 1.0f;
+  if (maxVoltageV > 1.0f && maxVoltageV <= 5.0f) {
+    voltageScaleMax = 5.0f;
+  } else if (maxVoltageV > 5.0f && maxVoltageV <= 10.0f) {
+    voltageScaleMax = 10.0f;
+  } else if (maxVoltageV > 10.0f && maxVoltageV <= 15.0f) {
+    voltageScaleMax = 15.0f;
+  } else if (maxVoltageV > 15.0f && maxVoltageV <= 20.0f) {
+    voltageScaleMax = 20.0f;
+  } else if (maxVoltageV > 20.0f && maxVoltageV <= 25.0f) {
+    voltageScaleMax = 25.0f;
+  } else if (maxVoltageV > 25.0f && maxVoltageV <= 30.0f) {
+    voltageScaleMax = 30.0f;
+  } else if (maxVoltageV > 30.0f) {
+    voltageScaleMax = 35.0f;
+  }
+
+  const String currentLegend = "Imax:" + String(currentScaleMax, currentScaleMax < 10.0f ? 0 : 0);
+  const String voltageLegend = "Vmax:" + String(voltageScaleMax, voltageScaleMax < 10.0f ? 0 : 0);
+  const String timeLegend = String(static_cast<int>(timeScaleSeconds)) + "s";
+  const float currentTickStep = (currentScaleMax <= 1.0f) ? 0.1f : (currentScaleMax <= 2.0f ? 0.5f : 1.0f);
+  const float voltageTickStep = (voltageScaleMax <= 10.0f) ? 1.0f : (voltageScaleMax <= 20.0f ? 2.0f : 5.0f);
+
+  uiDisplayPrintStyledAt(plotX + uiDisplayTextWidth(" ", textSize, textFont),
+                         y + 5,
+                         currentLegend,
+                         currentColor,
+                         textBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt(plotX + uiDisplayTextWidth(currentLegend, textSize, textFont) + uiDisplayTextWidth("  ", textSize, textFont),
+                         y + 5,
+                         voltageLegend,
+                         voltageColor,
+                         textBg,
+                         textSize,
+                         textFont);
+  uiDisplayPrintStyledAt(plotX + plotW - uiDisplayTextWidth(timeLegend, textSize, textFont),
+                         plotY + plotH + 4,
+                         timeLegend,
+                         kUiText,
+                         textBg,
+                         textSize,
+                         textFont);
+
+  for (float tick = currentTickStep; tick < currentScaleMax; tick += currentTickStep) {
+    const int tickY = plotY + plotH - static_cast<int>((tick / currentScaleMax) * static_cast<float>(plotH));
+    tft.drawLine(plotX - 6, tickY, plotX - 1, tickY, currentColor);
+  }
+
+  for (float tick = voltageTickStep; tick < voltageScaleMax; tick += voltageTickStep) {
+    const int tickY = plotY + plotH - static_cast<int>((tick / voltageScaleMax) * static_cast<float>(plotH));
+    tft.drawLine(plotX + 1, tickY, plotX + 5, tickY, voltageColor);
+  }
+
+  const int timeTickStep = (timeScaleSeconds <= 40.0f) ? 1 : (timeScaleSeconds <= 160.0f ? 10 : 20);
+  int lastTickX = -1;
+  for (int second = 0; second <= static_cast<int>(timeScaleSeconds); second += timeTickStep) {
+    const int tickX = plotX + static_cast<int>((static_cast<float>(second) / timeScaleSeconds) * static_cast<float>(plotW));
+    if (tickX == lastTickX) continue;
+    const int tickH = (timeTickStep == 1 && second % 5 == 0) ? (isLargeDisplay ? 6 : 4) : (isLargeDisplay ? 4 : 3);
+    tft.drawLine(tickX, plotY + plotH, tickX, plotY + plotH + tickH, axisColor);
+    lastTickX = tickX;
+  }
+
+  if (sampleCount == 1) {
+    app_trace_read_sample(0, &currentA, &voltageV);
+    const int pointX = plotX;
+    const int currentY = plotY + plotH - static_cast<int>((currentA / currentScaleMax) * static_cast<float>(plotH));
+    const int voltageY = plotY + plotH - static_cast<int>((voltageV / voltageScaleMax) * static_cast<float>(plotH));
+    uiDisplayFillCircle(pointX, currentY, isLargeDisplay ? 3 : 2, currentColor);
+    uiDisplayFillCircle(pointX, voltageY, isLargeDisplay ? 3 : 2, voltageColor);
+    return;
+  }
+
+  int prevCurrentX = plotX;
+  int prevCurrentY = plotY + plotH;
+  int prevVoltageX = plotX;
+  int prevVoltageY = plotY + plotH;
+  for (size_t i = 0; i < sampleCount; ++i) {
+    if (!app_trace_read_sample(i, &currentA, &voltageV)) continue;
+    const float sampleTime = static_cast<float>(i * kTraceSampleIntervalMs) / 1000.0f;
+    const float progress = constrain(sampleTime / timeScaleSeconds, 0.0f, 1.0f);
+    const int sampleX = plotX + static_cast<int>(progress * static_cast<float>(plotW));
+    const int currentY = plotY + plotH - static_cast<int>((currentA / currentScaleMax) * static_cast<float>(plotH));
+    const int voltageY = plotY + plotH - static_cast<int>((voltageV / voltageScaleMax) * static_cast<float>(plotH));
+    if (i > 0) {
+      tft.drawLine(prevCurrentX, prevCurrentY, sampleX, currentY, currentColor);
+      tft.drawLine(prevVoltageX, prevVoltageY, sampleX, voltageY, voltageColor);
+    }
+    prevCurrentX = sampleX;
+    prevCurrentY = currentY;
+    prevVoltageX = sampleX;
+    prevVoltageY = voltageY;
+  }
 }
 
 String format_cc_setpoint(float readingValue) {
@@ -524,6 +675,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastModeLine4 = "";
     g_ccLastModeLine5 = "";
     g_ccLastShiftActive = false;
+    g_ccLastTraceToken = 0;
   }
 
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
@@ -705,6 +857,13 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastModeLine3 = modeLine3;
     g_ccLastModeLine4 = modeLine4;
     g_ccLastModeLine5 = modeLine5;
+    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+  }
+
+  const uint32_t traceToken = app_trace_update_token();
+  if (isCcMode && (layoutChanged || g_ccLastTraceToken != traceToken)) {
+    draw_cc_trace_graph(1, contentY + 1, displayW - 2, contentH - 2, isLargeDisplay);
+    g_ccLastTraceToken = traceToken;
     draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
 
@@ -1409,16 +1568,64 @@ ManagedZoneLayout managed_zone_layout() {
   return {displayW, displayH, topBarH, metricsH, setZoneH, bottomBarH, footerY, setZoneY, contentY, contentH, displayW >= 400};
 }
 
-void clear_config_content_zone() {
+void draw_config_chrome(bool clearContentZone) {
   const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t metricTextFont = 1;
+  uint8_t metricTextSize = layout.isLargeDisplay ? 4 : 3;
   const uint8_t footerTextFont = 2;
   const uint8_t footerTextSize = layout.isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
   const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const String footerVersion = "v2.13a";
   const String footerDateTime = rtc_timestamp_text();
+  const uint8_t mode = app_mode_state_mode();
+  const char *modeLabel = (mode == CC) ? "CC" : (mode == CP) ? "CP" : (mode == CR) ? "CR" : (mode == BC) ? "BC" : (mode == TC) ? "TC" : (mode == TL) ? "TL" : "CA";
+  const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
+                                                      static_cast<float>(app_fan_temp_on_c()),
+                                                      app_limits_temp_cutoff());
+  const String metric1 = "-.---a";
+  const String metric2 = "-.---v";
+  const String metric3 = "-.--w";
+  int metric1W = 0;
+  int metric2W = 0;
+  int metric3W = 0;
+  int metricGap = 0;
+  const int metricsMargin = layout.isLargeDisplay ? 12 : 8;
+  const int metricsAvailableW = layout.displayW - (metricsMargin * 2);
+  for (; metricTextSize > 0; --metricTextSize) {
+    metric1W = uiDisplayTextWidth(metric1, metricTextSize, metricTextFont);
+    metric2W = uiDisplayTextWidth(metric2, metricTextSize, metricTextFont);
+    metric3W = uiDisplayTextWidth(metric3, metricTextSize, metricTextFont);
+    metricGap = uiDisplayTextWidth(" ", metricTextSize, metricTextFont) / 2;
+    const int totalW = metric1W + metric2W + metric3W + (metricGap * 2);
+    if (totalW <= metricsAvailableW || metricTextSize == 1) break;
+  }
+  const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
+  const int metricsStartX = ((layout.displayW - metricsTotalW) / 2) + (layout.isLargeDisplay ? 8 : 0);
+  const int metricsTextY = layout.topBarH + ((layout.metricsH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (layout.isLargeDisplay ? 2 : 0);
 
-  uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
+  uiDisplayFillRect(0, 0, layout.displayW, layout.topBarH, kUiAccent);
+  uiDisplayFillRect(1, layout.topBarH + 1, layout.displayW - 2, layout.metricsH - 2, kUiBg);
+  if (clearContentZone) {
+    uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
+  }
   uiDisplayFillRect(0, layout.footerY, layout.displayW, layout.bottomBarH, kUiAccent);
+  uiDisplayPrintStyledAt(layout.displayW / 50, topBarTextY, modeLabel, kUiHighlight, kUiAccent, barTextSize, barTextFont);
+  draw_centered_load_status(layout.displayW, layout.topBarH, false, layout.isLargeDisplay, barTextSize, barTextFont);
+  const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
+  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
+                       topBarTextY + (layout.isLargeDisplay ? 3 : 1),
+                       tempColor,
+                       kUiAccent,
+                       barTextSize,
+                       barTextFont);
+  uiDisplayPrintStyledAt(metricsStartX - metricGap, metricsTextY, metric1, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap, metricsTextY, metric2, kUiText, kUiBg, metricTextSize, metricTextFont);
+  uiDisplayPrintStyledAt(metricsStartX + metric1W + metricGap + metric2W + metricGap, metricsTextY, metric3, kUiText, kUiBg, metricTextSize, metricTextFont);
   uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
   uiDisplayPrintStyledAt(layout.displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
                          footerTextY,
@@ -1432,6 +1639,14 @@ void clear_config_content_zone() {
   draw_horizontal_separator(layout.contentY, layout.displayW, kUiBorder);
   draw_horizontal_separator(layout.setZoneY, layout.displayW, kUiBorder);
   draw_horizontal_separator(layout.footerY, layout.displayW, kUiBorder);
+}
+
+void clear_config_content_zone() {
+  draw_config_chrome(true);
+}
+
+void uiDisplayUpdateConfigChrome(void) {
+  draw_config_chrome(false);
 }
 
 void draw_config_title(const ManagedZoneLayout &layout, const String &title, uint8_t textSize = 0) {

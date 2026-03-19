@@ -333,7 +333,7 @@ void draw_clock_if_needed(const UiViewState &viewState) {
   g_clockCache.valid = true;
 }
 
-void invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiViewState &viewState) {
+bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiViewState &viewState) {
   const bool shiftActive = app_msc_shift_active();
   const bool sameRtc = g_configRtcCache.valid &&
                        g_configRtcCache.day == viewState.rtcDay &&
@@ -380,7 +380,9 @@ void invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
     g_configRtcCache.minute = viewState.rtcMinute;
     g_configRtcCache.shiftActive = shiftActive;
     g_configRtcCache.valid = true;
+    return true;
   }
+  return false;
 }
 
 void screen_enter_home(const UiViewState &viewState) {
@@ -643,7 +645,23 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
 }
 
 void run_screen_update(UiScreen screen, const UiViewState &viewState) {
-  invalidate_active_config_screen_if_rtc_changed(screen, viewState);
+  const bool configChromeChanged = invalidate_active_config_screen_if_rtc_changed(screen, viewState);
+  if (configChromeChanged) {
+    switch (screen) {
+      case UiScreen::MenuRoot:
+      case UiScreen::MenuProtection:
+      case UiScreen::MenuUpdate:
+      case UiScreen::MenuFwUpdate:
+      case UiScreen::MenuFanSettings:
+      case UiScreen::MenuLimits:
+      case UiScreen::MenuCalibration:
+      case UiScreen::MenuClock:
+        uiDisplayUpdateConfigChrome();
+        break;
+      default:
+        break;
+    }
+  }
   switch (screen) {
     case UiScreen::Home: screen_update_home(viewState); break;
     case UiScreen::BatterySetupTask: screen_update_battery_setup_task(viewState); break;

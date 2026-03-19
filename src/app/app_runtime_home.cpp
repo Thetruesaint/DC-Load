@@ -19,6 +19,7 @@
 #include "app_runtime_context.h"
 #include "app_setpoint_context.h"
 #include "app_setpoint_cursor.h"
+#include "app_trace_context.h"
 #include "app_timer_context.h"
 #include "app_timing_alerts.h"
 #include "app_transient_context.h"
@@ -130,6 +131,16 @@ void run_calibration_mode() {
   app_calibration_mode_update();
 }
 
+void run_cc_trace_capture() {
+  if (!home_screen_active()) return;
+  if (app_mode_state_mode() != CC) return;
+
+  app_trace_update_cc(app_load_is_enabled(),
+                      app_measurements_current_a(),
+                      app_measurements_voltage_v(),
+                      app_io_millis());
+}
+
 void run_transient_cont_mode() {
   if (!home_screen_active()) return;
   if (app_mode_state_mode() != TC) return;
@@ -222,6 +233,7 @@ void app_runtime_prepare_home_mode() {
 
   switch (app_mode_state_mode()) {
     case CC:
+      app_trace_reset();
       app_encoder_setup_begin(app_limits_current_cutoff());
       app_mode_state_set_initialized(true);
       break;
@@ -269,6 +281,7 @@ void app_runtime_update_home_cursor() {
 void app_runtime_run_home_mode_tasks() {
   if (!home_screen_active()) return;
 
+  run_cc_trace_capture();
   run_battery_mode();
   run_calibration_mode();
   run_transient_cont_mode();

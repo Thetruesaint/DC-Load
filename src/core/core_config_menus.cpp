@@ -391,7 +391,16 @@ void calibration_menu_finish(SystemState *state, bool apply, bool returnToParent
 }
 
 ConfigMenu decode_config_root_target(int32_t raw) {
-  return (raw == 2) ? ConfigMenu::Calibration : ConfigMenu::Protection;
+  if (raw == static_cast<int32_t>(ConfigMenu::Calibration)) {
+    return ConfigMenu::Calibration;
+  }
+  if (raw == static_cast<int32_t>(ConfigMenu::Clock)) {
+    return ConfigMenu::Clock;
+  }
+  if (raw == static_cast<int32_t>(ConfigMenu::Update)) {
+    return ConfigMenu::Update;
+  }
+  return ConfigMenu::Protection;
 }
 
 void clear_config_runtime_flags(SystemState *state) {
