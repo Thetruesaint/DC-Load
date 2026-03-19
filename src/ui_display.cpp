@@ -73,6 +73,7 @@ float g_ccLastTraceTimeScaleSeconds = 0.0f;
 float g_ccLastTraceCurrentScaleMax = 0.0f;
 float g_ccLastTraceVoltageScaleMax = 0.0f;
 bool g_ccLastTraceOverlayActive = false;
+uint16_t g_ccLastBatteryStatusColor = 0;
 
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
@@ -722,12 +723,13 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const String calibrationRealUnit = calibrationVoltageMode ? "V" : "A";
   const String calibrationRealValue = hasCalibrationRealInput ? String(liveInput) : "";
   const String setText = setPrefix + setValueText + setUnit;
-  const String bcStatus = state.batteryDone ? "DONE" : state.loadEnabled ? "DISCHARGING" : "READY";
+  const String bcStatus = state.batteryDone ? "Done!" : state.loadEnabled ? "Discharging..." : "Ready";
+  const uint16_t bcStatusColor = state.batteryDone ? TFT_GREEN : state.loadEnabled ? TFT_RED : kUiHighlight;
   const String modeTitle = isBcMode ? "BATTERY CAPACITY"
                                     : isTcMode ? "TRANSIENT CONT"
                                     : isTlMode ? "TRANSIENT LIST"
                                                : (calibrationVoltageMode ? "CAL VOLTAGE" : "CAL CURRENT");
-  const String modeLine1 = isBcMode ? String("Status: ") + bcStatus
+  const String modeLine1 = isBcMode ? String("Status:")
                                     : isTcMode ? String(state.loadEnabled ? "Output toggling" : "Enable load to start")
                                     : isCaMode ? String("Point: ") + (calibrationFirstPointTaken ? "P2" : "P1")
                                     : isTlMode ? String(state.loadEnabled ? "Sequence running" : "Enable load to start")
@@ -782,6 +784,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastTraceCurrentScaleMax = 0.0f;
     g_ccLastTraceVoltageScaleMax = 0.0f;
     g_ccLastTraceOverlayActive = false;
+    g_ccLastBatteryStatusColor = 0;
   }
 
   const bool traceOverlayChanged = layoutChanged || (g_ccLastTraceOverlayActive != traceOverlayActive);
@@ -872,7 +875,116 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   }
 
   if (!traceOverlayActive &&
-      (isBcMode || isTransientMode || isCaMode) &&
+      isBcMode &&
+      (layoutChanged || traceOverlayChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
+       g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
+    const uint8_t infoTitleFont = 2;
+    const uint8_t infoTitleSize = isLargeDisplay ? 2 : 1;
+    const uint8_t infoTextFont = 2;
+    const uint8_t infoTextSize = isLargeDisplay ? 2 : 1;
+    const int titleH = uiDisplayFontHeight(infoTitleSize, infoTitleFont);
+    const int textH = uiDisplayFontHeight(infoTextSize, infoTextFont);
+    const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+    const int titleY = contentY + verticalGap;
+    const int titleX = (displayW - uiDisplayTextWidth(modeTitle, infoTitleSize, infoTitleFont)) / 2;
+    const int statusY = titleY + titleH + verticalGap;
+    const int statusPrefixW = uiDisplayTextWidth(modeLine1, infoTextSize, infoTextFont);
+    const int statusValueW = uiDisplayTextWidth(bcStatus, infoTextSize, infoTextFont);
+    const int statusGap = uiDisplayTextWidth(" ", infoTextSize, infoTextFont);
+    const int statusTotalW = statusPrefixW + statusGap + statusValueW;
+    const int statusX = (displayW - statusTotalW) / 2;
+    const int row2Y = statusY + textH + verticalGap;
+    const int row3Y = row2Y + textH + verticalGap;
+    const int pairGap = isLargeDisplay ? 28 : 18;
+    const int row2LeftW = uiDisplayTextWidth(modeLine3, infoTextSize, infoTextFont);
+    const int row2TotalW = row2LeftW + pairGap + uiDisplayTextWidth(modeLine2, infoTextSize, infoTextFont);
+    const int row2StartX = (displayW - row2TotalW) / 2;
+    const int row2RightX = row2StartX + row2LeftW + pairGap;
+    const int row3LeftW = uiDisplayTextWidth(modeLine4, infoTextSize, infoTextFont);
+    const int row3TotalW = row3LeftW + pairGap + uiDisplayTextWidth(modeLine5, infoTextSize, infoTextFont);
+    const int row3StartX = (displayW - row3TotalW) / 2;
+    const int row3RightX = row3StartX + row3LeftW + pairGap;
+
+    if (layoutChanged || traceOverlayChanged) {
+      uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
+      uiDisplayPrintStyledAt(titleX,
+                             titleY,
+                             modeTitle,
+                             kUiHighlight,
+                             kUiModeAreaBg,
+                             infoTitleSize,
+                             infoTitleFont);
+      g_ccLastModeLine1 = "";
+      g_ccLastModeLine2 = "";
+      g_ccLastModeLine3 = "";
+      g_ccLastModeLine4 = "";
+      g_ccLastModeLine5 = "";
+      draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+    }
+
+    if (layoutChanged || traceOverlayChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastBatteryStatusColor != bcStatusColor) {
+      uiDisplayFillRect(1, statusY - 1, displayW - 2, textH + 2, kUiModeAreaBg);
+      uiDisplayPrintStyledAt(statusX,
+                             statusY,
+                             modeLine1,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      uiDisplayPrintStyledAt(statusX + statusPrefixW + statusGap,
+                             statusY,
+                             bcStatus,
+                             bcStatusColor,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      g_ccLastModeLine1 = modeLine1;
+      g_ccLastBatteryStatusColor = bcStatusColor;
+    }
+
+    if (layoutChanged || traceOverlayChanged || g_ccLastModeLine2 != modeLine2 || g_ccLastModeLine3 != modeLine3) {
+      uiDisplayFillRect(1, row2Y - 1, displayW - 2, textH + 2, kUiModeAreaBg);
+      uiDisplayPrintStyledAt(row2StartX,
+                             row2Y,
+                             modeLine3,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      uiDisplayPrintStyledAt(row2RightX,
+                             row2Y,
+                             modeLine2,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      g_ccLastModeLine2 = modeLine2;
+      g_ccLastModeLine3 = modeLine3;
+    }
+
+    if (layoutChanged || traceOverlayChanged || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5) {
+      uiDisplayFillRect(1, row3Y - 1, displayW - 2, textH + 2, kUiModeAreaBg);
+      uiDisplayPrintStyledAt(row3StartX,
+                             row3Y,
+                             modeLine4,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      uiDisplayPrintStyledAt(row3RightX,
+                             row3Y,
+                             modeLine5,
+                             kUiText,
+                             kUiModeAreaBg,
+                             infoTextSize,
+                             infoTextFont);
+      g_ccLastModeLine4 = modeLine4;
+      g_ccLastModeLine5 = modeLine5;
+    }
+  }
+
+  if (!traceOverlayActive &&
+      (isTransientMode || isCaMode) &&
       (layoutChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
        g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
     const uint8_t infoTitleFont = 2;

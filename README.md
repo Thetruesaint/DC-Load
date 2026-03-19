@@ -13,9 +13,10 @@
 - indicacion de "sf" en menues de configuración
 
 **Mejoras**
-- Mejoras esteticas en setups de TC, TL y Menues de Configuración
-- ya se puede setear fecha y hora del RTC.
+- Mejoras esteticas en setups de BC, TC, TL y Menues de Configuración
+- Opcion para ajustar fecha y hora del RTC.
 - Indicador de ON en blanco y Temp con grado de color de amarillo al rojo al incrementarse.
+- Histograma de av/t accesible con S+0 para CC, CP, CR y BC
 
 **Posibles Mejoras SW:**
 - Unificar template para cuando se supera mas de un límite.
