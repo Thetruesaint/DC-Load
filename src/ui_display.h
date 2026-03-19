@@ -26,6 +26,7 @@ void uiDisplayPrintStyledAt(int x, int y, const String &text, uint16_t fg, uint1
 void uiDisplayRenderBatterySetupTask(const UiViewState &state);
 void uiDisplayRenderBatterySetupCustom(const UiViewState &state);
 void uiDisplayRenderBatterySetupCells(const UiViewState &state);
+void uiDisplayUpdateSetupMetrics(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCustomValue(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCellsValue(const UiViewState &state);
 void uiDisplayRenderTransientContSetup(const UiViewState &state);

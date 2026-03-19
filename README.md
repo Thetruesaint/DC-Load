@@ -11,6 +11,7 @@
 
 **Fixes**
 - indicacion de "sf" en menues de configuración
+- BC, TC y TL ahora muestran a,v y w durante el setup. 
 
 **Mejoras**
 - Mejoras esteticas en setups de BC, TC, TL y Menues de Configuración

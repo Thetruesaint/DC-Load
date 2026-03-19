@@ -418,6 +418,7 @@ void screen_enter_battery_setup_task(const UiViewState &viewState) {
 
 void screen_update_battery_setup_task(const UiViewState &viewState) {
   draw_battery_setup_task_if_needed(viewState);
+  uiDisplayUpdateSetupMetrics(viewState);
 }
 
 void screen_render_battery_setup_task(const UiViewState &viewState) { (void)viewState; }
@@ -429,6 +430,7 @@ void screen_enter_battery_setup_custom(const UiViewState &viewState) {
 
 void screen_update_battery_setup_custom(const UiViewState &viewState) {
   draw_battery_setup_custom_if_needed(viewState);
+  uiDisplayUpdateSetupMetrics(viewState);
 }
 
 void screen_render_battery_setup_custom(const UiViewState &viewState) { (void)viewState; }
@@ -440,6 +442,7 @@ void screen_enter_battery_setup_cells(const UiViewState &viewState) {
 
 void screen_update_battery_setup_cells(const UiViewState &viewState) {
   draw_battery_setup_cells_if_needed(viewState);
+  uiDisplayUpdateSetupMetrics(viewState);
 }
 
 void screen_render_battery_setup_cells(const UiViewState &viewState) { (void)viewState; }
@@ -481,6 +484,7 @@ void screen_enter_transient_cont_setup(const UiViewState &viewState) {
 
 void screen_update_transient_cont_setup(const UiViewState &viewState) {
   draw_transient_cont_setup_if_needed(viewState);
+  uiDisplayUpdateSetupMetrics(viewState);
 }
 
 void screen_render_transient_cont_setup(const UiViewState &viewState) { (void)viewState; }
@@ -526,6 +530,7 @@ void screen_enter_transient_list_setup(const UiViewState &viewState) {
 
 void screen_update_transient_list_setup(const UiViewState &viewState) {
   draw_transient_list_setup_if_needed(viewState);
+  uiDisplayUpdateSetupMetrics(viewState);
 }
 
 void screen_render_transient_list_setup(const UiViewState &viewState) { (void)viewState; }
