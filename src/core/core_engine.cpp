@@ -42,6 +42,11 @@ bool can_open_config_from_screen(UiScreen screen) {
          screen == UiScreen::TransientListSetupStep;
 }
 
+bool trace_overlay_supported(const SystemState &state) {
+  return state.uiScreen == UiScreen::Home &&
+         (state.mode == CC || state.mode == CP || state.mode == CR || state.mode == BC);
+}
+
 void leave_calibration_confirmation(bool accept) {
   if (accept) {
     app_calibration_accept_pending_result();
@@ -583,6 +588,7 @@ void core_dispatch(const UserAction &action) {
     case ActionType::ModeSelect:
       core_mode_apply_selection(&g_state, action.value != 0, action.key);
       reset_mode_entry_state(&g_state, g_state.mode == 3);
+      g_state.traceOverlayActive = false;
       break;
 
     case ActionType::ValueConfirm:
@@ -596,6 +602,12 @@ void core_dispatch(const UserAction &action) {
 
     case ActionType::OpenConfigMenu:
       dispatch_open_config_menu(action.value);
+      break;
+
+    case ActionType::ToggleTraceOverlay:
+      if (trace_overlay_supported(g_state)) {
+        g_state.traceOverlayActive = !g_state.traceOverlayActive;
+      }
       break;
 
     case ActionType::None:

@@ -68,6 +68,11 @@ String g_ccLastModeLine4;
 String g_ccLastModeLine5;
 bool g_ccLastShiftActive = false;
 uint32_t g_ccLastTraceToken = 0;
+size_t g_ccLastTraceSampleCount = 0;
+float g_ccLastTraceTimeScaleSeconds = 0.0f;
+float g_ccLastTraceCurrentScaleMax = 0.0f;
+float g_ccLastTraceVoltageScaleMax = 0.0f;
+bool g_ccLastTraceOverlayActive = false;
 
 void restore_tft_text_style() {
   tft.setTextColor(TFT_TEXT_COLOR, TFT_BG_COLOR);
@@ -128,14 +133,135 @@ String format_measured_power(float powerW) {
   return format_fixed(powerW, decimals) + "w";
 }
 
+float trace_time_scale_seconds(float elapsedSeconds) {
+  constexpr float kTraceTimeScales[] = {
+      5.0f,   10.0f,   20.0f,   40.0f,   60.0f,   120.0f,
+      300.0f, 600.0f,  1200.0f, 2400.0f, 3600.0f};
+
+  float timeScaleSeconds = kTraceTimeScales[0];
+  for (float candidate : kTraceTimeScales) {
+    timeScaleSeconds = candidate;
+    if (elapsedSeconds < (candidate * 0.8f)) {
+      break;
+    }
+  }
+  return timeScaleSeconds;
+}
+
+String trace_time_legend(float timeScaleSeconds) {
+  if (timeScaleSeconds < 60.0f) {
+    return String(static_cast<int>(timeScaleSeconds)) + "s";
+  }
+  const int minutes = static_cast<int>(timeScaleSeconds / 60.0f);
+  if (minutes < 60) {
+    return String(minutes) + "m";
+  }
+  return "1h";
+}
+
+int trace_time_tick_step_seconds(float timeScaleSeconds) {
+  if (timeScaleSeconds <= 40.0f) return 1;
+  if (timeScaleSeconds <= 60.0f) return 5;
+  if (timeScaleSeconds <= 120.0f) return 10;
+  if (timeScaleSeconds <= 300.0f) return 30;
+  if (timeScaleSeconds <= 600.0f) return 60;
+  if (timeScaleSeconds <= 1200.0f) return 120;
+  if (timeScaleSeconds <= 2400.0f) return 300;
+  return 600;
+}
+
+float trace_current_scale_max(float maxCurrentA) {
+  float currentScaleMax = 1.0f;
+  while (currentScaleMax < 10.0f && maxCurrentA > currentScaleMax) {
+    currentScaleMax += 1.0f;
+  }
+  return constrain(currentScaleMax, 1.0f, 10.0f);
+}
+
+float trace_voltage_scale_max(float maxVoltageV) {
+  if (maxVoltageV > 1.0f && maxVoltageV <= 5.0f) {
+    return 5.0f;
+  }
+  if (maxVoltageV > 5.0f && maxVoltageV <= 10.0f) {
+    return 10.0f;
+  }
+  if (maxVoltageV > 10.0f && maxVoltageV <= 15.0f) {
+    return 15.0f;
+  }
+  if (maxVoltageV > 15.0f && maxVoltageV <= 20.0f) {
+    return 20.0f;
+  }
+  if (maxVoltageV > 20.0f && maxVoltageV <= 25.0f) {
+    return 25.0f;
+  }
+  if (maxVoltageV > 25.0f && maxVoltageV <= 30.0f) {
+    return 30.0f;
+  }
+  if (maxVoltageV > 30.0f) {
+    return 35.0f;
+  }
+  return 1.0f;
+}
+
+void draw_cc_trace_segment_range(int plotX,
+                                 int plotY,
+                                 int plotW,
+                                 int plotH,
+                                 unsigned long sampleIntervalMs,
+                                 float timeScaleSeconds,
+                                 float currentScaleMax,
+                                 float voltageScaleMax,
+                                 uint16_t currentColor,
+                                 uint16_t voltageColor,
+                                 size_t startIndex,
+                                 size_t endIndex) {
+  if (endIndex == 0 || startIndex > endIndex) return;
+
+  float prevCurrentA = 0.0f;
+  float prevVoltageV = 0.0f;
+  if (!app_trace_read_sample(startIndex, &prevCurrentA, &prevVoltageV)) return;
+
+  const float prevTime = static_cast<float>(startIndex * sampleIntervalMs) / 1000.0f;
+  int prevX = plotX + static_cast<int>(constrain(prevTime / timeScaleSeconds, 0.0f, 1.0f) * static_cast<float>(plotW));
+  int prevCurrentY = plotY + plotH - static_cast<int>((prevCurrentA / currentScaleMax) * static_cast<float>(plotH));
+  int prevVoltageY = plotY + plotH - static_cast<int>((prevVoltageV / voltageScaleMax) * static_cast<float>(plotH));
+
+  if (startIndex == endIndex) {
+    uiDisplayFillCircle(prevX, prevCurrentY, 2, currentColor);
+    uiDisplayFillCircle(prevX, prevVoltageY, 2, voltageColor);
+    return;
+  }
+
+  for (size_t i = startIndex + 1; i <= endIndex; ++i) {
+    float currentA = 0.0f;
+    float voltageV = 0.0f;
+    if (!app_trace_read_sample(i, &currentA, &voltageV)) continue;
+    const float sampleTime = static_cast<float>(i * sampleIntervalMs) / 1000.0f;
+    const int sampleX = plotX + static_cast<int>(constrain(sampleTime / timeScaleSeconds, 0.0f, 1.0f) * static_cast<float>(plotW));
+    const int currentY = plotY + plotH - static_cast<int>((currentA / currentScaleMax) * static_cast<float>(plotH));
+    const int voltageY = plotY + plotH - static_cast<int>((voltageV / voltageScaleMax) * static_cast<float>(plotH));
+    tft.drawLine(prevX, prevCurrentY, sampleX, currentY, currentColor);
+    tft.drawLine(prevX, prevVoltageY, sampleX, voltageY, voltageColor);
+    prevX = sampleX;
+    prevCurrentY = currentY;
+    prevVoltageY = voltageY;
+  }
+}
+
 void draw_cc_trace_graph(int x, int y, int w, int h, bool isLargeDisplay) {
-  const uint16_t axisColor = kUiBorder;
-  const uint16_t currentColor = TFT_GREEN;
+  const uint16_t panelBg = TFT_WHITE;
+  const uint16_t axisColor = TFT_BLACK;
+  const uint16_t currentColor = tft.color565(0, 180, 0);
   const uint16_t voltageColor = TFT_RED;
-  const uint16_t textBg = kUiModeAreaBg;
+  const uint16_t textBg = panelBg;
   const uint8_t textFont = 1;
+#ifdef WOKWI_SIMULATION
+  const uint8_t textSize = 1;
+#else
   const uint8_t textSize = 2;
+#endif
   const size_t sampleCount = app_trace_sample_count();
+  const unsigned long sampleIntervalMs = app_trace_effective_interval_ms();
   const int leftPad = isLargeDisplay ? 24 : 18;
   const int rightPad = leftPad;
   const int topPad = isLargeDisplay ? 18 : 14;
@@ -145,9 +271,19 @@ void draw_cc_trace_graph(int x, int y, int w, int h, bool isLargeDisplay) {
   const int plotW = max(10, w - leftPad - rightPad);
   const int plotH = max(10, h - topPad - bottomPad);
 
+  const int panelInsetX = isLargeDisplay ? 8 : 6;
+  const int panelInsetY = isLargeDisplay ? 6 : 4;
+  const int panelX = x + panelInsetX;
+  const int panelY = y + panelInsetY;
+  const int panelW = max(8, w - (panelInsetX * 2));
+  const int panelH = max(8, h - (panelInsetY * 2));
+
   uiDisplayFillRect(x, y, w, h, kUiModeAreaBg);
+  uiDisplayFillRect(panelX, panelY, panelW, panelH, panelBg);
+  uiDisplayDrawRect(panelX, panelY, panelW, panelH, axisColor);
   tft.drawLine(plotX, plotY, plotX, plotY + plotH, axisColor);
-  tft.drawLine(plotX, plotY + plotH, plotX + plotW, plotY + plotH, axisColor);
+  tft.drawLine(plotX - (isLargeDisplay ? 4 : 3), plotY + plotH, plotX + plotW, plotY + plotH, axisColor);
+  tft.drawLine(plotX - (isLargeDisplay ? 4 : 3), plotY, plotX + (isLargeDisplay ? 4 : 3), plotY, axisColor);
 
   float maxCurrentA = 0.0f;
   float maxVoltageV = 0.0f;
@@ -159,121 +295,84 @@ void draw_cc_trace_graph(int x, int y, int w, int h, bool isLargeDisplay) {
     maxVoltageV = max(maxVoltageV, voltageV);
   }
   const float elapsedSeconds = app_trace_duration_seconds();
-
-  float timeScaleSeconds = 5.0f;
-  while (timeScaleSeconds < 240.0f && elapsedSeconds >= (timeScaleSeconds * 0.8f)) {
-    if (timeScaleSeconds < 40.0f) {
-      timeScaleSeconds *= 2.0f;
-    } else if (timeScaleSeconds < 80.0f) {
-      timeScaleSeconds = 80.0f;
-    } else if (timeScaleSeconds < 160.0f) {
-      timeScaleSeconds = 160.0f;
-    } else {
-      timeScaleSeconds = 240.0f;
-    }
-  }
-
-  float currentScaleMax = 1.0f;
-  while (currentScaleMax < 10.0f && maxCurrentA > currentScaleMax) {
-    currentScaleMax += 1.0f;
-  }
-  currentScaleMax = constrain(currentScaleMax, 1.0f, 10.0f);
-
-  float voltageScaleMax = 1.0f;
-  if (maxVoltageV > 1.0f && maxVoltageV <= 5.0f) {
-    voltageScaleMax = 5.0f;
-  } else if (maxVoltageV > 5.0f && maxVoltageV <= 10.0f) {
-    voltageScaleMax = 10.0f;
-  } else if (maxVoltageV > 10.0f && maxVoltageV <= 15.0f) {
-    voltageScaleMax = 15.0f;
-  } else if (maxVoltageV > 15.0f && maxVoltageV <= 20.0f) {
-    voltageScaleMax = 20.0f;
-  } else if (maxVoltageV > 20.0f && maxVoltageV <= 25.0f) {
-    voltageScaleMax = 25.0f;
-  } else if (maxVoltageV > 25.0f && maxVoltageV <= 30.0f) {
-    voltageScaleMax = 30.0f;
-  } else if (maxVoltageV > 30.0f) {
-    voltageScaleMax = 35.0f;
-  }
+  const float timeScaleSeconds = trace_time_scale_seconds(elapsedSeconds);
+  const float currentScaleMax = trace_current_scale_max(maxCurrentA);
+  const float voltageScaleMax = trace_voltage_scale_max(maxVoltageV);
 
   const String currentLegend = "Imax:" + String(currentScaleMax, currentScaleMax < 10.0f ? 0 : 0);
   const String voltageLegend = "Vmax:" + String(voltageScaleMax, voltageScaleMax < 10.0f ? 0 : 0);
-  const String timeLegend = String(static_cast<int>(timeScaleSeconds)) + "s";
+  const String timeLegend = trace_time_legend(timeScaleSeconds);
   const float currentTickStep = (currentScaleMax <= 1.0f) ? 0.1f : (currentScaleMax <= 2.0f ? 0.5f : 1.0f);
-  const float voltageTickStep = (voltageScaleMax <= 10.0f) ? 1.0f : (voltageScaleMax <= 20.0f ? 2.0f : 5.0f);
+  const float voltageTickStep = (voltageScaleMax <= 1.0f) ? 0.5f : ((voltageScaleMax <= 10.0f) ? 1.0f : (voltageScaleMax <= 20.0f ? 2.0f : 5.0f));
 
-  uiDisplayPrintStyledAt(plotX + uiDisplayTextWidth(" ", textSize, textFont),
-                         y + 5,
+  const int legendY = y + 8;
+  const int legendStartX = panelX + (panelW / 2) - uiDisplayTextWidth(currentLegend + "   " + voltageLegend, textSize, textFont) / 2;
+  uiDisplayPrintStyledAt(legendStartX,
+                         legendY,
                          currentLegend,
                          currentColor,
                          textBg,
                          textSize,
                          textFont);
-  uiDisplayPrintStyledAt(plotX + uiDisplayTextWidth(currentLegend, textSize, textFont) + uiDisplayTextWidth("  ", textSize, textFont),
-                         y + 5,
+  uiDisplayPrintStyledAt(legendStartX + uiDisplayTextWidth(currentLegend + "   ", textSize, textFont),
+                         legendY,
                          voltageLegend,
                          voltageColor,
                          textBg,
                          textSize,
                          textFont);
   uiDisplayPrintStyledAt(plotX + plotW - uiDisplayTextWidth(timeLegend, textSize, textFont),
-                         plotY + plotH + 4,
+                         plotY + plotH - uiDisplayFontHeight(textSize, textFont) - (isLargeDisplay ? 2 : 1),
                          timeLegend,
-                         kUiText,
+                         axisColor,
                          textBg,
                          textSize,
                          textFont);
 
   for (float tick = currentTickStep; tick < currentScaleMax; tick += currentTickStep) {
     const int tickY = plotY + plotH - static_cast<int>((tick / currentScaleMax) * static_cast<float>(plotH));
-    tft.drawLine(plotX - 6, tickY, plotX - 1, tickY, currentColor);
+    const bool majorTick = fabsf(fmodf(tick, 1.0f)) < 0.01f;
+    const int tickLen = majorTick ? (isLargeDisplay ? 6 : 4) : (isLargeDisplay ? 4 : 3);
+    tft.drawLine(plotX - tickLen, tickY, plotX - 1, tickY, currentColor);
   }
 
   for (float tick = voltageTickStep; tick < voltageScaleMax; tick += voltageTickStep) {
     const int tickY = plotY + plotH - static_cast<int>((tick / voltageScaleMax) * static_cast<float>(plotH));
-    tft.drawLine(plotX + 1, tickY, plotX + 5, tickY, voltageColor);
+    const bool majorTick = fabsf(fmodf(tick, 1.0f)) < 0.01f;
+    const int tickLen = majorTick ? (isLargeDisplay ? 6 : 4) : (isLargeDisplay ? 4 : 3);
+    tft.drawLine(plotX + 1, tickY, plotX + tickLen, tickY, voltageColor);
   }
 
-  const int timeTickStep = (timeScaleSeconds <= 40.0f) ? 1 : (timeScaleSeconds <= 160.0f ? 10 : 20);
+  const int timeTickStep = trace_time_tick_step_seconds(timeScaleSeconds);
   int lastTickX = -1;
   for (int second = 0; second <= static_cast<int>(timeScaleSeconds); second += timeTickStep) {
     const int tickX = plotX + static_cast<int>((static_cast<float>(second) / timeScaleSeconds) * static_cast<float>(plotW));
     if (tickX == lastTickX) continue;
-    const int tickH = (timeTickStep == 1 && second % 5 == 0) ? (isLargeDisplay ? 6 : 4) : (isLargeDisplay ? 4 : 3);
+    const bool majorTick = (timeTickStep < 60) ? ((second % (timeTickStep * 5)) == 0) : ((second % (timeTickStep * 2)) == 0);
+    const int tickH = majorTick ? (isLargeDisplay ? 6 : 4) : (isLargeDisplay ? 4 : 3);
     tft.drawLine(tickX, plotY + plotH, tickX, plotY + plotH + tickH, axisColor);
     lastTickX = tickX;
   }
 
-  if (sampleCount == 1) {
-    app_trace_read_sample(0, &currentA, &voltageV);
-    const int pointX = plotX;
-    const int currentY = plotY + plotH - static_cast<int>((currentA / currentScaleMax) * static_cast<float>(plotH));
-    const int voltageY = plotY + plotH - static_cast<int>((voltageV / voltageScaleMax) * static_cast<float>(plotH));
-    uiDisplayFillCircle(pointX, currentY, isLargeDisplay ? 3 : 2, currentColor);
-    uiDisplayFillCircle(pointX, voltageY, isLargeDisplay ? 3 : 2, voltageColor);
-    return;
+  if (sampleCount > 0) {
+    draw_cc_trace_segment_range(plotX,
+                                plotY,
+                                plotW,
+                                plotH,
+                                sampleIntervalMs,
+                                timeScaleSeconds,
+                                currentScaleMax,
+                                voltageScaleMax,
+                                currentColor,
+                                voltageColor,
+                                0,
+                                sampleCount - 1);
   }
 
-  int prevCurrentX = plotX;
-  int prevCurrentY = plotY + plotH;
-  int prevVoltageX = plotX;
-  int prevVoltageY = plotY + plotH;
-  for (size_t i = 0; i < sampleCount; ++i) {
-    if (!app_trace_read_sample(i, &currentA, &voltageV)) continue;
-    const float sampleTime = static_cast<float>(i * kTraceSampleIntervalMs) / 1000.0f;
-    const float progress = constrain(sampleTime / timeScaleSeconds, 0.0f, 1.0f);
-    const int sampleX = plotX + static_cast<int>(progress * static_cast<float>(plotW));
-    const int currentY = plotY + plotH - static_cast<int>((currentA / currentScaleMax) * static_cast<float>(plotH));
-    const int voltageY = plotY + plotH - static_cast<int>((voltageV / voltageScaleMax) * static_cast<float>(plotH));
-    if (i > 0) {
-      tft.drawLine(prevCurrentX, prevCurrentY, sampleX, currentY, currentColor);
-      tft.drawLine(prevVoltageX, prevVoltageY, sampleX, voltageY, voltageColor);
-    }
-    prevCurrentX = sampleX;
-    prevCurrentY = currentY;
-    prevVoltageX = sampleX;
-    prevVoltageY = voltageY;
-  }
+  g_ccLastTraceSampleCount = sampleCount;
+  g_ccLastTraceTimeScaleSeconds = timeScaleSeconds;
+  g_ccLastTraceCurrentScaleMax = currentScaleMax;
+  g_ccLastTraceVoltageScaleMax = voltageScaleMax;
 }
 
 String format_cc_setpoint(float readingValue) {
@@ -547,6 +646,8 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const bool isTcMode = state.mode == TC;
   const bool isTlMode = state.mode == TL;
   const bool isCaMode = state.mode == CA;
+  const bool traceOverlaySupportedMode = isCcMode || isCpMode || isCrMode || isBcMode;
+  const bool traceOverlayActive = state.traceOverlayActive && traceOverlaySupportedMode;
   const bool isTransientMode = isTcMode || isTlMode;
   const int topBarH = (displayH * 10) / 100;
   const int metricsH = (displayH * 20) / 100;
@@ -676,6 +777,27 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastModeLine5 = "";
     g_ccLastShiftActive = false;
     g_ccLastTraceToken = 0;
+    g_ccLastTraceSampleCount = 0;
+    g_ccLastTraceTimeScaleSeconds = 0.0f;
+    g_ccLastTraceCurrentScaleMax = 0.0f;
+    g_ccLastTraceVoltageScaleMax = 0.0f;
+    g_ccLastTraceOverlayActive = false;
+  }
+
+  const bool traceOverlayChanged = layoutChanged || (g_ccLastTraceOverlayActive != traceOverlayActive);
+  if (traceOverlayChanged) {
+    uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
+    g_ccLastModeLine1 = "";
+    g_ccLastModeLine2 = "";
+    g_ccLastModeLine3 = "";
+    g_ccLastModeLine4 = "";
+    g_ccLastModeLine5 = "";
+    g_ccLastTraceToken = 0;
+    g_ccLastTraceSampleCount = 0;
+    g_ccLastTraceTimeScaleSeconds = 0.0f;
+    g_ccLastTraceCurrentScaleMax = 0.0f;
+    g_ccLastTraceVoltageScaleMax = 0.0f;
+    g_ccLastTraceOverlayActive = traceOverlayActive;
   }
 
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
@@ -749,7 +871,8 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastMetric3 = metric3;
   }
 
-  if ((isBcMode || isTransientMode || isCaMode) &&
+  if (!traceOverlayActive &&
+      (isBcMode || isTransientMode || isCaMode) &&
       (layoutChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
        g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
     const uint8_t infoTitleFont = 2;
@@ -861,10 +984,58 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   }
 
   const uint32_t traceToken = app_trace_update_token();
-  if (isCcMode && (layoutChanged || g_ccLastTraceToken != traceToken)) {
-    draw_cc_trace_graph(1, contentY + 1, displayW - 2, contentH - 2, isLargeDisplay);
+  if (traceOverlayActive && (layoutChanged || traceOverlayChanged || g_ccLastTraceToken != traceToken)) {
+    const size_t sampleCount = app_trace_sample_count();
+    float maxCurrentA = 0.0f;
+    float maxVoltageV = 0.0f;
+    float currentA = 0.0f;
+    float voltageV = 0.0f;
+    for (size_t i = 0; i < sampleCount; ++i) {
+      if (!app_trace_read_sample(i, &currentA, &voltageV)) continue;
+      maxCurrentA = max(maxCurrentA, currentA);
+      maxVoltageV = max(maxVoltageV, voltageV);
+    }
+
+    const float nextTimeScale = trace_time_scale_seconds(app_trace_duration_seconds());
+    const float nextCurrentScale = trace_current_scale_max(maxCurrentA);
+    const float nextVoltageScale = trace_voltage_scale_max(maxVoltageV);
+    const bool scalesChanged = layoutChanged || traceOverlayChanged ||
+                               g_ccLastTraceTimeScaleSeconds != nextTimeScale ||
+                               g_ccLastTraceCurrentScaleMax != nextCurrentScale ||
+                               g_ccLastTraceVoltageScaleMax != nextVoltageScale ||
+                               sampleCount < g_ccLastTraceSampleCount;
+
+    if (scalesChanged) {
+      draw_cc_trace_graph(1, contentY + 1, displayW - 2, contentH - 2, isLargeDisplay);
+      draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+    } else if (sampleCount > 0 && sampleCount > g_ccLastTraceSampleCount) {
+      const int leftPad = isLargeDisplay ? 24 : 18;
+      const int rightPad = leftPad;
+      const int topPad = isLargeDisplay ? 18 : 14;
+      const int bottomPad = isLargeDisplay ? 18 : 14;
+      const int plotX = 1 + leftPad;
+      const int plotY = (contentY + 1) + topPad;
+      const int plotW = max(10, (displayW - 2) - leftPad - rightPad);
+      const int plotH = max(10, (contentH - 2) - topPad - bottomPad);
+      const size_t startIndex = (g_ccLastTraceSampleCount > 0) ? (g_ccLastTraceSampleCount - 1) : 0;
+      draw_cc_trace_segment_range(plotX,
+                                  plotY,
+                                  plotW,
+                                  plotH,
+                                  app_trace_effective_interval_ms(),
+                                  nextTimeScale,
+                                  nextCurrentScale,
+                                  nextVoltageScale,
+                                  tft.color565(0, 180, 0),
+                                  TFT_RED,
+                                  startIndex,
+                                  sampleCount - 1);
+      g_ccLastTraceSampleCount = sampleCount;
+      g_ccLastTraceTimeScaleSeconds = nextTimeScale;
+      g_ccLastTraceCurrentScaleMax = nextCurrentScale;
+      g_ccLastTraceVoltageScaleMax = nextVoltageScale;
+    }
     g_ccLastTraceToken = traceToken;
-    draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
   }
 
   const bool supportsCursorHighlight = isCcMode || isCpMode || isCrMode || isBcMode || isTcMode || isCaMode;

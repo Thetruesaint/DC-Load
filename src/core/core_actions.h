@@ -14,7 +14,8 @@ enum class ActionType : uint8_t {
   ModeSelect,
   ValueConfirm,
   OpenConfigMenu,
-  OpenLimitsSetup
+  OpenLimitsSetup,
+  ToggleTraceOverlay
 };
 
 struct UserAction {
@@ -65,6 +66,10 @@ constexpr UserAction make_open_calibration_config_action() {
 
 constexpr UserAction make_open_limits_setup_action() {
   return {ActionType::OpenLimitsSetup, 0, '\0'};
+}
+
+constexpr UserAction make_toggle_trace_overlay_action() {
+  return {ActionType::ToggleTraceOverlay, 0, '\0'};
 }
 
 #endif

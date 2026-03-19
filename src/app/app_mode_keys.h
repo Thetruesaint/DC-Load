@@ -5,7 +5,8 @@ enum class MscKeyDecision {
   Continue = 0,
   Consumed,
   ExitMode,
-  OpenConfig
+  OpenConfig,
+  ToggleTraceOverlay
 };
 
 MscKeyDecision app_route_msc_key(char key, bool configAllowed);

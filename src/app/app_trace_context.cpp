@@ -7,9 +7,30 @@ size_t g_traceHead = 0;
 size_t g_traceCount = 0;
 uint32_t g_traceToken = 0;
 unsigned long g_lastSampleMs = 0;
+unsigned long g_effectiveSampleIntervalMs = kTraceSampleIntervalMs;
 bool g_traceWasEnabled = false;
 
+void compact_trace_history() {
+  if (g_traceCount < kTraceSampleCapacity) {
+    return;
+  }
+
+  const size_t oldest = (g_traceHead + kTraceSampleCapacity - g_traceCount) % kTraceSampleCapacity;
+  const size_t compactedCount = kTraceSampleCapacity / 2U;
+  for (size_t i = 0; i < compactedCount; ++i) {
+    const size_t firstSlot = (oldest + (i * 2U)) % kTraceSampleCapacity;
+    const size_t secondSlot = (oldest + (i * 2U) + 1U) % kTraceSampleCapacity;
+    g_traceCurrentsA[i] = (g_traceCurrentsA[firstSlot] + g_traceCurrentsA[secondSlot]) * 0.5f;
+    g_traceVoltagesV[i] = (g_traceVoltagesV[firstSlot] + g_traceVoltagesV[secondSlot]) * 0.5f;
+  }
+
+  g_traceHead = compactedCount;
+  g_traceCount = compactedCount;
+  g_effectiveSampleIntervalMs *= 2UL;
+}
+
 void record_sample(float currentA, float voltageV, unsigned long nowMs) {
+  compact_trace_history();
   g_traceCurrentsA[g_traceHead] = currentA;
   g_traceVoltagesV[g_traceHead] = voltageV;
   g_traceHead = (g_traceHead + 1U) % kTraceSampleCapacity;
@@ -25,6 +46,8 @@ void app_trace_reset() {
   g_traceHead = 0;
   g_traceCount = 0;
   g_lastSampleMs = 0;
+  g_effectiveSampleIntervalMs = kTraceSampleIntervalMs;
+  g_traceWasEnabled = false;
   ++g_traceToken;
 }
 
@@ -40,7 +63,7 @@ void app_trace_update_cc(bool loadEnabled, float currentA, float voltageV, unsig
     return;
   }
 
-  if (g_traceCount == 0 || (nowMs - g_lastSampleMs) >= kTraceSampleIntervalMs) {
+  if (g_traceCount == 0 || (nowMs - g_lastSampleMs) >= g_effectiveSampleIntervalMs) {
     record_sample(currentA, voltageV, nowMs);
   }
 }
@@ -55,7 +78,11 @@ uint32_t app_trace_update_token() {
 
 float app_trace_duration_seconds() {
   if (g_traceCount <= 1) return 0.0f;
-  return static_cast<float>((g_traceCount - 1U) * kTraceSampleIntervalMs) / 1000.0f;
+  return static_cast<float>((g_traceCount - 1U) * g_effectiveSampleIntervalMs) / 1000.0f;
+}
+
+unsigned long app_trace_effective_interval_ms() {
+  return g_effectiveSampleIntervalMs;
 }
 
 bool app_trace_read_sample(size_t index, float *currentA, float *voltageV) {

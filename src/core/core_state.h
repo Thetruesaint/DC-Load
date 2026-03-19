@@ -141,6 +141,7 @@ struct SystemState {
   uint32_t actionCounter;
 
   bool loadEnabled;
+  bool traceOverlayActive;
   uint8_t mode;
   bool modeInitialized;
   bool modeConfigured;

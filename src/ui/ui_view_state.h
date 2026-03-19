@@ -6,6 +6,7 @@
 struct UiViewState {
   bool modeInitialized;
   bool loadEnabled;
+  bool traceOverlayActive;
   uint8_t mode;
   int cursorPosition;
 

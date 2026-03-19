@@ -29,6 +29,10 @@ MscKeyDecision app_route_msc_key(char key, bool configAllowed) {
       app_push_action(make_mode_select_action(true, key));
       return MscKeyDecision::ExitMode;
     }
+    if (key == '0') {
+      shiftPressed = false;
+      return MscKeyDecision::ToggleTraceOverlay;
+    }
     return MscKeyDecision::Consumed;
   }
 

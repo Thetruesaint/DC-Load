@@ -14,6 +14,7 @@ struct PreservedUiState {
   uint8_t fanSettingsMenuSelection;
   ConfigMenu currentConfigMenu;
   ConfigMenu parentConfigMenu;
+  bool traceOverlayActive;
   int32_t lastEncoderDelta;
   char lastKeyPressed;
   bool limitsMenuActive;
@@ -73,6 +74,7 @@ PreservedUiState capture_preserved_ui_state(const SystemState &state) {
   preserved.fanSettingsMenuSelection = state.fanSettingsMenuSelection;
   preserved.currentConfigMenu = state.currentConfigMenu;
   preserved.parentConfigMenu = state.parentConfigMenu;
+  preserved.traceOverlayActive = state.traceOverlayActive;
   preserved.lastEncoderDelta = state.lastEncoderDelta;
   preserved.lastKeyPressed = state.lastKeyPressed;
   preserved.limitsMenuActive = state.limitsMenuActive;
@@ -182,6 +184,7 @@ void restore_preserved_ui_state(SystemState *current, const PreservedUiState &pr
   current->fanSettingsMenuSelection = preserved.fanSettingsMenuSelection;
   current->currentConfigMenu = preserved.currentConfigMenu;
   current->parentConfigMenu = preserved.parentConfigMenu;
+  current->traceOverlayActive = preserved.traceOverlayActive;
   current->lastEncoderDelta = preserved.lastEncoderDelta;
   current->lastKeyPressed = preserved.lastKeyPressed;
   current->limitsMenuActive = preserved.limitsMenuActive;

@@ -10,6 +10,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   UiViewState view = ui_view_state_make_default();
   view.modeInitialized = state.modeInitialized;
   view.loadEnabled = state.loadEnabled;
+  view.traceOverlayActive = state.traceOverlayActive;
   view.mode = state.mode;
   view.cursorPosition = state.cursorPosition;
   view.measuredCurrent_A = state.measuredCurrent_A;
