@@ -1,5 +1,67 @@
-**DC LOAD based in a desing from Mr Louis Scully**
+## v2.13 ## LEVELING UP!
 
+**Trabajando:**
+
+
+**A Trabajar:**
+- Seguir optimizando la arquitectura
+
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los digitos
+
+**Fixes**
+- Indicacion de `sf` en menues de configuracion
+- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
+
+**Mejoras**
+- Adjunto Documentación y reorganizo
+- Mejoras esteticas en setups de `BC`, `TC`, `TL` y menues de configuracion
+- Opcion para ajustar fecha y hora del RTC
+- Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
+- Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
+
+**Posibles mejoras de software**
+- Unificar template para cuando se supera mas de un limite
+- Menu de configuracion ampliado, por ejemplo limites de descarga de baterias
+- En `TC` y `TL`: mostrar mSec decrecientes
+- En `CP` y `CR`: recalcular los limites de `W` y `R` en funcion de la `DC` presente
+- El RTC es un `DS1307` de Maxim y cuenta con una `EEPROM AT24C32` de Atmel. Evaluar aprovechar esa memoria
+- Promediar los valores de `a` y `v` para reducir refrescos continuos
+- Graficar `Y/t` para mostrar el historico de `a` y `v`
+
+**Posibles mejoras de hardware**
+- Medicion de baterias por celda
+- Medir frecuencia maxima en `TC` y `TL` con osciloscopio, usando LiPo
+- Habilitar control externo de MOSFETs
+- Referencia de `4.096V` para ADC
+- Resistencia shunt con mejor coeficiente de temperatura
+
+## v2.12 ## NICE TO SEE YOU
+
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los dígitos
+
+**Fixes**
+- CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
+- IMPORTANTE: Corrección de calibración en SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
+- En BC, TC y TL ahora se detecta el salto de modo con S+N
+
+**Mejoras**
+- Limpieza y organización de todo el código migrando/eliminando funciones basadas en grilla LCD 20x4 y ajuste de arquictura.
+- Indicador de shift pressed
+- En TL los steps x/t empiezan contando de 1 y no de 0.
+- En TC se puede reajustar el periodo con teclado o encoder.
+- Nuevos templates TFT para pantallas de inicio, menues y modos CC, CP, CR, BC, TC, TL, CA y advertencias!!
+- Nueva simulacion WOKWI con TFT 240x320
+- Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
+- Opción ON/OFF de Fans en Fans Settings para probarlos
+- Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usos MOSFET de placa de control Power para mandar Iset a GND forzando el apagado por si falla el DAC.
+- Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
+- **FW Update por Wifi! (OTA)**
+    - El menu `Configuration -> FW Update` conecta el WiFi y muestra IP/Host.
+    - En powershell ejecutar:
+            pio run -e real
+            & "C:\Users\thetr\.platformio\penv\Scripts\python.exe" "C:\Users\thetr\.platformio\packages\framework-arduinoespressif32\tools\espota.py" -i <IP_QUE_MUESTRA_EL_TFT> -p 3232 -f ".pio\build\real\firmware.bin"
 
 ## v2.11 ## BY LCD HELLO TFT & AI
 

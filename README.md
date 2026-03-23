@@ -1,48 +1,75 @@
-## v2.12 ## NICE TO SEE YOU
+# DC LOAD - Carga Electrónica
 
-**Trabajando:**
-- Introduciendo mejoras con TFT
+<p align="center">
+  <img src="doc/images/DC%20LOAD%20Front.jpg" alt="DC Load ESP32 vista frontal" width="720">
+</p>
 
-**A Trabajar:**
-- Setear hora y fecha del RTC: rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); y que no se pise con cada update de FW.
-- Seguir optimizando la arquitectura
+Carga electronica programable basada en ESP32 para ensayo de fuentes, baterias y etapas de potencia. El firmware mide variables electricas y termicas, controla la carga en distintos modos y muestra la informacion en una interfaz TFT con menus de configuracion, calibracion y mantenimiento.
 
-**Bugs**
-- Pixeles remanentes cuando a y v se reacomodan por los dígitos
+## Agradecimientos
 
-**Fixes**
-- CRITICO: Cuando el USB estaba conectado porque el DAC no podia controlar los MOSFET y quedaban en corto. Parece que se soluciono con MOSFONOFF HIGHT. VERIFICAR BIEN
-- IMPORTANTE: Corrección de calibración en SetCurrent: calibratedCurrent = (targetCurrent - Out_Curr_Calib_Offs) / outputFactor;
-- En BC, TC y TL ahora se detecta el salto de modo con S+N
+Este proyecto toma como base el trabajo de Mr. Louis Scully y sigue evolucionando con redisenos propios de hardware y firmware. 
+(Mr. Louis Scully Playlist: <https://youtube.com/playlist?list=PLUMG8JNssPPzbr4LydbTcBrhoPlemu5Dt&si=T7vzUby6amjt4Xsd>)
 
-**Mejoras**
-- Limpieza y organización de todo el código migrando/eliminando funciones basadas en grilla LCD 20x4 y ajuste de arquictura.
-- Indicador de shift pressed
-- En TL los steps x/t empiezan contando de 1 y no de 0.
-- En TC se puede reajustar el periodo con teclado o encoder.
-- Nuevos templates TFT para pantallas de inicio, menues y modos CC, CP, CR, BC, TC, TL, CA y advertencias!!
-- Nueva simulacion WOKWI con TFT 240x320
-- Nueva placa aparte provisoria para el control de FANs se integrará en la nueva versión de PCB v2.3
-- Opción ON/OFF de Fans en Fans Settings para probarlos
-- Reasignación de GPIOs para poder tener control de MOSFETs independiente del DAC: FAN_CTRL = 16, LOADONOFF = 39 y MOSFONOFF = 25. Usos MOSFET de placa de control Power para mandar Iset a GND forzando el apagado por si falla el DAC.
-- Si MeasuredCurrent > SetCurrent, se advierte "RunOut Cutt Off!" y ahora Carga apagada = MOSFONOFF HIGHT
-- **FW Update por Wifi! (OTA)**
-    - El menu `Configuration -> FW Update` conecta el WiFi y muestra IP/Host.
-    - En powershell ejecutar:
-            pio run -e real
-            & "C:\Users\thetr\.platformio\penv\Scripts\python.exe" "C:\Users\thetr\.platformio\packages\framework-arduinoespressif32\tools\espota.py" -i <IP_QUE_MUESTRA_EL_TFT> -p 3232 -f ".pio\build\real\firmware.bin"
 
-**Posibles Mejoras SW:**
-- Unificar template para cuando se supera mas de un límite.
-- Menu de configuración ampliado (limites de descarga de baterias por ej.)
-- En TC y TL: mostrar mSec decrecientes?
-- En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
-- EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
-- Promediar los valores de a y v para que no cambien tanto y se deba refrescar continuamente
+Las nuevas PCB se encuentran en fabricacion, ¡gracias PCBWay por ayudarme a mejorarlas y llevarlas al siguiente nivel!
 
-**Posibles Mejoras de HW:**
-- Medición de baterias por celda 
-- Medir frecuencia máxima TC y TL con el osciloscopio a ver hasta donde llega, usar Lipo.
-- Habilitar control externo de MOSFETs?
-- Reg. de 4.096V para ADC?
-- R Shunt con buen coheficiente de temperatura.
+<p>
+  <img src="doc/images/PCBWay.jpg" alt="PCBWay" width="160">
+</p>
+
+## Funciones principales
+
+- Modos de carga `CC`, `CP`, `CR`, `BC`, `TC`, `TL` y `CA`.
+- Medicion de corriente, tension, potencia y temperatura.
+- Interfaz TFT con pantallas de operacion, configuracion, calibracion y advertencias.
+- Limites de proteccion configurables.
+- Actualizacion de firmware por WiFi mediante OTA.
+- Simulacion Wokwi para validar UI y parte del flujo de operacion.
+
+## Uso basico
+
+1. Conectar la fuente o bateria a ensayar.
+2. Verificar limites de corriente, tension, potencia y temperatura.
+3. Seleccionar el modo de trabajo deseado.
+4. Ajustar el setpoint con teclado o encoder.
+5. Activar la carga y supervisar la lectura en pantalla.
+
+## Actualizacion OTA
+
+1. En el equipo, ir a `Configuration -> FW Update`.
+2. Esperar a que la pantalla muestre IP y host.
+3. Compilar el firmware para hardware real.
+4. Enviar el binario por OTA desde PowerShell.
+
+## Fotos y material visual
+
+- Vista frontal del equipo: [doc/images/DC LOAD Front.jpg](doc/images/DC%20LOAD%20Front.jpg)
+- Fotos del desarrollo y del hardware: [doc/images/](doc/images/)
+- Referencia de display TFT: [doc/images/TFT.webp](doc/images/TFT.webp)
+- Pinout de ESP32 usado como referencia: [doc/images/ESP32 wroom nodemcu pinout.jpg](doc/images/ESP32%20wroom%20nodemcu%20pinout.jpg)
+
+## Documentacion de hardware
+
+- Esquematicos: [doc/hardware/Schematics/](doc/hardware/Schematics/)
+- PCBs: [doc/hardware/PCBs/](doc/hardware/PCBs/)
+- Datasheets: [doc/hardware/Datasheets/](doc/hardware/Datasheets/)
+
+Actualmente el repositorio ya incluye esquematicos, layouts de PCB y hojas de datos de componentes clave para acompanar el firmware.
+
+
+## Estructura de documentacion
+
+- [README.md](README.md): descripcion general del proyecto y guia rapida.
+- [CHANGELOG.md](CHANGELOG.md): mejoras, fixes y evolucion por version.
+- [doc/images/](doc/images/): fotos, capturas y referencias visuales.
+- [doc/hardware/](doc/hardware/): esquematicos, PCB y datasheets.
+- [doc/usage/](doc/usage/): espacio para futuras guias de calibracion, operacion y servicio.
+
+## Estado actual del Firmware
+
+- Plataforma actual: `v2.x` basada en ESP32.
+- Plataforma legacy: `v1.x` basada en Arduino Nano.
+- Historial de cambios y avances: [CHANGELOG.md](CHANGELOG.md).
+
+Versiones publicadas: [GitHub Releases](https://github.com/Thetruesaint/DC-Load/releases)

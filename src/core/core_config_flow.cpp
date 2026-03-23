@@ -33,6 +33,10 @@ UiScreen core_config_target_screen(const SystemState &state) {
     return UiScreen::MenuCalibration;
   }
 
+  if (state.currentConfigMenu == ConfigMenu::Clock) {
+    return UiScreen::MenuClock;
+  }
+
   if (state.currentConfigMenu == ConfigMenu::Root) {
     return UiScreen::MenuRoot;
   }

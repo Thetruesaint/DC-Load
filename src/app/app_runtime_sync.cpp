@@ -83,6 +83,16 @@ void capture_fan_state(RuntimeSnapshot *state) {
                               : app_fan_output_is_on();
 }
 
+void capture_rtc_state(RuntimeSnapshot *state) {
+  if (state == nullptr) return;
+  const DateTime now = rtc.now();
+  state->rtcDay = static_cast<uint8_t>(now.day());
+  state->rtcMonth = static_cast<uint8_t>(now.month());
+  state->rtcYear = static_cast<uint8_t>(now.year() % 100);
+  state->rtcHour = static_cast<uint8_t>(now.hour());
+  state->rtcMinute = static_cast<uint8_t>(now.minute());
+}
+
 void apply_limit_runtime_updates(const SystemState &state) {
   if (state.mode == CC || state.mode == BC) {
     app_setpoint_set_max_reading(app_limits_current_cutoff());
@@ -132,6 +142,15 @@ void apply_config_events(const SystemState &state) {
     app_fan_save_settings(static_cast<int>(state.fanDraftTempC), static_cast<uint8_t>(state.fanDraftHoldSeconds));
   }
 
+  if (state.clockSaveEvent) {
+    rtc.adjust(DateTime(2000 + static_cast<int>(state.clockDraftYear),
+                        static_cast<int>(state.clockDraftMonth),
+                        static_cast<int>(state.clockDraftDay),
+                        static_cast<int>(state.clockDraftHour),
+                        static_cast<int>(state.clockDraftMinute),
+                        0));
+  }
+
   if (state.calibrationMenuApplyEvent) {
     app_calibration_apply_menu_option(state.calibrationMenuOption);
   }
@@ -160,6 +179,7 @@ RuntimeSnapshot app_runtime_sync_capture() {
   capture_runtime_controls(&state);
   capture_measurements_and_limits(&state);
   capture_fan_state(&state);
+  capture_rtc_state(&state);
   capture_mode_and_setup_state(&state);
 
   return state;

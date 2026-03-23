@@ -15,6 +15,7 @@ void uiDisplayInit(void);
 void uiDisplayClear(void);
 void uiDisplayUpdate(void);
 void uiDisplayInvalidateHomeLayout(void);
+void uiDisplayInvalidateFwUpdateLayout(void);
 void uiDisplayFillRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayDrawRect(int x, int y, int w, int h, uint16_t color);
 void uiDisplayFillCircle(int x, int y, int r, uint16_t color);
@@ -26,6 +27,7 @@ void uiDisplayPrintStyledAt(int x, int y, const String &text, uint16_t fg, uint1
 void uiDisplayRenderBatterySetupTask(const UiViewState &state);
 void uiDisplayRenderBatterySetupCustom(const UiViewState &state);
 void uiDisplayRenderBatterySetupCells(const UiViewState &state);
+void uiDisplayUpdateSetupMetrics(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCustomValue(const UiViewState &state);
 void uiDisplayUpdateBatterySetupCellsValue(const UiViewState &state);
 void uiDisplayRenderTransientContSetup(const UiViewState &state);
@@ -41,6 +43,8 @@ void uiDisplayRenderFwUpdateScreen(const char *statusLine, const char *detailLin
 void uiDisplayRenderFanSettingsMenu(const UiViewState &state);
 void uiDisplayRenderLimitsMenu(const UiViewState &state);
 void uiDisplayRenderCalibrationMenu(const UiViewState &state);
+void uiDisplayRenderClockMenu(const UiViewState &state);
+void uiDisplayUpdateConfigChrome(void);
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);

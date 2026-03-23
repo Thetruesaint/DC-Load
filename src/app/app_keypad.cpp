@@ -36,6 +36,10 @@ void app_read_keypad(int col, int row) {
       app_push_action(make_open_limits_config_action());
       return;
     }
+    if (mscDecision == MscKeyDecision::ToggleTraceOverlay) {
+      app_push_action(make_toggle_trace_overlay_action());
+      return;
+    }
     return;
   }
 

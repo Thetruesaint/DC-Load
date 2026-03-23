@@ -20,6 +20,10 @@ bool app_handle_msc_keys(char key) {
       app_push_action(make_open_limits_config_action());
       return true;
 
+    case MscKeyDecision::ToggleTraceOverlay:
+      app_push_action(make_toggle_trace_overlay_action());
+      return true;
+
     case MscKeyDecision::Continue:
     default:
       return true;
