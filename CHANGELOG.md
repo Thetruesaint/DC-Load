@@ -1,4 +1,40 @@
-**DC LOAD based in a desing from Mr Louis Scully**
+## v2.13 ## LEVELING UP!
+
+**Trabajando:**
+
+
+**A Trabajar:**
+- Seguir optimizando la arquitectura
+
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los digitos
+
+**Fixes**
+- Indicacion de `sf` en menues de configuracion
+- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
+
+**Mejoras**
+- Adjunto Documentación y reorganizo
+- Mejoras esteticas en setups de `BC`, `TC`, `TL` y menues de configuracion
+- Opcion para ajustar fecha y hora del RTC
+- Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
+- Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
+
+**Posibles mejoras de software**
+- Unificar template para cuando se supera mas de un limite
+- Menu de configuracion ampliado, por ejemplo limites de descarga de baterias
+- En `TC` y `TL`: mostrar mSec decrecientes
+- En `CP` y `CR`: recalcular los limites de `W` y `R` en funcion de la `DC` presente
+- El RTC es un `DS1307` de Maxim y cuenta con una `EEPROM AT24C32` de Atmel. Evaluar aprovechar esa memoria
+- Promediar los valores de `a` y `v` para reducir refrescos continuos
+- Graficar `Y/t` para mostrar el historico de `a` y `v`
+
+**Posibles mejoras de hardware**
+- Medicion de baterias por celda
+- Medir frecuencia maxima en `TC` y `TL` con osciloscopio, usando LiPo
+- Habilitar control externo de MOSFETs
+- Referencia de `4.096V` para ADC
+- Resistencia shunt con mejor coeficiente de temperatura
 
 ## v2.12 ## NICE TO SEE YOU
 

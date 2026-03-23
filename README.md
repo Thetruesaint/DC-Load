@@ -1,36 +1,75 @@
-## v2.13 ##
+# DC LOAD - Carga Electrónica
 
-**Trabajando:**
+<p align="center">
+  <img src="doc/images/DC%20LOAD%20Front.jpg" alt="DC Load ESP32 vista frontal" width="720">
+</p>
+
+Carga electronica programable basada en ESP32 para ensayo de fuentes, baterias y etapas de potencia. El firmware mide variables electricas y termicas, controla la carga en distintos modos y muestra la informacion en una interfaz TFT con menus de configuracion, calibracion y mantenimiento.
+
+## Agradecimientos
+
+Este proyecto toma como base el trabajo de Mr. Louis Scully y sigue evolucionando con redisenos propios de hardware y firmware. 
+(Mr. Louis Scully Playlist: <https://youtube.com/playlist?list=PLUMG8JNssPPzbr4LydbTcBrhoPlemu5Dt&si=T7vzUby6amjt4Xsd>)
 
 
-**A Trabajar:**
-- Seguir optimizando la arquitectura
+Las nuevas PCB se encuentran en fabricacion, ¡gracias PCBWay por ayudarme a mejorarlas y llevarlas al siguiente nivel!
 
-**Bugs**
-- Pixeles remanentes cuando a y v se reacomodan por los dígitos
+<p>
+  <img src="doc/images/PCBWay.jpg" alt="PCBWay" width="160">
+</p>
 
-**Fixes**
-- indicacion de "sf" en menues de configuración
-- BC, TC y TL ahora muestran a,v y w durante el setup. 
+## Funciones principales
 
-**Mejoras**
-- Mejoras esteticas en setups de BC, TC, TL y Menues de Configuración
-- Opcion para ajustar fecha y hora del RTC.
-- Indicador de ON en blanco y Temp con grado de color de amarillo al rojo al incrementarse.
-- Histograma de av/t accesible con S+0 para CC, CP, CR y BC
+- Modos de carga `CC`, `CP`, `CR`, `BC`, `TC`, `TL` y `CA`.
+- Medicion de corriente, tension, potencia y temperatura.
+- Interfaz TFT con pantallas de operacion, configuracion, calibracion y advertencias.
+- Limites de proteccion configurables.
+- Actualizacion de firmware por WiFi mediante OTA.
+- Simulacion Wokwi para validar UI y parte del flujo de operacion.
 
-**Posibles Mejoras SW:**
-- Unificar template para cuando se supera mas de un límite.
-- Menu de configuración ampliado (limites de descarga de baterias por ej.)
-- En TC y TL: mostrar mSec decrecientes?
-- En CP y CR: Recalcular los limites de W y R en funcion de la DC presente?..
-- EL RTC es un DS1307 de MAXIM y cuenta con una EEPROM AT24C32 de ATMEL. Ver de aprovechar esta memoria.
-- Promediar los valores de a y v para que no cambien tanto y se deba refrescar continuamente
-- Graficar Y/t para mostrar el historico de a y v.
+## Uso basico
 
-**Posibles Mejoras de HW:**
-- Medición de baterias por celda 
-- Medir frecuencia máxima TC y TL con el osciloscopio a ver hasta donde llega, usar Lipo.
-- Habilitar control externo de MOSFETs?
-- Reg. de 4.096V para ADC?
-- R Shunt con buen coheficiente de temperatura.
+1. Conectar la fuente o bateria a ensayar.
+2. Verificar limites de corriente, tension, potencia y temperatura.
+3. Seleccionar el modo de trabajo deseado.
+4. Ajustar el setpoint con teclado o encoder.
+5. Activar la carga y supervisar la lectura en pantalla.
+
+## Actualizacion OTA
+
+1. En el equipo, ir a `Configuration -> FW Update`.
+2. Esperar a que la pantalla muestre IP y host.
+3. Compilar el firmware para hardware real.
+4. Enviar el binario por OTA desde PowerShell.
+
+## Fotos y material visual
+
+- Vista frontal del equipo: [doc/images/DC LOAD Front.jpg](doc/images/DC%20LOAD%20Front.jpg)
+- Fotos del desarrollo y del hardware: [doc/images/](doc/images/)
+- Referencia de display TFT: [doc/images/TFT.webp](doc/images/TFT.webp)
+- Pinout de ESP32 usado como referencia: [doc/images/ESP32 wroom nodemcu pinout.jpg](doc/images/ESP32%20wroom%20nodemcu%20pinout.jpg)
+
+## Documentacion de hardware
+
+- Esquematicos: [doc/hardware/Schematics/](doc/hardware/Schematics/)
+- PCBs: [doc/hardware/PCBs/](doc/hardware/PCBs/)
+- Datasheets: [doc/hardware/Datasheets/](doc/hardware/Datasheets/)
+
+Actualmente el repositorio ya incluye esquematicos, layouts de PCB y hojas de datos de componentes clave para acompanar el firmware.
+
+
+## Estructura de documentacion
+
+- [README.md](README.md): descripcion general del proyecto y guia rapida.
+- [CHANGELOG.md](CHANGELOG.md): mejoras, fixes y evolucion por version.
+- [doc/images/](doc/images/): fotos, capturas y referencias visuales.
+- [doc/hardware/](doc/hardware/): esquematicos, PCB y datasheets.
+- [doc/usage/](doc/usage/): espacio para futuras guias de calibracion, operacion y servicio.
+
+## Estado actual del Firmware
+
+- Plataforma actual: `v2.x` basada en ESP32.
+- Plataforma legacy: `v1.x` basada en Arduino Nano.
+- Historial de cambios y avances: [CHANGELOG.md](CHANGELOG.md).
+
+Versiones publicadas: [GitHub Releases](https://github.com/Thetruesaint/DC-Load/releases)
