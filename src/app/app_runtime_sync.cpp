@@ -6,7 +6,7 @@
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
 #include "app_fan_context.h"
-#include "app_limits_bootstrap.h"
+#include "app_limits_storage.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
 #include "app_measurements_context.h"
