@@ -81,9 +81,24 @@ bool app_calibration_capture_or_compute(
     float realValue,
     float setCurrentA,
     AppCalibrationComputationResult &result) {
-  result = {false, false, false, 1.0f, 0.0f, 1.0f, 0.0f};
+  result = {false, false, false, false, false, false, false, 1.0f, 0.0f, 1.0f, 0.0f};
 
   if (!calibrationFirstPointTaken) {
+    const float senseErrRatio1 = fabsf(measuredValue - realValue) / max(fabsf(measuredValue), 0.001f);
+    result.ready = true;
+    result.point1SenseMismatch = senseErrRatio1 > CAL_MAX_POINT1_ERROR_RATIO;
+
+    if (!calibrationVoltageMode) {
+      const float outputErrRatio1 = fabsf(setCurrentA - realValue) / max(fabsf(setCurrentA), 0.001f);
+      result.point1OutputMismatch = outputErrRatio1 > CAL_MAX_POINT1_ERROR_RATIO;
+    }
+
+    result.pointMismatch = result.point1SenseMismatch || result.point1OutputMismatch;
+    if (result.pointMismatch) {
+      calibrationFirstPointTaken = false;
+      return true;
+    }
+
     firstMeasuredValue = measuredValue;
     firstRealValue = realValue;
     firstSetCurrentA = setCurrentA;
@@ -101,22 +116,30 @@ bool app_calibration_capture_or_compute(
       ? (measuredDelta < CAL_MIN_VOLTAGE_DELTA)
       : (setCurrentDelta < CAL_MIN_CURRENT_DELTA);
 
-  if (!calibrationVoltageMode) {
-    const float errRatio1 = fabsf(firstMeasuredValue - firstSetCurrentA) / max(firstSetCurrentA, 0.001f);
-    const float errRatio2 = fabsf(measuredValue - setCurrentA) / max(setCurrentA, 0.001f);
-    result.pointMismatch = (errRatio1 > CAL_MAX_POINT_ERROR_RATIO) || (errRatio2 > CAL_MAX_POINT_ERROR_RATIO);
-  }
-
-  if (result.pointsTooClose || result.pointMismatch) {
+  if (result.pointsTooClose) {
     return true;
   }
 
-  result.sensorFactor = max(0.9f, min(1.1f, (realValue - firstRealValue) / (measuredValue - firstMeasuredValue)));
-  result.sensorOffset = max(-0.1f, min(0.1f, firstRealValue - (firstMeasuredValue * result.sensorFactor)));
+  const float senseErrRatio2 = fabsf(measuredValue - realValue) / max(fabsf(measuredValue), 0.001f);
+  result.point2SenseMismatch = senseErrRatio2 > CAL_MAX_POINT2_ERROR_RATIO;
 
   if (!calibrationVoltageMode) {
-    result.outputFactor = max(0.9f, min(1.1f, (realValue - firstRealValue) / (setCurrentA - firstSetCurrentA)));
-    result.outputOffset = max(-0.1f, min(0.1f, firstRealValue - (firstSetCurrentA * result.outputFactor))) * 1000.0f;
+    const float outputErrRatio2 = fabsf(setCurrentA - realValue) / max(fabsf(setCurrentA), 0.001f);
+    result.point2OutputMismatch = outputErrRatio2 > CAL_MAX_POINT2_ERROR_RATIO;
+  }
+
+  result.pointMismatch = result.point2SenseMismatch || result.point2OutputMismatch;
+
+  if (result.pointMismatch) {
+    return true;
+  }
+
+  result.sensorFactor = max(CAL_FACTOR_MIN, min(CAL_FACTOR_MAX, (realValue - firstRealValue) / (measuredValue - firstMeasuredValue)));
+  result.sensorOffset = max(CAL_OFFSET_MIN, min(CAL_OFFSET_MAX, firstRealValue - (firstMeasuredValue * result.sensorFactor)));
+
+  if (!calibrationVoltageMode) {
+    result.outputFactor = max(CAL_FACTOR_MIN, min(CAL_FACTOR_MAX, (realValue - firstRealValue) / (setCurrentA - firstSetCurrentA)));
+    result.outputOffset = max(CAL_OFFSET_MIN, min(CAL_OFFSET_MAX, firstRealValue - (firstSetCurrentA * result.outputFactor))) * 1000.0f;
   }
 
   return true;
@@ -173,6 +196,10 @@ void app_calibration_accept_pending_result() {
 
   AppCalibrationComputationResult result = {
     true,
+    false,
+    false,
+    false,
+    false,
     false,
     false,
     pendingSensorFactor,

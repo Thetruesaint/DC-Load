@@ -36,7 +36,6 @@ void wait_for_protection_ack(const char *message, char causeCode) {
   app_input_reset();
 
   bool encoderWasPressed = false;
-  int lastTempC = app_measurements_temp_c();
   uiDisplayInvalidateHomeLayout();
   uiDisplayRenderProtectionModal(message, causeCode);
 
@@ -57,12 +56,7 @@ void wait_for_protection_ack(const char *message, char causeCode) {
     }
     encoderWasPressed = encoderPressed;
 
-    const int tempC = static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR);
-    if (tempC != lastTempC) {
-      app_measurements_set_temp_c(tempC);
-      lastTempC = tempC;
-      uiDisplayRenderProtectionModal(message, causeCode);
-    }
+    app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
 
     hal_delay_ms(10);
   }
@@ -146,7 +140,10 @@ void app_check_limits() {
   } else if (measuredCurrent > app_limits_current_cutoff() * 1.01f) {
     strcpy(message, "Current Cut Off!");
     ilimit = true;
-  } else if (app_load_is_enabled() && setCurrentA > 0.0f && runoutSettled && measuredCurrent > setCurrentA * 1.11f) {
+  } else if (app_load_is_enabled() &&
+             setCurrentA > MIN_RUNOUT_PROTECTION_CURRENT_A &&
+             runoutSettled &&
+             measuredCurrent > setCurrentA * 1.11f) {
     strcpy(message, "Runout Cut Off!");
     ilimit = true;
   } else if (power > app_limits_power_cutoff()) {

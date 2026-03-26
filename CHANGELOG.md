@@ -1,8 +1,7 @@
 ## v2.14a ##
 
 **Trabajando:**
-- Bugs Fix
-- Promediar a y v y w para visualización?
+- 
 
 **A Trabajar:**
 - Seguir optimizando la arquitectura
@@ -14,11 +13,15 @@
 - Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
 - Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
 - En BC tiene status de "Pause" cuando se pasa a OFF sin resetear el modo.
+- Ahora los valores de a y v y w se actualizan en pantalla cada 2mA y 5mV o 10mV w es consecuencia del producto. Solo en visualización.
+- Calibración: Nueva evaluación de aceptación de P1 y P2 para Out y Sense: Out: usa abs(SET - REAL) / SET y Sense: usa abs(READ - REAL) / READ comparador con margenes seteables por constantes en system_constants.h
+- Calibración con mensajes de abort más claros y espera con E-Accept
 
 **Fixes**
 - Indicacion de `sf` en menues de configuracion
 - `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
 - `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
+- Runout deshabilitado para SET <= 10 mA dado que no se requiere y daba falsa alarma
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los digitos

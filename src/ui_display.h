@@ -49,7 +49,7 @@ void uiDisplayRenderClockMenu(const UiViewState &state);
 void uiDisplayUpdateConfigChrome(void);
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
-void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose);
+void uiDisplayRenderCalibrationAbortScreen(const char *detail);
 void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail);
 void uiDisplayRenderProtectionModal(const char *message, char causeCode);
 

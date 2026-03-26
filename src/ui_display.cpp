@@ -147,18 +147,38 @@ String format_fixed(float value, int decimals) {
   return String(value, decimals);
 }
 
-String format_measured_current(float currentA) {
+float quantize_display_value(float value, float step) {
+  if (step <= 0.0f) return value;
+  return roundf(value / step) * step;
+}
+
+String format_measured_current_raw(float currentA) {
   return format_fixed(currentA, (currentA <= 9.999f) ? 3 : 2) + "a";
 }
 
-String format_measured_voltage(float voltageV) {
+String format_measured_voltage_raw(float voltageV) {
   const int decimals = (voltageV <= 9.999f) ? 3 : (voltageV <= 99.99f) ? 2 : 1;
   return format_fixed(voltageV, decimals) + "v";
 }
 
-String format_measured_power(float powerW) {
+String format_measured_power_raw(float powerW) {
   const int decimals = (powerW < 100.0f) ? 2 : 1;
   return format_fixed(powerW, decimals) + "w";
+}
+
+String format_measured_current_display(float currentA) {
+  currentA = quantize_display_value(currentA, (currentA <= 9.999f) ? 0.002f : 0.01f);
+  return format_measured_current_raw(currentA);
+}
+
+String format_measured_voltage_display(float voltageV) {
+  voltageV = quantize_display_value(voltageV, (voltageV <= 9.999f) ? 0.005f : (voltageV <= 99.99f) ? 0.01f : 0.1f);
+  return format_measured_voltage_raw(voltageV);
+}
+
+String format_measured_power_display(float powerW) {
+  powerW = quantize_display_value(powerW, (powerW < 100.0f) ? 0.05f : 0.1f);
+  return format_measured_power_raw(powerW);
 }
 
 float trace_time_scale_seconds(float elapsedSeconds) {
@@ -577,9 +597,9 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   const int indicatorY = topBarH / 2;
   const String tempText = String(constrain(static_cast<int>(state.tempC), 0, 99));
   const uint16_t tempColor = temperature_status_color(state.tempC, state.fanTempOnC, state.tempCutOffC);
-  const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
-  const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
-  const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
+  const String metric1 = format_measured_current_display(max(0.0f, state.measuredCurrent_A));
+  const String metric2 = format_measured_voltage_display(max(0.0f, state.measuredVoltage_V));
+  const String metric3 = format_measured_power_display(max(0.0f, state.measuredPower_W));
   uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
   int metric1W = 0;
   int metric2W = 0;
@@ -650,9 +670,9 @@ void update_setup_metrics_internal(const UiViewState &state) {
   const int metricsBoxY = topBarH;
   const int metricsBoxH = metricsH;
   const uint8_t metricTextFont = 1;
-  const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
-  const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
-  const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
+  const String metric1 = format_measured_current_display(max(0.0f, state.measuredCurrent_A));
+  const String metric2 = format_measured_voltage_display(max(0.0f, state.measuredVoltage_V));
+  const String metric3 = format_measured_power_display(max(0.0f, state.measuredPower_W));
   uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
   int metric1W = 0;
   int metric2W = 0;
@@ -778,9 +798,13 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const bool calibrationVoltageMode = app_calibration_is_voltage_mode();
   const bool calibrationFirstPointTaken = app_calibration_first_point_taken();
   const char *modeLabel = isCcMode ? "CC" : isCpMode ? "CP" : isCrMode ? "CR" : isBcMode ? "BC" : isTcMode ? "TC" : isTlMode ? "TL" : "CA";
-  const String metric1 = format_measured_current(max(0.0f, state.measuredCurrent_A));
-  const String metric2 = format_measured_voltage(max(0.0f, state.measuredVoltage_V));
-  const String metric3 = format_measured_power(max(0.0f, state.measuredPower_W));
+  const bool useRawMetrics = isCaMode;
+  const String metric1 = useRawMetrics ? format_measured_current_raw(max(0.0f, state.measuredCurrent_A))
+                                       : format_measured_current_display(max(0.0f, state.measuredCurrent_A));
+  const String metric2 = useRawMetrics ? format_measured_voltage_raw(max(0.0f, state.measuredVoltage_V))
+                                       : format_measured_voltage_display(max(0.0f, state.measuredVoltage_V));
+  const String metric3 = useRawMetrics ? format_measured_power_raw(max(0.0f, state.measuredPower_W))
+                                       : format_measured_power_display(max(0.0f, state.measuredPower_W));
   uint8_t metricTextSize = isLargeDisplay ? 4 : 3;
   int metric1W = 0;
   int metric2W = 0;
@@ -1360,8 +1384,9 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
 
   const bool supportsCursorHighlight = isCcMode || isCpMode || isCrMode || isBcMode || isTcMode || isCaMode;
   const bool shiftActive = app_msc_shift_active();
+  const bool cursorRefreshBlocked = hasLiveInput || (!isCaMode && hasCalibrationRealInput);
   if (layoutChanged || g_ccLastSetText != (isCaMode ? (setText + "|" + calibrationRealValue) : setText) || g_ccLastShiftActive != shiftActive ||
-      (supportsCursorHighlight && !(hasLiveInput || hasCalibrationRealInput) &&
+      (supportsCursorHighlight && !cursorRefreshBlocked &&
        (g_ccLastCursorVisible != cursorVisible || g_ccLastCursorPosition != state.cursorPosition))) {
     uiDisplayFillRect(1, setZoneY + 1, displayW - 2, setZoneH - 2, kUiBg);
     const int setTextX = displayW / 50;
@@ -2817,17 +2842,18 @@ void uiDisplayRenderCalibrationResultScreen(bool voltageMode,
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 
-void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose) {
+void uiDisplayRenderCalibrationAbortScreen(const char *detailText) {
   const ManagedZoneLayout layout = managed_zone_layout();
   const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
-  const String detail = pointsTooClose ? "P1/P2 too close" : "Set/Read >20%";
+  const String detail = detailText ? String(detailText) : String("Calibration mismatch");
   const int lineY = layout.contentY + (layout.isLargeDisplay ? 62 : 46);
 
   draw_calibration_overlay_chrome("CA");
   clear_config_content_zone();
   draw_config_title(layout, "CALIBRATION ABORT", titleSize);
   draw_config_line(layout, lineY, detail, true, textSize);
+  draw_battery_setup_set_zone("E-Accept  ", "");
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 
@@ -2845,17 +2871,17 @@ void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detai
 
 void uiDisplayRenderProtectionModal(const char *message, char causeCode) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t textSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(textSize, font);
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 14;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 12 : 14);
   const String detail = message ? String(message) : String("");
   const String cause = String("Cause: ") + String(causeCode);
-  const String metric1 = format_measured_current(max(0.0f, app_measurements_current_a()));
-  const String metric2 = format_measured_voltage(max(0.0f, app_measurements_voltage_v()));
-  const String metric3 = format_measured_power(max(0.0f, app_measurements_power_w()));
+  const String metric1 = format_measured_current_raw(max(0.0f, app_measurements_current_a()));
+  const String metric2 = format_measured_voltage_raw(max(0.0f, app_measurements_voltage_v()));
+  const String metric3 = format_measured_power_raw(max(0.0f, app_measurements_power_w()));
   const uint8_t metricTextFont = 1;
   uint8_t metricTextSize = layout.isLargeDisplay ? 4 : 3;
   int metric1W = 0;

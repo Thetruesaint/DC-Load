@@ -18,6 +18,46 @@
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
 
+namespace {
+const char *calibration_abort_detail(const AppCalibrationComputationResult &result, bool voltageMode) {
+  if (result.pointsTooClose) {
+    return "P1/P2 too close";
+  }
+  if (result.point1SenseMismatch) {
+    return voltageMode
+        ? "P1 Sense Read/Real >30%"
+        : "P1 Sense Read/Real >30%";
+  }
+  if (result.point1OutputMismatch) {
+    return "P1 Out Set/Real >30%";
+  }
+  if (result.point2SenseMismatch) {
+    return voltageMode
+        ? "P2 Sense Read/Real >20%"
+        : "P2 Sense Read/Real >20%";
+  }
+  if (result.point2OutputMismatch) {
+    return "P2 Out Set/Real >20%";
+  }
+  return "Calibration mismatch";
+}
+
+void wait_for_calibration_abort_ack(const char *detail) {
+  app_input_reset();
+  uiDisplayRenderCalibrationAbortScreen(detail);
+
+  while (true) {
+    const char key = app_input_read_key();
+    if (!app_input_is_no_key(key) && key == 'E') {
+      app_input_reset();
+      return;
+    }
+
+    delay(10);
+  }
+}
+}  // namespace
+
 void app_calibration_mode_update() {
   static bool confirmationDrawn = false;
 
@@ -121,11 +161,13 @@ void app_calibration_confirm_value(float realValue) {
   }
 
   app_load_output_off();
+  app_setpoint_set_reading(0.0f);
+  app_runtime_set_encoder_position(0.0f);
+  app_load_set_set_current_mA(0.0f);
 
   if (result.pointsTooClose || result.pointMismatch) {
-    uiDisplayRenderCalibrationAbortScreen(result.pointsTooClose);
+    wait_for_calibration_abort_ack(calibration_abort_detail(result, app_calibration_is_voltage_mode()));
     app_calibration_finish_mode();
-    delay(2000);
     return;
   }
 

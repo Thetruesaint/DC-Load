@@ -53,7 +53,13 @@ const int TMP_CHK_TIME = 1000;
 
 const float CAL_MIN_VOLTAGE_DELTA = 10.0f;
 const float CAL_MIN_CURRENT_DELTA = 4.0f;
-const float CAL_MAX_POINT_ERROR_RATIO = 0.20f;
+const float CAL_MAX_POINT1_ERROR_RATIO = 0.30f;
+const float CAL_MAX_POINT2_ERROR_RATIO = 0.20f;
+const float CAL_FACTOR_MIN = 0.90f;
+const float CAL_FACTOR_MAX = 1.10f;
+const float CAL_OFFSET_MIN = -0.10f;
+const float CAL_OFFSET_MAX = 0.10f;
+const float MIN_RUNOUT_PROTECTION_CURRENT_A = 0.010f;
 
 #ifndef WOKWI_SIMULATION
 #define TEMP_CONVERSION_FACTOR 0.02686202686202686f

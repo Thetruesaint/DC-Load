@@ -7,6 +7,10 @@ struct AppCalibrationComputationResult {
   bool ready;
   bool pointsTooClose;
   bool pointMismatch;
+  bool point1SenseMismatch;
+  bool point1OutputMismatch;
+  bool point2SenseMismatch;
+  bool point2OutputMismatch;
   float sensorFactor;
   float sensorOffset;
   float outputFactor;
