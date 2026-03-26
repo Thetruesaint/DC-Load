@@ -1,17 +1,11 @@
-## v2.13 ## LEVELING UP!
+## v2.14a ##
 
 **Trabajando:**
-
+- Bugs Fix
+- Promediar a y v y w para visualización?
 
 **A Trabajar:**
 - Seguir optimizando la arquitectura
-
-**Bugs**
-- Pixeles remanentes cuando a y v se reacomodan por los digitos
-
-**Fixes**
-- Indicacion de `sf` en menues de configuracion
-- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
 
 **Mejoras**
 - Adjunto Documentación y reorganizo
@@ -19,6 +13,17 @@
 - Opcion para ajustar fecha y hora del RTC
 - Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
 - Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
+- En BC tiene status de "Pause" cuando se pasa a OFF sin resetear el modo.
+
+**Fixes**
+- Indicacion de `sf` en menues de configuracion
+- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
+- `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
+
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los digitos
+
+
 
 **Posibles mejoras de software**
 - Unificar template para cuando se supera mas de un limite
@@ -35,6 +40,22 @@
 - Habilitar control externo de MOSFETs
 - Referencia de `4.096V` para ADC
 - Resistencia shunt con mejor coeficiente de temperatura
+
+## v2.13 ## LEVELING UP!
+
+**Mejoras**
+- Adjunto Documentación y reorganizo
+- Mejoras esteticas en setups de `BC`, `TC`, `TL` y menues de configuracion
+- Opcion para ajustar fecha y hora del RTC
+- Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
+- Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
+
+**Fixes**
+- Indicacion de `sf` en menues de configuracion
+- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
+
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los digitos
 
 ## v2.12 ## NICE TO SEE YOU
 

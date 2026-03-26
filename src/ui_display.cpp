@@ -36,6 +36,7 @@ constexpr uint16_t kUiHighlight = TFT_YELLOW;
 constexpr uint16_t kUiSetColor = TFT_MAGENTA;
 constexpr uint16_t kUiAlertBg = TFT_RED;
 constexpr uint16_t kUiAlertText = TFT_WHITE;
+constexpr const char *kFirmwareVersion = "v2.14a";
 
 int footer_bar_height_px(int displayH) {
   return max(16, (displayH * 8) / 100);
@@ -78,6 +79,7 @@ String g_ccLastModeLine2;
 String g_ccLastModeLine3;
 String g_ccLastModeLine4;
 String g_ccLastModeLine5;
+String g_ccLastBatteryStatus;
 bool g_ccLastShiftActive = false;
 uint32_t g_ccLastTraceToken = 0;
 size_t g_ccLastTraceSampleCount = 0;
@@ -458,7 +460,7 @@ void draw_startup_base(const char *title, bool rtcDetected, int tempC, bool show
   const uint8_t footerTextSize = kFooterTextSize;
   const int topBarTextY = ((topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (isLargeDisplay ? 1 : 0);
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   uiDisplayClear();
   uiDisplayFillRect(0, 0, displayW, topBarH, kUiAccent);
   uiDisplayFillRect(1, topBarH + 1, displayW - 2, footerY - topBarH - 1, kUiModeAreaBg);
@@ -596,7 +598,7 @@ void draw_setup_screen_base(const UiViewState &state, const char *modeLabel) {
   const int metricsTotalW = metric1W + metric2W + metric3W + (metricGap * 2);
   const int metricsStartX = ((displayW - metricsTotalW) / 2) + (isLargeDisplay ? 8 : 0);
   const int metricsTextY = topBarH + ((metricsH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   const String footerDateTime = rtc_timestamp_text();
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
 
@@ -804,7 +806,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const int metricsStartX = ((displayW - metricsTotalW) / 2) + metricsLeftBias;
   const int metricsTextY = metricsBoxY + ((metricsBoxH - uiDisplayFontHeight(metricTextSize, metricTextFont)) / 2) - (isLargeDisplay ? 2 : 0);
   const int setTextY = setZoneY + ((setZoneH - uiDisplayFontHeight(sectionTextSize, sectionTextFont)) / 2);
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   const String footerDateTime = rtc_timestamp_text();
   const int footerTextY = footerY + ((bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
   const char *liveInput = app_input_text();
@@ -827,7 +829,17 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   const String calibrationRealUnit = calibrationVoltageMode ? "V" : "A";
   const String calibrationRealValue = hasCalibrationRealInput ? String(liveInput) : "";
   const String setText = setPrefix + setValueText + setUnit;
-  const String bcStatus = state.batteryDone ? "Done!" : state.loadEnabled ? "Discharging..." : "Ready";
+  const bool bcWasRunning = (g_ccLastBatteryStatus == "Discharging...") || (g_ccLastBatteryStatus == "Pause");
+#ifdef WOKWI_SIMULATION
+  const bool bcVoltageDropped = state.measuredVoltage_V < (SIM_DEFAULT_VOLTAGE - 0.001f);
+#else
+  const bool bcVoltageDropped = false;
+#endif
+  const bool bcPaused = app_mode_state_configured() &&
+                        !state.batteryDone &&
+                        !state.loadEnabled &&
+                        ((state.batteryLife > 0.0f) || bcVoltageDropped || bcWasRunning);
+  const String bcStatus = state.batteryDone ? "Done!" : state.loadEnabled ? "Discharging..." : bcPaused ? "Pause" : "Ready";
   const uint16_t bcStatusColor = state.batteryDone ? TFT_GREEN : state.loadEnabled ? TFT_RED : kUiHighlight;
   const String modeTitle = isBcMode ? "BATTERY CAPACITY"
                                     : isTcMode ? "TRANSIENT CONT"
@@ -881,6 +893,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
     g_ccLastModeLine3 = "";
     g_ccLastModeLine4 = "";
     g_ccLastModeLine5 = "";
+    g_ccLastBatteryStatus = "";
     g_ccLastShiftActive = false;
     g_ccLastTraceToken = 0;
     g_ccLastTraceSampleCount = 0;
@@ -981,7 +994,8 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
   if (!traceOverlayActive &&
       isBcMode &&
       (layoutChanged || traceOverlayChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastModeLine2 != modeLine2 ||
-       g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5)) {
+       g_ccLastModeLine3 != modeLine3 || g_ccLastModeLine4 != modeLine4 || g_ccLastModeLine5 != modeLine5 ||
+       g_ccLastBatteryStatus != bcStatus || g_ccLastBatteryStatusColor != bcStatusColor)) {
     const uint8_t infoTitleFont = 2;
     const uint8_t infoTitleSize = isLargeDisplay ? 2 : 1;
     const uint8_t infoTextFont = 2;
@@ -1023,10 +1037,12 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
       g_ccLastModeLine3 = "";
       g_ccLastModeLine4 = "";
       g_ccLastModeLine5 = "";
+      g_ccLastBatteryStatus = "";
       draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
     }
 
-    if (layoutChanged || traceOverlayChanged || g_ccLastModeLine1 != modeLine1 || g_ccLastBatteryStatusColor != bcStatusColor) {
+    if (layoutChanged || traceOverlayChanged || g_ccLastModeLine1 != modeLine1 ||
+        g_ccLastBatteryStatus != bcStatus || g_ccLastBatteryStatusColor != bcStatusColor) {
       uiDisplayFillRect(1, statusY - 1, displayW - 2, textH + 2, kUiModeAreaBg);
       uiDisplayPrintStyledAt(statusX,
                              statusY,
@@ -1043,6 +1059,7 @@ bool render_managed_home(const UiViewState &state, bool cursorVisible) {
                              infoTextSize,
                              infoTextFont);
       g_ccLastModeLine1 = modeLine1;
+      g_ccLastBatteryStatus = bcStatus;
       g_ccLastBatteryStatusColor = bcStatusColor;
     }
 
@@ -1812,6 +1829,64 @@ void uiDisplayRenderTransientContSetup(const UiViewState &state) {
   draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
 }
 
+void uiDisplayUpdateTransientContSetupContent(const UiViewState &state) {
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const bool isLargeDisplay = displayW >= 400;
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = footer_bar_height_px(displayH);
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  const int contentH = setZoneY - contentY;
+  const uint8_t titleFont = 2;
+  const uint8_t titleSize = isLargeDisplay ? 2 : 1;
+  const uint8_t textFont = 2;
+  const uint8_t textSize = isLargeDisplay ? 2 : 1;
+  const int titleH = uiDisplayFontHeight(titleSize, titleFont);
+  const int textH = uiDisplayFontHeight(textSize, textFont);
+  const int verticalGap = max(isLargeDisplay ? 6 : 4, (contentH - titleH - (textH * 3)) / 5);
+  const int titleY = contentY + verticalGap;
+  const String title = "TRANSIENT CONT";
+  const int titleX = (displayW - uiDisplayTextWidth(title, titleSize, titleFont)) / 2;
+  const int row1Y = titleY + titleH + verticalGap;
+  const int row2Y = row1Y + textH + verticalGap;
+  const int row3Y = row2Y + textH + verticalGap;
+  const String line1 = String("I1(A): ") + ((state.transientSetupStage > 0) ? format_transient_current(state.transientLowCurrentA) : "--");
+  const String line2 = String("I2(A): ") + ((state.transientSetupStage > 1) ? format_transient_current(state.transientHighCurrentA) : "--");
+  const String line3 = String("dt(ms): ") + ((state.transientSetupStage > 2) ? String(static_cast<unsigned long>(state.transientPeriodMs)) : "--");
+  const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
+  const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
+  const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
+  const int highlightPadX = isLargeDisplay ? 10 : 6;
+  const int highlightPadY = isLargeDisplay ? 4 : 2;
+
+  const auto draw_stage_line = [&](const String &text, int x, int y, bool selected) {
+    if (selected) {
+      uiDisplayFillRect(x - highlightPadX,
+                        y - highlightPadY,
+                        uiDisplayTextWidth(text, textSize, textFont) + (highlightPadX * 2),
+                        textH + (highlightPadY * 2),
+                        kUiHighlight);
+    }
+    uiDisplayPrintStyledAt(x,
+                           y,
+                           text,
+                           selected ? kUiDark : kUiText,
+                           selected ? kUiHighlight : kUiModeAreaBg,
+                           textSize,
+                           textFont);
+  };
+
+  uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
+  uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
+  draw_stage_line(line1, line1X, row1Y, state.transientSetupStage == 0);
+  draw_stage_line(line2, line2X, row2Y, state.transientSetupStage == 1);
+  draw_stage_line(line3, line3X, row3Y, state.transientSetupStage >= 2);
+}
+
 void uiDisplayUpdateTransientContSetupValue(const UiViewState &state) {
   String suffix = "";
   if (state.transientSetupStage < 2) {
@@ -1825,6 +1900,22 @@ void uiDisplayUpdateTransientContSetupValue(const UiViewState &state) {
 }
 
 void uiDisplayRenderTransientListSetup(const UiViewState &state) {
+  draw_setup_screen_base(state, "TL");
+  uiDisplayUpdateTransientListSetupContent(state);
+  uiDisplayUpdateTransientListSetupValue(state);
+  const int displayW = uiDisplayWidthPx();
+  const int displayH = uiDisplayHeightPx();
+  const int topBarH = (displayH * 10) / 100;
+  const int metricsH = (displayH * 20) / 100;
+  const int setZoneH = (displayH * 10) / 100;
+  const int bottomBarH = footer_bar_height_px(displayH);
+  const int footerY = displayH - bottomBarH;
+  const int setZoneY = footerY - setZoneH;
+  const int contentY = topBarH + metricsH;
+  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
+}
+
+void uiDisplayUpdateTransientListSetupContent(const UiViewState &state) {
   const int displayW = uiDisplayWidthPx();
   const int displayH = uiDisplayHeightPx();
   const bool isLargeDisplay = displayW >= 400;
@@ -1869,7 +1960,7 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state) {
                            textFont);
   };
 
-  draw_setup_screen_base(state, "TL");
+  uiDisplayFillRect(1, contentY + 1, displayW - 2, contentH - 1, kUiModeAreaBg);
   uiDisplayPrintStyledAt(titleX, titleY, title, kUiHighlight, kUiModeAreaBg, titleSize, titleFont);
 
   if (state.transientListSetupStage == 0) {
@@ -1902,13 +1993,10 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state) {
     const int line1X = (displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2;
     const int line2X = (displayW - uiDisplayTextWidth(line2, textSize, textFont)) / 2;
     const int line3X = (displayW - uiDisplayTextWidth(line3, textSize, textFont)) / 2;
-    uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiHighlight, kUiModeAreaBg, textSize, textFont);
-    draw_stage_line(line2, line2X, row2Y, state.transientListDraftField == 0);
-    draw_stage_line(line3, line3X, row3Y, state.transientListDraftField != 0);
+      uiDisplayPrintStyledAt(line1X, row1Y, line1, kUiHighlight, kUiModeAreaBg, textSize, textFont);
+      draw_stage_line(line2, line2X, row2Y, state.transientListDraftField == 0);
+      draw_stage_line(line3, line3X, row3Y, state.transientListDraftField != 0);
   }
-
-  uiDisplayUpdateTransientListSetupValue(state);
-  draw_home_zone_borders(displayW, displayH, topBarH, contentY, setZoneY, footerY);
 }
 
 void uiDisplayUpdateTransientListSetupValue(const UiViewState &state) {
@@ -2065,7 +2153,7 @@ void draw_config_chrome(bool clearContentZone) {
   const uint8_t footerTextSize = kFooterTextSize;
   const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
   const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   const String footerDateTime = rtc_timestamp_text();
   const uint8_t mode = app_mode_state_mode();
   const char *modeLabel = (mode == CC) ? "CC" : (mode == CP) ? "CP" : (mode == CR) ? "CR" : (mode == BC) ? "BC" : (mode == TC) ? "TC" : (mode == TL) ? "TL" : "CA";
@@ -2618,7 +2706,7 @@ void draw_calibration_overlay_chrome(const char *title) {
   const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
                                                       static_cast<float>(app_fan_temp_on_c()),
                                                       app_limits_temp_cutoff());
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
 
@@ -2666,7 +2754,7 @@ void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {
   const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
                                                       static_cast<float>(app_fan_temp_on_c()),
                                                       app_limits_temp_cutoff());
-  const String footerVersion = "v2.13";
+  const String footerVersion = kFirmwareVersion;
   const String footerDateTime = rtc_timestamp_text();
   const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
 
@@ -2700,13 +2788,13 @@ void uiDisplayRenderCalibrationResultScreen(bool voltageMode,
                                             float outputFactor,
                                             float outputOffset) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t textSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
   const uint8_t font = 2;
-  const int titleY = layout.contentY + 8;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
   const int lineHeight = uiDisplayFontHeight(textSize, font);
   const int rowGap = layout.isLargeDisplay ? 10 : 8;
-  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + 12;
+  const int startY = titleY + uiDisplayFontHeight(titleSize, font) + (layout.isLargeDisplay ? 10 : 12);
   const int columnGap = layout.isLargeDisplay ? 40 : 24;
   const String leftTop = "OF: " + String(outputFactor, 4);
   const String rightTop = "OO: " + String(outputOffset, 0);
@@ -2731,23 +2819,27 @@ void uiDisplayRenderCalibrationResultScreen(bool voltageMode,
 
 void uiDisplayRenderCalibrationAbortScreen(bool pointsTooClose) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  const uint8_t titleSize = 1;
-  const uint8_t textSize = 1;
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
   const String detail = pointsTooClose ? "P1/P2 too close" : "Set/Read >20%";
+  const int lineY = layout.contentY + (layout.isLargeDisplay ? 62 : 46);
 
   draw_calibration_overlay_chrome("CA");
   clear_config_content_zone();
   draw_config_title(layout, "CALIBRATION ABORT", titleSize);
-  draw_config_line(layout, layout.contentY + 46, detail, true, textSize);
+  draw_config_line(layout, lineY, detail, true, textSize);
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 
 void uiDisplayRenderCalibrationNoticeScreen(const char *title, const char *detail) {
   const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
+  const int lineY = layout.contentY + (layout.isLargeDisplay ? 62 : 46);
   draw_calibration_overlay_chrome("CA");
   clear_config_content_zone();
-  draw_config_title(layout, title ? String(title) : String("CALIBRATION"), 1);
-  draw_config_line(layout, layout.contentY + 46, detail ? String(detail) : String(""), true, 1);
+  draw_config_title(layout, title ? String(title) : String("CALIBRATION"), titleSize);
+  draw_config_line(layout, lineY, detail ? String(detail) : String(""), true, textSize);
   draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
 }
 

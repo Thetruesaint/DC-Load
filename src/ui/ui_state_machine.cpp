@@ -11,6 +11,7 @@
 
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
+UiScreen g_previousScreen = UiScreen::Home;
 uint8_t g_lastMenuRootSelection = 0xFF;
 
 struct LimitsRenderCache {
@@ -124,6 +125,17 @@ ConfigRtcRenderCache g_configRtcCache = {0, 0, 0, 0, 0, false, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false, false};
 TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false, false};
 TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false, false};
+
+bool is_transient_cont_setup_screen(UiScreen screen) {
+  return screen == UiScreen::TransientContSetupLow ||
+         screen == UiScreen::TransientContSetupHigh ||
+         screen == UiScreen::TransientContSetupPeriod;
+}
+
+bool is_transient_list_setup_screen(UiScreen screen) {
+  return screen == UiScreen::TransientListSetupCount ||
+         screen == UiScreen::TransientListSetupStep;
+}
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -461,9 +473,12 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  if (!sameStage || !sameValues) {
+  if (!g_transientContSetupCache.valid) {
     uiDisplayRenderTransientContSetup(viewState);
   } else {
+    if (!sameStage || !sameValues) {
+      uiDisplayUpdateTransientContSetupContent(viewState);
+    }
     uiDisplayUpdateTransientContSetupValue(viewState);
   }
 
@@ -478,7 +493,9 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_transient_cont_setup(const UiViewState &viewState) {
-  g_transientContSetupCache.valid = false;
+  if (!is_transient_cont_setup_screen(g_previousScreen)) {
+    g_transientContSetupCache.valid = false;
+  }
   draw_transient_cont_setup_if_needed(viewState);
 }
 
@@ -505,9 +522,12 @@ void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  if (!sameStage || !sameValues) {
+  if (!g_transientListSetupCache.valid) {
     uiDisplayRenderTransientListSetup(viewState);
   } else {
+    if (!sameStage || !sameValues) {
+      uiDisplayUpdateTransientListSetupContent(viewState);
+    }
     uiDisplayUpdateTransientListSetupValue(viewState);
   }
 
@@ -524,7 +544,9 @@ void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_transient_list_setup(const UiViewState &viewState) {
-  g_transientListSetupCache.valid = false;
+  if (!is_transient_list_setup_screen(g_previousScreen)) {
+    g_transientListSetupCache.valid = false;
+  }
   draw_transient_list_setup_if_needed(viewState);
 }
 
@@ -718,6 +740,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 void ui_state_machine_reset() {
   uiDisplayInvalidateHomeLayout();
   g_currentScreen = UiScreen::Home;
+  g_previousScreen = UiScreen::Home;
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
   g_updateCache.valid = false;
@@ -734,6 +757,7 @@ void ui_state_machine_reset() {
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
   if (targetScreen != g_currentScreen) {
+    g_previousScreen = g_currentScreen;
     uiDisplayInvalidateHomeLayout();
     if (g_currentScreen == UiScreen::MenuFwUpdate && targetScreen != UiScreen::MenuFwUpdate) {
       app_ota_stop();
