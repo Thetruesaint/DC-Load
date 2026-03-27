@@ -157,13 +157,14 @@ void app_check_limits() {
   }
 
   if (strlen(message) > 0) {
-    app_load_output_off();
+    app_load_output_emergency_off();
     app_setpoint_set_reading(0.0f);
     app_runtime_set_encoder_position(0.0f);
     encoder.clearCount();
 
     wait_for_protection_ack(message, protection_cause_code(vlimit, ilimit, plimit, climit));
 
+    digitalWrite(MOSFONOFF, LOW);
     app_input_reset();
     app_mode_state_set_initialized(false);
     ui_state_machine_reset();

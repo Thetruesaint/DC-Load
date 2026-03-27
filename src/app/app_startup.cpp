@@ -11,6 +11,7 @@
 #include "app_health_context.h"
 #include "app_limits_storage.h"
 #include "app_limits_context.h"
+#include "app_load_output.h"
 #include "app_measurements_context.h"
 #include "app_timing_alerts.h"
 
@@ -33,7 +34,8 @@ void init_io() {
   pinMode(BUZZER, OUTPUT);
   digitalWrite(BUZZER, LOW);
   pinMode(MOSFONOFF, OUTPUT);
-  digitalWrite(MOSFONOFF, HIGH);
+  app_load_output_set_dac_ready(false);
+  app_load_output_emergency_off();
 }
 
 void init_peripherals() {
@@ -52,9 +54,11 @@ void run_peripheral_health_check() {
 
 #ifndef WOKWI_SIMULATION
   if (dac.begin(0x60)) {
+    app_load_output_set_dac_ready(true);
     Serial.print("DAC detected");
     ads.setGain(GAIN_TWOTHIRDS);
   } else {
+    app_load_output_set_dac_ready(false);
     dacDetected = false;
     app_health_set_ok(false);
     Serial.print("DAC not detected");
@@ -84,10 +88,17 @@ void run_peripheral_health_check() {
   if (sensorOk) {
     digitalWrite(MOSFONOFF, LOW);
   } else {
-    digitalWrite(MOSFONOFF, HIGH);
+    app_load_output_emergency_off();
   }
 
   uiDisplayRenderStartupHealthCheck(dacDetected, adsDetected, g_rtcDetected, app_measurements_temp_c(), sensorOk);
+
+  if (!sensorOk) {
+    while (true) {
+      delay(50);
+    }
+  }
+
   delay(2000);
 }
 

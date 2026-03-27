@@ -16,7 +16,9 @@
 - Ahora los valores de a y v y w se actualizan en pantalla cada 2mA y 5mV o 10mV w es consecuencia del producto. Solo en visualización.
 - Calibración: Nueva evaluación de aceptación de P1 y P2 para Out y Sense: Out: usa abs(SET - REAL) / SET y Sense: usa abs(READ - REAL) / READ comparador con margenes seteables por constantes en system_constants.h
 - Calibración con mensajes de abort más claros y espera con E-Accept
-
+- Ahora `MOSFONOFF = HIGH` queda reservado para emergencia: si falla el `health check` de arranque o si salta una protección. En operación normal, `OFF` se controla con `DAC = 0` para evitar lecturas residuales de corriente que genera el apagado forzado de los MOSFET. Tras `E-Accept` en una protección, `MOSFONOFF` vuelve a `LOW` y el sistema queda listo para continuar.
+ - Si falla el `health check`, la pantalla queda detenida mostrando el fallo y no avanza el arranque.
+ 
 **Fixes**
 - Indicacion de `sf` en menues de configuracion
 - `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
