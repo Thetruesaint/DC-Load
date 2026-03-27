@@ -152,6 +152,9 @@ void apply_runtime_snapshot(SystemState *current, const RuntimeSnapshot &incomin
   current->tempCutOffC = incoming.tempCutOffC;
   current->fanTempOnC = incoming.fanTempOnC;
   current->fanHoldSeconds = incoming.fanHoldSeconds;
+  current->fanOutputOn = incoming.fanOutputOn;
+  current->fanManualOverrideActive = incoming.fanManualOverrideActive;
+  current->fanManualStateOn = incoming.fanManualStateOn;
   current->rtcDay = incoming.rtcDay;
   current->rtcMonth = incoming.rtcMonth;
   current->rtcYear = incoming.rtcYear;

@@ -47,6 +47,7 @@ void uiDisplayRenderLimitsMenu(const UiViewState &state);
 void uiDisplayRenderCalibrationMenu(const UiViewState &state);
 void uiDisplayRenderClockMenu(const UiViewState &state);
 void uiDisplayUpdateConfigChrome(void);
+void uiDisplayUpdateConfigFooterTime(void);
 void uiDisplayRenderCalibrationSetupMenu(const char *inputText);
 void uiDisplayRenderCalibrationResultScreen(bool voltageMode, float sensorFactor, float sensorOffset, float outputFactor, float outputOffset);
 void uiDisplayRenderCalibrationAbortScreen(const char *detail);

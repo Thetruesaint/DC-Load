@@ -36,7 +36,7 @@ constexpr uint16_t kUiHighlight = TFT_YELLOW;
 constexpr uint16_t kUiSetColor = TFT_MAGENTA;
 constexpr uint16_t kUiAlertBg = TFT_RED;
 constexpr uint16_t kUiAlertText = TFT_WHITE;
-constexpr const char *kFirmwareVersion = "v2.14a";
+constexpr const char *kFirmwareVersion = "v2.14b";
 
 int footer_bar_height_px(int displayH) {
   return max(16, (displayH * 8) / 100);
@@ -2241,12 +2241,39 @@ void draw_config_chrome(bool clearContentZone) {
   draw_horizontal_separator(layout.footerY, layout.displayW, kUiBorder);
 }
 
+void draw_config_footer_time_only() {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t footerTextFont = kFooterTextFont;
+  const uint8_t footerTextSize = kFooterTextSize;
+  const int footerTextY = layout.footerY + ((layout.bottomBarH - uiDisplayFontHeight(footerTextSize, footerTextFont)) / 2);
+  const String footerVersion = kFirmwareVersion;
+  const String footerDateTime = rtc_timestamp_text();
+
+  uiDisplayFillRect(0, layout.footerY, layout.displayW, layout.bottomBarH, kUiAccent);
+  uiDisplayPrintStyledAt(4, footerTextY, footerVersion, kUiText, kUiAccent, footerTextSize, footerTextFont);
+  uiDisplayPrintStyledAt(layout.displayW - uiDisplayTextWidth(footerDateTime, footerTextSize, footerTextFont) - 4,
+                         footerTextY,
+                         footerDateTime,
+                         kUiText,
+                         kUiAccent,
+                         footerTextSize,
+                         footerTextFont);
+  draw_horizontal_separator(layout.footerY, layout.displayW, kUiBorder);
+  tft.drawLine(0, layout.displayH - 1, layout.displayW - 1, layout.displayH - 1, kUiBorder);
+  tft.drawLine(0, layout.footerY, 0, layout.displayH - 1, kUiBorder);
+  tft.drawLine(layout.displayW - 1, layout.footerY, layout.displayW - 1, layout.displayH - 1, kUiBorder);
+}
+
 void clear_config_content_zone() {
   draw_config_chrome(true);
 }
 
 void uiDisplayUpdateConfigChrome(void) {
   draw_config_chrome(false);
+}
+
+void uiDisplayUpdateConfigFooterTime(void) {
+  draw_config_footer_time_only();
 }
 
 void draw_config_title(const ManagedZoneLayout &layout, const String &title, uint8_t textSize = 0) {
@@ -2519,7 +2546,7 @@ void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
   const String holdValue = (state.fanEditActive && state.fanSettingsMenuSelection == 1 && state.fanInputText[0] != '\0')
                                ? String(state.fanInputText)
                                : String(static_cast<int>(state.fanDraftHoldSeconds));
-  const String fanState = state.fanManualStateOn ? "ON" : "OFF";
+  const String fanState = state.fanOutputOn ? "ON" : "OFF";
 
   clear_config_content_zone();
   draw_config_title(layout, "FAN SETTINGS", titleSize);

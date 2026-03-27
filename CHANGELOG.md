@@ -1,4 +1,4 @@
-## v2.14a ##
+## v2.14b ##
 
 **Trabajando:**
 - 
@@ -24,6 +24,7 @@
 - `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
 - `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
 - Runout deshabilitado para SET <= 10 mA dado que no se requiere y daba falsa alarma
+- En Fan Setting ahora la opción 3-FAN muestra el estado real del FAN.
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los digitos

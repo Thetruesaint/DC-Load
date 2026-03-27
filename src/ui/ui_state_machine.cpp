@@ -235,7 +235,7 @@ void draw_fan_settings_if_needed(const UiViewState &viewState) {
       g_fanSettingsCache.tempC == viewState.fanDraftTempC &&
       g_fanSettingsCache.holdSeconds == viewState.fanDraftHoldSeconds &&
       g_fanSettingsCache.editActive == viewState.fanEditActive &&
-      g_fanSettingsCache.fanOn == viewState.fanManualStateOn &&
+      g_fanSettingsCache.fanOn == viewState.fanOutputOn &&
       std::strcmp(g_fanSettingsCache.inputText, viewState.fanInputText) == 0) {
     return;
   }
@@ -245,7 +245,7 @@ void draw_fan_settings_if_needed(const UiViewState &viewState) {
   g_fanSettingsCache.tempC = viewState.fanDraftTempC;
   g_fanSettingsCache.holdSeconds = viewState.fanDraftHoldSeconds;
   g_fanSettingsCache.editActive = viewState.fanEditActive;
-  g_fanSettingsCache.fanOn = viewState.fanManualStateOn;
+  g_fanSettingsCache.fanOn = viewState.fanOutputOn;
   std::strncpy(g_fanSettingsCache.inputText, viewState.fanInputText, sizeof(g_fanSettingsCache.inputText) - 1);
   g_fanSettingsCache.inputText[sizeof(g_fanSettingsCache.inputText) - 1] = '\0';
   g_fanSettingsCache.valid = true;
@@ -356,35 +356,6 @@ bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
                        g_configRtcCache.shiftActive == shiftActive;
 
   if (!sameRtc) {
-    switch (screen) {
-      case UiScreen::MenuRoot:
-        g_lastMenuRootSelection = 0xFF;
-        break;
-      case UiScreen::MenuProtection:
-        g_protectionCache.valid = false;
-        break;
-      case UiScreen::MenuUpdate:
-        g_updateCache.valid = false;
-        break;
-      case UiScreen::MenuFwUpdate:
-        g_fwUpdateCache.valid = false;
-        break;
-      case UiScreen::MenuFanSettings:
-        g_fanSettingsCache.valid = false;
-        break;
-      case UiScreen::MenuLimits:
-        g_limitsCache.valid = false;
-        break;
-      case UiScreen::MenuCalibration:
-        g_calibrationCache.valid = false;
-        break;
-      case UiScreen::MenuClock:
-        g_clockCache.valid = false;
-        break;
-      default:
-        break;
-    }
-
     g_configRtcCache.day = viewState.rtcDay;
     g_configRtcCache.month = viewState.rtcMonth;
     g_configRtcCache.year = viewState.rtcYear;
@@ -683,7 +654,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
       case UiScreen::MenuLimits:
       case UiScreen::MenuCalibration:
       case UiScreen::MenuClock:
-        uiDisplayUpdateConfigChrome();
+        uiDisplayUpdateConfigFooterTime();
         break;
       case UiScreen::MenuFwUpdate:
         break;

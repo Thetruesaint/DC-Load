@@ -322,7 +322,6 @@ void fan_menu_finish(SystemState *state, bool save, bool returnToParent = false)
   state->fanSaveEvent = save;
   state->fanEditActive = false;
   state->fanManualOverrideActive = false;
-  state->fanManualStateOn = false;
   fan_input_reset(state);
 
   if (returnToParent && parent != ConfigMenu::None) {
@@ -414,7 +413,6 @@ void clear_config_runtime_flags(SystemState *state) {
   state->calibrationMenuActive = false;
   state->fanEditActive = false;
   state->fanManualOverrideActive = false;
-  state->fanManualStateOn = false;
   fan_input_reset(state);
   state->clockEditActive = false;
   clock_input_reset(state);
