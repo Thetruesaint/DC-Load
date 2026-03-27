@@ -9,7 +9,6 @@
 namespace {
 bool calibrationVoltageMode = false;
 bool calibrationFirstPointTaken = false;
-bool calibrationMenuReturnRequested = false;
 bool calibrationConfirmationActive = false;
 bool calibrationPendingVoltageMode = false;
 uint8_t calibrationReturnMode = 0;
@@ -36,16 +35,8 @@ bool app_calibration_is_voltage_mode() {
   return calibrationVoltageMode;
 }
 
-void app_calibration_set_voltage_mode(bool enabled) {
-  calibrationVoltageMode = enabled;
-}
-
 bool app_calibration_first_point_taken() {
   return calibrationFirstPointTaken;
-}
-
-void app_calibration_set_first_point_taken(bool taken) {
-  calibrationFirstPointTaken = taken;
 }
 
 void app_calibration_reset_session() {
@@ -238,16 +229,6 @@ uint8_t app_calibration_return_mode() {
 
 int app_calibration_return_function_index() {
   return calibrationReturnFunctionIndex;
-}
-
-void app_calibration_request_menu_return() {
-  calibrationMenuReturnRequested = true;
-}
-
-bool app_calibration_consume_menu_return_request() {
-  const bool requested = calibrationMenuReturnRequested;
-  calibrationMenuReturnRequested = false;
-  return requested;
 }
 
 float& app_calibration_sns_volt_factor_ref() {

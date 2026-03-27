@@ -547,17 +547,6 @@ void core_init() {
 
 void core_sync_from_runtime(const RuntimeSnapshot &snapshot) {
   core_sync_merge_runtime_state(&g_state, snapshot);
-  const bool calibrationMenuReturnRequested = app_calibration_consume_menu_return_request();
-  if (calibrationMenuReturnRequested) {
-    g_state.currentConfigMenu = ConfigMenu::Calibration;
-    g_state.parentConfigMenu = ConfigMenu::Root;
-    g_state.calibrationMenuActive = true;
-    if (g_state.calibrationMenuOption < 1 || g_state.calibrationMenuOption > 5) {
-      g_state.calibrationMenuOption = 1;
-    }
-    ui_state_machine_reset();
-  }
-
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
   core_mode_update_ui_screen(&g_state);
