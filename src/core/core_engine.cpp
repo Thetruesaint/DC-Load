@@ -77,7 +77,9 @@ void dispatch_encoder_delta(int32_t value) {
     case UiScreen::MenuFwUpdate:
       return;
     case UiScreen::MenuFanSettings:
-      if (!g_state.fanEditActive) {
+      if (g_state.fanEditActive) {
+        fan_menu_adjust_field(&g_state, direction);
+      } else {
         config_menu_step_selection(&g_state, ConfigMenu::FanSettings, direction);
       }
       return;
@@ -89,7 +91,9 @@ void dispatch_encoder_delta(int32_t value) {
       }
       return;
     case UiScreen::MenuLimits:
-      if (!g_state.limitsEditActive) {
+      if (g_state.limitsEditActive) {
+        limits_menu_adjust_field(&g_state, direction);
+      } else {
         limits_menu_move_field(&g_state, direction);
       }
       return;

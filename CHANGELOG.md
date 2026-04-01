@@ -1,7 +1,7 @@
 ## v2.14b ## CLEANING IT UP!
 
 **Trabajando:**
-- Calibración de sensor de Temperatura (LM35)
+- Refresco de selecciòn en menues y healt check de TFT
 
 **A Trabajar:**
 - 
@@ -14,12 +14,14 @@
 - Ahora `MOSFONOFF = HIGH` queda reservado para emergencia: si falla el `health check` de arranque o si salta una protección. En operación normal, `OFF` se controla con `DAC = 0` para evitar lecturas residuales de corriente que genera el apagado forzado de los MOSFET. Tras `E-Accept` en una protección, `MOSFONOFF` vuelve a `LOW` y el sistema queda listo para continuar.
  - Si falla el `health check`, la pantalla queda detenida mostrando el fallo y no avanza el arranque.
  - Calibraciòn de Sensado de Temperatura con su menu y almacenamiento de factor en EEPROM
+ - Edicion de ajuste de limites y Fan Settings con encoder y otras mejoras visuales
  
 **Fixes**
 - `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
 - Runout deshabilitado para SET <= 10 mA dado que no se requiere y daba falsa alarma
 - En Fan Setting ahora la opción 3-FAN muestra el estado real del FAN.
-- El refresco de minutos ya no refresca toda la pantalla.
+- El refresco de minutos y temperatura ya no refresca toda la pantalla.
+- Optimizaciòn en refresco de menues de configuracion 
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los digitos

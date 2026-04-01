@@ -75,11 +75,15 @@ void run_peripheral_health_check() {
 #endif
 
   g_rtcDetected = rtc.begin();
+#ifndef WOKWI_SIMULATION
   if (g_rtcDetected) {
     Serial.print(" RTC detected");
   } else {
-    app_health_set_ok(false);
     Serial.print(" RTC not detected");
+  }
+#endif
+  if (!g_rtcDetected) {
+    app_health_set_ok(false);
   }
 
   app_measurements_set_temp_c(app_measurements_read_temp_c());

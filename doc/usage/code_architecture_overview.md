@@ -135,6 +135,7 @@ Algunos bloques importantes:
 
 - [app_startup.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_startup.cpp): arranque, init y health check
 - [app_measurements_poll.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_measurements_poll.cpp): adquisicion de mediciones
+- [app_measurements_context.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_measurements_context.cpp): acceso a mediciones vivas y conversion calibrada de temperatura
 - [app_protection.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_protection.cpp): protecciones y corte de emergencia
 - [app_load_output.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_load_output.cpp): control de DAC en operacion normal y uso de `MOSFONOFF` solo para emergencia
 - [app_runtime_home.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/app/app_runtime_home.cpp): tareas activas de modos como `BC`, `TC` y `TL`
@@ -179,7 +180,13 @@ Flujo de render:
 3. `ui_state_machine` decide la pantalla y controla invalidaciones
 4. `ui_display.cpp` dibuja la pantalla concreta
 
-En menus y pantallas de configuracion, los cambios del RTC ya no fuerzan un redraw completo del contenido: solo se actualiza el footer con fecha y hora.
+En menus y pantallas de configuracion, la UI ya no depende de redraws completos para cambios pequenos:
+
+- cambios del RTC actualizan solo el footer con fecha y hora
+- cambios de temperatura actualizan solo el bloque superior de estado
+- cambios de seleccion o edicion en menus suelen repintar solo la zona azul de contenido
+
+Esto mantiene la navegacion mas fluida y reduce parpadeos innecesarios.
 
 ### Persistencia
 
@@ -193,6 +200,8 @@ Se usa para guardar valores durables como:
 - limites
 - configuracion de fan
 - datos de calibracion
+
+Dentro de calibracion ya entra tambien el factor de correccion de temperatura, que se calcula en runtime y se persiste junto con el resto de factores cuando se ejecuta `Save_Calibration()`.
 
 ## Como Fluye la Informacion
 

@@ -551,8 +551,36 @@ bool limits_menu_backspace(SystemState *state) {
   return true;
 }
 
+void limits_menu_adjust_field(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0 || !state->limitsEditActive) return;
+
+  // Encoder edits operate on the draft values directly, independent of typed input.
+  limits_input_reset(state);
+
+  if (state->limitsMenuField == 0) {
+    state->limitsDraftCurrentA =
+        constrain(state->limitsDraftCurrentA + (0.1f * static_cast<float>(direction)),
+                  1.0f,
+                  static_cast<float>(MAX_CURRENT));
+  } else if (state->limitsMenuField == 1) {
+    state->limitsDraftPowerW =
+        constrain(state->limitsDraftPowerW + static_cast<float>(direction),
+                  1.0f,
+                  static_cast<float>(MAX_POWER));
+  } else {
+    state->limitsDraftTempC =
+        constrain(state->limitsDraftTempC + static_cast<float>(direction),
+                  30.0f,
+                  static_cast<float>(MAX_TEMP));
+  }
+}
+
 void limits_menu_commit_edit(SystemState *state) {
-  if (state == nullptr || state->limitsInputLength == 0) return;
+  if (state == nullptr) return;
+  if (state->limitsInputLength == 0) {
+    limits_menu_cancel_edit(state);
+    return;
+  }
   const float value = static_cast<float>(atof(state->limitsInputText));
 
   if (state->limitsMenuField == 0) {
@@ -582,8 +610,31 @@ void fan_menu_cancel_edit(SystemState *state) {
   fan_input_reset(state);
 }
 
+void fan_menu_adjust_field(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0 || !state->fanEditActive) return;
+
+  // Encoder edits operate on the draft values directly, independent of typed input.
+  fan_input_reset(state);
+
+  if (state->fanSettingsMenuSelection == 0) {
+    state->fanDraftTempC =
+        static_cast<float>(constrain(static_cast<int>(state->fanDraftTempC) + direction,
+                                     MIN_FAN_TEMP_ON_C,
+                                     MAX_FAN_TEMP_ON_C));
+  } else if (state->fanSettingsMenuSelection == 1) {
+    state->fanDraftHoldSeconds =
+        static_cast<float>(constrain(static_cast<int>(state->fanDraftHoldSeconds) + direction,
+                                     static_cast<int>(MIN_FAN_HOLD_MS / 1000UL),
+                                     static_cast<int>(MAX_FAN_HOLD_MS / 1000UL)));
+  }
+}
+
 void fan_menu_commit_edit(SystemState *state) {
-  if (state == nullptr || state->fanInputLength == 0) return;
+  if (state == nullptr) return;
+  if (state->fanInputLength == 0) {
+    fan_menu_cancel_edit(state);
+    return;
+  }
   const int value = atoi(state->fanInputText);
 
   if (state->fanSettingsMenuSelection == 0) {

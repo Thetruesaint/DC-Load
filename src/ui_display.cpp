@@ -2287,7 +2287,8 @@ void draw_accent_chrome_temp_only() {
 }
 
 void clear_config_content_zone() {
-  draw_config_chrome(true);
+  const ManagedZoneLayout layout = managed_zone_layout();
+  uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
 }
 
 void uiDisplayUpdateConfigChrome(void) {
@@ -2330,6 +2331,114 @@ void draw_config_line(const ManagedZoneLayout &layout, int y, const String &text
                          selected ? kUiDark : kUiText,
                          selected ? kUiHighlight : kUiModeAreaBg,
                          size,
+                         font);
+}
+
+void draw_config_value_edit_line(const ManagedZoneLayout &layout,
+                                 int y,
+                                 const String &label,
+                                 const String &value,
+                                 bool selected,
+                                 bool editingValue,
+                                 uint8_t textSize = 0) {
+  const uint8_t font = 2;
+  const uint8_t size = (textSize != 0) ? textSize : (layout.isLargeDisplay ? 2 : 1);
+  const int labelW = uiDisplayTextWidth(label, size, font);
+  const int valueW = uiDisplayTextWidth(value, size, font);
+  const int totalW = labelW + valueW;
+  const int x = (layout.displayW - totalW) / 2;
+  const int h = uiDisplayFontHeight(size, font);
+
+  if (editingValue) {
+    uiDisplayFillRect(x + labelW - 4, y - 1, valueW + 8, h + 2, kUiSetColor);
+  } else if (selected) {
+    uiDisplayFillRect(x - 4, y - 1, totalW + 8, h + 2, kUiHighlight);
+  }
+
+  uiDisplayPrintStyledAt(x,
+                         y,
+                         label,
+                         selected && !editingValue ? kUiDark : kUiText,
+                         selected && !editingValue ? kUiHighlight : kUiModeAreaBg,
+                         size,
+                         font);
+  uiDisplayPrintStyledAt(x + labelW,
+                         y,
+                         value,
+                         editingValue || selected ? kUiDark : kUiText,
+                         editingValue ? kUiSetColor : (selected ? kUiHighlight : kUiModeAreaBg),
+                         size,
+                         font);
+}
+
+void draw_config_value_edit_item(int x,
+                                 int y,
+                                 const String &label,
+                                 const String &value,
+                                 bool selected,
+                                 bool editingValue,
+                                 uint8_t textSize = 1) {
+  const uint8_t font = 2;
+  const int labelW = uiDisplayTextWidth(label, textSize, font);
+  const int valueW = uiDisplayTextWidth(value, textSize, font);
+  const int totalW = labelW + valueW;
+  const int h = uiDisplayFontHeight(textSize, font);
+
+  if (editingValue) {
+    uiDisplayFillRect(x + labelW - 4, y - 1, valueW + 8, h + 2, kUiSetColor);
+  } else if (selected) {
+    uiDisplayFillRect(x - 4, y - 1, totalW + 8, h + 2, kUiHighlight);
+  }
+
+  uiDisplayPrintStyledAt(x,
+                         y,
+                         label,
+                         selected && !editingValue ? kUiDark : kUiText,
+                         selected && !editingValue ? kUiHighlight : kUiModeAreaBg,
+                         textSize,
+                         font);
+  uiDisplayPrintStyledAt(x + labelW,
+                         y,
+                         value,
+                         editingValue || selected ? kUiDark : kUiText,
+                         editingValue ? kUiSetColor : (selected ? kUiHighlight : kUiModeAreaBg),
+                         textSize,
+                         font);
+}
+
+void draw_config_status_item(int x,
+                             int y,
+                             const String &label,
+                             const String &value,
+                             bool selected,
+                             bool active,
+                             uint8_t textSize = 1) {
+  const uint8_t font = 2;
+  const int labelW = uiDisplayTextWidth(label, textSize, font);
+  const int valueW = uiDisplayTextWidth(value, textSize, font);
+  const int totalW = labelW + valueW;
+  const int h = uiDisplayFontHeight(textSize, font);
+  const uint16_t selectedBg = active ? kUiLoadOn : kUiHighlight;
+  const uint16_t selectedValueFg = active ? kUiText : kUiDark;
+
+  if (selected) {
+    uiDisplayFillRect(x - 4, y - 1, totalW + 8, h + 2, kUiHighlight);
+    uiDisplayFillRect(x + labelW - 2, y - 1, valueW + 6, h + 2, selectedBg);
+  }
+
+  uiDisplayPrintStyledAt(x,
+                         y,
+                         label,
+                         selected ? kUiDark : kUiText,
+                         selected ? kUiHighlight : kUiModeAreaBg,
+                         textSize,
+                         font);
+  uiDisplayPrintStyledAt(x + labelW,
+                         y,
+                         value,
+                         selected ? selectedValueFg : (active ? kUiText : kUiText),
+                         selected ? selectedBg : (active ? kUiLoadOn : kUiModeAreaBg),
+                         textSize,
                          font);
 }
 
@@ -2577,9 +2686,27 @@ void uiDisplayRenderFanSettingsMenu(const UiViewState &state) {
 
   clear_config_content_zone();
   draw_config_title(layout, "FAN SETTINGS", titleSize);
-  draw_config_column_item(layout, leftX, startY, "1 Temp: " + tempValue + "C", state.fanSettingsMenuSelection == 0, itemSize);
-  draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Hold: " + holdValue + "s", state.fanSettingsMenuSelection == 1, itemSize);
-  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Fan: " + fanState, state.fanSettingsMenuSelection == 2, itemSize);
+  draw_config_value_edit_item(leftX,
+                              startY,
+                              "1 Temp: ",
+                              tempValue + "C",
+                              state.fanSettingsMenuSelection == 0,
+                              state.fanEditActive && state.fanSettingsMenuSelection == 0,
+                              itemSize);
+  draw_config_value_edit_item(leftX,
+                              startY + (lineHeight + gap),
+                              "2 Hold: ",
+                              holdValue + "s",
+                              state.fanSettingsMenuSelection == 1,
+                              state.fanEditActive && state.fanSettingsMenuSelection == 1,
+                              itemSize);
+  draw_config_status_item(leftX,
+                          startY + ((lineHeight + gap) * 2),
+                          "3 Fan: ",
+                          fanState,
+                          state.fanSettingsMenuSelection == 2,
+                          state.fanOutputOn,
+                          itemSize);
   draw_config_column_item(layout, rightX, startY, "4 Back", state.fanSettingsMenuSelection == 3, itemSize);
   draw_battery_setup_set_zone("SET> ", state.fanEditActive ? String(state.fanInputText) : String(""));
 }
@@ -2605,9 +2732,27 @@ void uiDisplayRenderLimitsMenu(const UiViewState &state) {
 
   clear_config_content_zone();
   draw_config_title(layout, "LIMITS", titleSize);
-  draw_config_line(layout, startY, "1 Current: " + currValue, state.limitsMenuField == 0, itemSize);
-  draw_config_line(layout, startY + (lineHeight + gap), "2 Power: " + powerValue, state.limitsMenuField == 1, itemSize);
-  draw_config_line(layout, startY + ((lineHeight + gap) * 2), "3 Temp: " + tempValue, state.limitsMenuField == 2, itemSize);
+  draw_config_value_edit_line(layout,
+                              startY,
+                              "1 Current: ",
+                              currValue,
+                              state.limitsMenuField == 0,
+                              state.limitsEditActive && state.limitsMenuField == 0,
+                              itemSize);
+  draw_config_value_edit_line(layout,
+                              startY + (lineHeight + gap),
+                              "2 Power: ",
+                              powerValue,
+                              state.limitsMenuField == 1,
+                              state.limitsEditActive && state.limitsMenuField == 1,
+                              itemSize);
+  draw_config_value_edit_line(layout,
+                              startY + ((lineHeight + gap) * 2),
+                              "3 Temp: ",
+                              tempValue,
+                              state.limitsMenuField == 2,
+                              state.limitsEditActive && state.limitsMenuField == 2,
+                              itemSize);
   draw_battery_setup_set_zone("SET> ", state.limitsEditActive ? String(state.limitsInputText) : String(""));
 }
 
