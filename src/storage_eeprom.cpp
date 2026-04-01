@@ -6,6 +6,7 @@
 #define Sns_Curr_Calib_Offs (app_calibration_sns_curr_offset_ref())
 #define Out_Curr_Calib_Fact (app_calibration_out_curr_factor_ref())
 #define Out_Curr_Calib_Offs (app_calibration_out_curr_offset_ref())
+#define Temp_Calib_Fact (app_calibration_temp_factor_ref())
 
 
 #include "storage_eeprom.h"
@@ -17,7 +18,7 @@ float Load_EEPROM(int address)
   EEPROM.get(address, value);
   if (isnan(value)) {  // Si el valor es NaN, significa que la EEPROM no estaba inicializada
     value = (address == ADD_SNS_VOLT_OFF_CAL || address == ADD_SNS_CURR_OFF_CAL ||
-                address == ADD_OUT_CURR_OFF_CAL) ? 0.0 : 1.0;
+                address == ADD_OUT_CURR_OFF_CAL) ? 0.0f : 1.0f;
     EEPROM.put(address, value);  // Guardar el valor por defecto en la EEPROM
     EEPROM.commit();
   }
@@ -47,13 +48,21 @@ void Load_Calibration() {
     {ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs, "Sns_Volt_Calib_Offs", true},
     {ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs, "Sns_Curr_Calib_Offs", true},
     {ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs, "Out_Curr_Calib_Offs", true},
+    {ADD_TEMP_FAC_CAL, Temp_Calib_Fact, "Temp_Calib_Fact", false},
   };
 
   for (CalibrationData &d : data) {
     d.variable = Load_EEPROM(d.address);
 
     if (!d.isOffset) {  // Es un FAC_CAL (factor de calibracion)
-      if (d.variable < 0.9 || d.variable > 1.1) {
+      float minFactor = CAL_FACTOR_MIN;
+      float maxFactor = CAL_FACTOR_MAX;
+      if (d.address == ADD_TEMP_FAC_CAL) {
+        minFactor = TEMP_CAL_FACTOR_MIN;
+        maxFactor = TEMP_CAL_FACTOR_MAX;
+      }
+
+      if (d.variable < minFactor || d.variable > maxFactor) {
         d.variable = 1.0;  // Restaurar al valor por defecto
       }
     } else {  // Es un OFF_CAL
@@ -92,6 +101,7 @@ void Save_Calibration() {
       {ADD_SNS_VOLT_OFF_CAL, Sns_Volt_Calib_Offs, "Sns_Volt_Calib_Offs"},
       {ADD_SNS_CURR_OFF_CAL, Sns_Curr_Calib_Offs, "Sns_Curr_Calib_Offs"},
       {ADD_OUT_CURR_OFF_CAL, Out_Curr_Calib_Offs, "Out_Curr_Calib_Offs"},
+      {ADD_TEMP_FAC_CAL, Temp_Calib_Fact, "Temp_Calib_Fact"},
   };
 
   // Verificar y guardar solo si el valor ha cambiado

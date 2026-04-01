@@ -441,7 +441,7 @@ void dispatch_key_for_config_menu(char key) {
       return;
 
     case UiScreen::MenuCalibration:
-      if (key >= '1' && key <= '5') {
+      if (key >= '1' && key <= '6') {
         config_menu_select_index(&g_state, ConfigMenu::Calibration, static_cast<uint8_t>(key - '1'));
       } else if (key == 'U' || key == 'L') {
         config_menu_step_selection(&g_state, ConfigMenu::Calibration, -1);

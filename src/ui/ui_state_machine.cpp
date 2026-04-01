@@ -84,6 +84,13 @@ struct ConfigRtcRenderCache {
   bool valid;
 };
 
+struct ConfigChromeRenderCache {
+  float tempC;
+  float fanTempOnC;
+  float tempCutOffC;
+  bool valid;
+};
+
 struct BatterySetupRenderCache {
   uint8_t stage;
   char batteryType[8];
@@ -122,6 +129,7 @@ LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 ClockRenderCache g_clockCache = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, {'\0'}, false};
 ConfigRtcRenderCache g_configRtcCache = {0, 0, 0, 0, 0, false, false};
+ConfigChromeRenderCache g_configChromeCache = {0.0f, 0.0f, 0.0f, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false, false};
 TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false, false};
 TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false, false};
@@ -368,6 +376,36 @@ bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
   return false;
 }
 
+bool invalidate_active_config_screen_if_temp_changed(UiScreen screen, const UiViewState &viewState) {
+  switch (screen) {
+    case UiScreen::MenuRoot:
+    case UiScreen::MenuProtection:
+    case UiScreen::MenuUpdate:
+    case UiScreen::MenuFanSettings:
+    case UiScreen::MenuLimits:
+    case UiScreen::MenuCalibration:
+    case UiScreen::MenuClock:
+      break;
+    default:
+      return false;
+  }
+
+  const bool sameTemp = g_configChromeCache.valid &&
+                        g_configChromeCache.tempC == viewState.tempC &&
+                        g_configChromeCache.fanTempOnC == viewState.fanTempOnC &&
+                        g_configChromeCache.tempCutOffC == viewState.tempCutOffC;
+
+  if (sameTemp) {
+    return false;
+  }
+
+  g_configChromeCache.tempC = viewState.tempC;
+  g_configChromeCache.fanTempOnC = viewState.fanTempOnC;
+  g_configChromeCache.tempCutOffC = viewState.tempCutOffC;
+  g_configChromeCache.valid = true;
+  return true;
+}
+
 void screen_enter_home(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
@@ -380,6 +418,7 @@ void screen_enter_home(const UiViewState &viewState) {
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
+  g_configChromeCache.valid = false;
   if (viewState.mode == CA && app_calibration_confirmation_active()) {
     return;
   }
@@ -645,7 +684,8 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
 
 void run_screen_update(UiScreen screen, const UiViewState &viewState) {
   const bool configChromeChanged = invalidate_active_config_screen_if_rtc_changed(screen, viewState);
-  if (configChromeChanged) {
+  const bool configTempChanged = invalidate_active_config_screen_if_temp_changed(screen, viewState);
+  if (configChromeChanged || configTempChanged) {
     switch (screen) {
       case UiScreen::MenuRoot:
       case UiScreen::MenuProtection:
@@ -654,7 +694,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
       case UiScreen::MenuLimits:
       case UiScreen::MenuCalibration:
       case UiScreen::MenuClock:
-        uiDisplayUpdateConfigFooterTime();
+        uiDisplayUpdateAccentChromeStatus();
         break;
       case UiScreen::MenuFwUpdate:
         break;
@@ -721,6 +761,7 @@ void ui_state_machine_reset() {
   g_calibrationCache.valid = false;
   g_clockCache.valid = false;
   g_configRtcCache.valid = false;
+  g_configChromeCache.valid = false;
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
@@ -745,6 +786,10 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
+}
+
+void ui_state_machine_invalidate_menu_calibration() {
+  g_calibrationCache.valid = false;
 }
 
 

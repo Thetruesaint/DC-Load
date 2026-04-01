@@ -59,6 +59,8 @@ const float CAL_FACTOR_MIN = 0.90f;
 const float CAL_FACTOR_MAX = 1.10f;
 const float CAL_OFFSET_MIN = -0.10f;
 const float CAL_OFFSET_MAX = 0.10f;
+const float TEMP_CAL_FACTOR_MIN = 0.80f;
+const float TEMP_CAL_FACTOR_MAX = 1.20f;
 const float MIN_RUNOUT_PROTECTION_CURRENT_A = 0.010f;
 
 #ifndef WOKWI_SIMULATION
@@ -79,6 +81,7 @@ const int ADD_SNS_CURR_OFF_CAL = 28;
 const int ADD_OUT_CURR_OFF_CAL = 32;
 const int ADD_FAN_TEMP_ON = 36;
 const int ADD_FAN_HOLD_MS = 40;
+const int ADD_TEMP_FAC_CAL = 44;
 
 #endif
 

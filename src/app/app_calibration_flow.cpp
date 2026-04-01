@@ -15,10 +15,13 @@
 #include "app_setpoint_context.h"
 #include "app_value_result_context.h"
 #include "../ui_display.h"
+#include "../ui/ui_state_machine.h"
 #include "../config/system_constants.h"
 #include "../storage_eeprom.h"
 
 namespace {
+constexpr unsigned long kCalibrationUiRefreshMs = TMP_CHK_TIME;
+
 const char *calibration_abort_detail(const AppCalibrationComputationResult &result, bool voltageMode) {
   if (result.pointsTooClose) {
     return "P1/P2 too close";
@@ -54,6 +57,101 @@ void wait_for_calibration_abort_ack(const char *detail) {
     }
 
     delay(10);
+  }
+}
+
+void refresh_calibration_temperature() {
+  app_measurements_set_temp_c(app_measurements_read_temp_c());
+}
+
+void wait_for_key_release() {
+  while (true) {
+    const char key = app_input_read_key();
+    if (app_input_is_no_key(key)) {
+      return;
+    }
+    delay(10);
+  }
+}
+
+template <typename RefreshFn>
+char wait_for_key_with_refresh(RefreshFn refreshContent) {
+  unsigned long lastRefreshMs = 0;
+
+  while (true) {
+    const char key = app_input_read_key();
+    if (!app_input_is_no_key(key)) {
+      return key;
+    }
+
+    const unsigned long now = millis();
+    if ((now - lastRefreshMs) >= kCalibrationUiRefreshMs) {
+      refresh_calibration_temperature();
+      uiDisplayUpdateAccentChromeStatus();
+      refreshContent();
+      lastRefreshMs = now;
+    }
+
+    delay(10);
+  }
+}
+
+void run_temp_calibration_entry() {
+  float referenceTempC = 0.0f;
+  app_input_reset();
+
+  while (referenceTempC <= 0.0f || referenceTempC > MAX_TEMP) {
+    refresh_calibration_temperature();
+    uiDisplayRenderTempCalibrationEntryScreen(app_measurements_read_temp_raw_c(), app_input_text());
+
+    while (true) {
+      const char key = wait_for_key_with_refresh([]() {
+        uiDisplayUpdateTempCalibrationRawValue(app_measurements_read_temp_raw_c());
+      });
+
+      if (key == '<' || key == 'M') {
+        app_input_reset();
+        wait_for_key_release();
+        ui_state_machine_invalidate_menu_calibration();
+        return;
+      }
+
+      if (!app_handle_msc_keys(key)) {
+        app_input_reset();
+        return;
+      }
+
+      bool handled = app_input_append_digit(key, 4);
+      if (!handled && key == '.') {
+        handled = app_input_append_decimal(4);
+      }
+      if (!handled && key == '<') {
+        handled = app_input_backspace();
+      }
+
+      if (!handled && key == 'E' && app_input_length() > 0) {
+        referenceTempC = app_input_parse_float();
+        break;
+      }
+
+      uiDisplayRenderTempCalibrationEntryScreen(app_measurements_read_temp_raw_c(), app_input_text());
+    }
+
+    if (referenceTempC > 0.0f && referenceTempC <= MAX_TEMP) {
+      const float rawTempC = app_measurements_read_temp_raw_c();
+      const float factor = constrain(referenceTempC / max(rawTempC, 1.0f), TEMP_CAL_FACTOR_MIN, TEMP_CAL_FACTOR_MAX);
+      app_calibration_temp_factor_ref() = factor;
+      app_measurements_set_temp_c(app_measurements_read_temp_c());
+      uiDisplayRenderCalibrationNoticeScreen("CAL TEMP", "Factor updated");
+      delay(1500);
+      app_input_reset();
+      ui_state_machine_invalidate_menu_calibration();
+      return;
+    }
+
+    uiDisplayRenderCalibrationNoticeScreen("CAL TEMP", "Invalid temp");
+    delay(1200);
+    app_input_reset();
   }
 }
 }  // namespace
@@ -105,11 +203,11 @@ void app_calibration_run_setup() {
   float selection = 0.0f;
   app_input_reset();
   do {
+    refresh_calibration_temperature();
     uiDisplayRenderCalibrationSetupMenu(app_input_text());
 
     while (true) {
-      char key = app_input_wait_key();
-      app_push_action(make_key_pressed_action(key));
+      char key = wait_for_key_with_refresh([]() {});
 
       if (!app_handle_msc_keys(key)) {
         app_input_reset();
@@ -130,19 +228,26 @@ void app_calibration_run_setup() {
 
       uiDisplayRenderCalibrationSetupMenu(app_input_text());
     }
-  } while (selection < 1.0f || selection > 4.0f);
+  } while (selection < 1.0f || selection > 6.0f);
 
   app_mode_state_set_configured(true);
   if (selection == 3.0f) {
+    run_temp_calibration_entry();
+    app_mode_state_set_configured(false);
+  }
+  if (selection == 4.0f) {
     Load_Calibration();
     uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Loaded");
     delay(1500);
     app_mode_state_set_configured(false);
   }
-  if (selection == 4.0f) {
+  if (selection == 5.0f) {
     Save_Calibration();
     uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Saved");
     delay(1500);
+    app_mode_state_set_configured(false);
+  }
+  if (selection == 6.0f) {
     app_mode_state_set_configured(false);
   }
 
@@ -189,12 +294,16 @@ void app_calibration_apply_menu_option(uint8_t option) {
     app_calibration_reset_session();
     app_value_result_set(static_cast<float>(option));
   } else if (option == 3) {
+    run_temp_calibration_entry();
+    app_mode_state_set_configured(false);
+    app_mode_state_set_initialized(false);
+  } else if (option == 4) {
     Load_Calibration();
     uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Loaded");
     delay(1500);
     app_mode_state_set_configured(false);
     app_mode_state_set_initialized(false);
-  } else if (option == 4) {
+  } else if (option == 5) {
     Save_Calibration();
     uiDisplayRenderCalibrationNoticeScreen("CALIBRATION", "Saved");
     delay(1500);

@@ -56,7 +56,7 @@ void wait_for_protection_ack(const char *message, char causeCode) {
     }
     encoderWasPressed = encoderPressed;
 
-    app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+    app_measurements_set_temp_c(app_measurements_read_temp_c());
 
     hal_delay_ms(10);
   }
@@ -95,7 +95,7 @@ void app_update_fan_control() {
   }
 
   last_tmpchk = currentMillis;
-  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+  app_measurements_set_temp_c(app_measurements_read_temp_c());
 
   if (app_measurements_temp_c() >= app_fan_temp_on_c()) {
     if (!fans_on) {

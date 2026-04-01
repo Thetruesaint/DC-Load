@@ -2264,6 +2264,28 @@ void draw_config_footer_time_only() {
   tft.drawLine(layout.displayW - 1, layout.footerY, layout.displayW - 1, layout.displayH - 1, kUiBorder);
 }
 
+void draw_accent_chrome_temp_only() {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t barTextFont = 2;
+  const uint8_t barTextSize = layout.isLargeDisplay ? 2 : 1;
+  const int topBarTextY = ((layout.topBarH - uiDisplayFontHeight(barTextSize, barTextFont)) / 2) + (layout.isLargeDisplay ? 1 : 0);
+  const String tempText = String(constrain(app_measurements_temp_c(), 0, 99));
+  const uint16_t tempColor = temperature_status_color(static_cast<float>(app_measurements_temp_c()),
+                                                      static_cast<float>(app_fan_temp_on_c()),
+                                                      app_limits_temp_cutoff());
+  const int tempBlockX = layout.displayW - (layout.isLargeDisplay ? 86 : 38);
+
+  uiDisplayFillRect(tempBlockX - 2, 1, layout.displayW - tempBlockX - 1, layout.topBarH - 2, kUiAccent);
+  uiDisplayPrintStyledAt(tempBlockX, topBarTextY, tempText, tempColor, kUiAccent, barTextSize, barTextFont);
+  draw_degree_c_symbol(tempBlockX + uiDisplayTextWidth(tempText, barTextSize, barTextFont) + (layout.isLargeDisplay ? 8 : 6),
+                       topBarTextY + (layout.isLargeDisplay ? 3 : 1),
+                       tempColor,
+                       kUiAccent,
+                       barTextSize,
+                       barTextFont);
+  draw_horizontal_separator(layout.topBarH, layout.displayW, kUiBorder);
+}
+
 void clear_config_content_zone() {
   draw_config_chrome(true);
 }
@@ -2273,6 +2295,11 @@ void uiDisplayUpdateConfigChrome(void) {
 }
 
 void uiDisplayUpdateConfigFooterTime(void) {
+  draw_config_footer_time_only();
+}
+
+void uiDisplayUpdateAccentChromeStatus(void) {
+  draw_accent_chrome_temp_only();
   draw_config_footer_time_only();
 }
 
@@ -2597,8 +2624,8 @@ void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
   int leftX = 0;
   int rightX = 0;
   compute_two_column_positions(layout,
-                               uiDisplayTextWidth("3 Load", itemSize, font),
-                               uiDisplayTextWidth("5 Back", itemSize, font),
+                               uiDisplayTextWidth("3 Temp", itemSize, font),
+                               uiDisplayTextWidth("6 Back", itemSize, font),
                                columnGap,
                                leftX,
                                rightX);
@@ -2608,9 +2635,10 @@ void uiDisplayRenderCalibrationMenu(const UiViewState &state) {
   draw_config_title(layout, "CALIBRATION", titleSize);
   draw_config_column_item(layout, leftX, startY, "1 Voltage", selected == 0, itemSize);
   draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Current", selected == 1, itemSize);
-  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Load", selected == 2, itemSize);
-  draw_config_column_item(layout, rightX, startY, "4 Save", selected == 3, itemSize);
-  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Back", selected == 4, itemSize);
+  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Temp", selected == 2, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Load", selected == 3, itemSize);
+  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Save", selected == 4, itemSize);
+  draw_config_column_item(layout, rightX, startY + ((lineHeight + gap) * 2), "6 Back", selected == 5, itemSize);
   draw_battery_setup_set_zone("", "");
 }
 
@@ -2728,8 +2756,8 @@ void uiDisplayRenderCalibrationSetupMenu(const char *inputText) {
   int leftX = 0;
   int rightX = 0;
   compute_two_column_positions(layout,
-                               uiDisplayTextWidth("3 Load", itemSize, font),
-                               uiDisplayTextWidth("4 Save", itemSize, font),
+                               uiDisplayTextWidth("3 Temp", itemSize, font),
+                               uiDisplayTextWidth("6 Back", itemSize, font),
                                columnGap,
                                leftX,
                                rightX);
@@ -2738,8 +2766,10 @@ void uiDisplayRenderCalibrationSetupMenu(const char *inputText) {
   draw_config_title(layout, "CALIBRATION", titleSize);
   draw_config_column_item(layout, leftX, startY, "1 Voltage", false, itemSize);
   draw_config_column_item(layout, leftX, startY + (lineHeight + gap), "2 Current", false, itemSize);
-  draw_config_column_item(layout, rightX, startY, "3 Load", false, itemSize);
-  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "4 Save", false, itemSize);
+  draw_config_column_item(layout, leftX, startY + ((lineHeight + gap) * 2), "3 Temp", false, itemSize);
+  draw_config_column_item(layout, rightX, startY, "4 Load", false, itemSize);
+  draw_config_column_item(layout, rightX, startY + (lineHeight + gap), "5 Save", false, itemSize);
+  draw_config_column_item(layout, rightX, startY + ((lineHeight + gap) * 2), "6 Back", false, itemSize);
   draw_battery_setup_set_zone("SEL> ", (inputText != nullptr) ? String(inputText) : "");
 }
 
@@ -2792,6 +2822,47 @@ void draw_calibration_overlay_chrome(const char *title) {
                          kUiAccent,
                          footerTextSize,
                          footerTextFont);
+}
+
+void uiDisplayRenderTempCalibrationEntryScreen(float rawTempC, const char *inputText) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
+  const int lineHeight = uiDisplayFontHeight(textSize, 2);
+  const int startY = titleY + uiDisplayFontHeight(titleSize, 2) + (layout.isLargeDisplay ? 10 : 12);
+  const String sensedLine = "Raw: " + String(rawTempC, 1) + "C";
+  const String referenceLine =
+      "Real: " + (((inputText != nullptr) && inputText[0] != '\0') ? String(inputText) + "C" : String("--.-C"));
+  const String backLine = "CLR-Back";
+
+  draw_calibration_overlay_chrome("CA");
+  clear_config_content_zone();
+  draw_config_title(layout, "CAL TEMP", titleSize);
+  draw_config_line(layout, startY, sensedLine, false, textSize);
+  draw_config_line(layout, startY + lineHeight + (layout.isLargeDisplay ? 10 : 8), referenceLine, true, textSize);
+  draw_config_line(layout,
+                   startY + ((lineHeight + (layout.isLargeDisplay ? 10 : 8)) * 2),
+                   backLine,
+                   false,
+                   textSize);
+  draw_battery_setup_set_zone("REAL> ", (inputText != nullptr) ? String(inputText) : String(""));
+  draw_home_zone_borders(layout.displayW, layout.displayH, layout.topBarH, layout.contentY, layout.setZoneY, layout.footerY);
+}
+
+void uiDisplayUpdateTempCalibrationRawValue(float rawTempC) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const uint8_t titleSize = layout.isLargeDisplay ? 2 : 1;
+  const uint8_t textSize = layout.isLargeDisplay ? 2 : 1;
+  const int titleY = layout.contentY + (layout.isLargeDisplay ? 10 : 8);
+  const int startY = titleY + uiDisplayFontHeight(titleSize, 2) + (layout.isLargeDisplay ? 10 : 12);
+  const int lineHeight = uiDisplayFontHeight(textSize, 2);
+  const String sensedLine = "Raw: " + String(rawTempC, 1) + "C";
+  const int bandY = startY - 2;
+  const int bandH = lineHeight + 6;
+
+  uiDisplayFillRect(1, bandY, layout.displayW - 2, bandH, kUiModeAreaBg);
+  draw_config_line(layout, startY, sensedLine, false, textSize);
 }
 
 void draw_modal_overlay_chrome(const char *title, bool loadEnabled) {

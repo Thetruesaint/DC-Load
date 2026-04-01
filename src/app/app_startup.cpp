@@ -82,7 +82,7 @@ void run_peripheral_health_check() {
     Serial.print(" RTC not detected");
   }
 
-  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+  app_measurements_set_temp_c(app_measurements_read_temp_c());
   sensorOk = app_health_is_ok() && app_measurements_temp_c() <= 99;
 
   if (sensorOk) {
@@ -109,7 +109,7 @@ void ensure_rtc_running() {
 }
 
 void show_startup_splash() {
-  app_measurements_set_temp_c(static_cast<int>(analogRead(TEMP_SNSR) * TEMP_CONVERSION_FACTOR));
+  app_measurements_set_temp_c(app_measurements_read_temp_c());
   uiDisplayRenderStartupSplash(false, app_measurements_temp_c());
 
 #ifndef WOKWI_SIMULATION

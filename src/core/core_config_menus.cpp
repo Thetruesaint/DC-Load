@@ -41,7 +41,7 @@ uint8_t config_menu_item_count(ConfigMenu menu) {
     case ConfigMenu::Protection: return 3;
     case ConfigMenu::Update: return 2;
     case ConfigMenu::FanSettings: return 4;
-    case ConfigMenu::Calibration: return 5;
+    case ConfigMenu::Calibration: return 6;
     default: return 0;
   }
 }
@@ -367,7 +367,7 @@ void calibration_menu_begin(SystemState *state) {
   state->calibrationMenuActive = true;
   state->currentConfigMenu = ConfigMenu::Calibration;
   state->parentConfigMenu = ConfigMenu::Root;
-  if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 5) {
+  if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 6) {
     state->calibrationMenuOption = 1;
   }
 }
@@ -603,8 +603,10 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
 
   if (menu == ConfigMenu::Calibration) {
     const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::Calibration);
-    if (selection == 4) {
+    if (selection == 5) {
       calibration_menu_finish(state, false, true);
+    } else if (selection == 2) {
+      state->calibrationMenuApplyEvent = true;
     } else {
       calibration_menu_finish(state, true);
     }

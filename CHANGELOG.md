@@ -1,7 +1,7 @@
 ## v2.14b ## CLEANING IT UP!
 
 **Trabajando:**
-- 
+- Calibración de sensor de Temperatura (LM35)
 
 **A Trabajar:**
 - 
@@ -13,6 +13,7 @@
 - Calibración con mensajes de abort más claros y espera con E-Accept
 - Ahora `MOSFONOFF = HIGH` queda reservado para emergencia: si falla el `health check` de arranque o si salta una protección. En operación normal, `OFF` se controla con `DAC = 0` para evitar lecturas residuales de corriente que genera el apagado forzado de los MOSFET. Tras `E-Accept` en una protección, `MOSFONOFF` vuelve a `LOW` y el sistema queda listo para continuar.
  - Si falla el `health check`, la pantalla queda detenida mostrando el fallo y no avanza el arranque.
+ - Calibraciòn de Sensado de Temperatura con su menu y almacenamiento de factor en EEPROM
  
 **Fixes**
 - `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul

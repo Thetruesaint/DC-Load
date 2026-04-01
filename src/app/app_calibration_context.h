@@ -51,5 +51,6 @@ float& app_calibration_sns_curr_factor_ref();
 float& app_calibration_sns_curr_offset_ref();
 float& app_calibration_out_curr_factor_ref();
 float& app_calibration_out_curr_offset_ref();
+float& app_calibration_temp_factor_ref();
 
 #endif

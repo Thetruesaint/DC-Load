@@ -20,6 +20,7 @@ float snsCurrCalibFactor = 1.0f;
 float snsCurrCalibOffset = 0.0f;
 float outCurrCalibFactor = 1.0f;
 float outCurrCalibOffset = 0.0f;
+float tempCalibFactor = 1.0f;
 
 float pendingSensorFactor = 1.0f;
 float pendingSensorOffset = 0.0f;
@@ -253,4 +254,8 @@ float& app_calibration_out_curr_factor_ref() {
 
 float& app_calibration_out_curr_offset_ref() {
   return outCurrCalibOffset;
+}
+
+float& app_calibration_temp_factor_ref() {
+  return tempCalibFactor;
 }
