@@ -95,7 +95,7 @@ void run_peripheral_health_check() {
     app_load_output_emergency_off();
   }
 
-  uiDisplayRenderStartupHealthCheck(dacDetected, adsDetected, g_rtcDetected, app_measurements_temp_c(), sensorOk);
+  uiDisplayRenderStartupHealthCheck(dacDetected, adsDetected, g_rtcDetected, sensorOk);
 
   if (!sensorOk) {
     while (true) {

@@ -2087,7 +2087,7 @@ void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC) {
   draw_horizontal_separator(footerY, displayW, kUiBorder);
 }
 
-void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk) {
+void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, bool sensorOk) {
   const int displayW = uiDisplayWidthPx();
   const int displayH = uiDisplayHeightPx();
   const bool isLargeDisplay = displayW >= 400;
@@ -2106,7 +2106,7 @@ void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool 
   const String line3 = String("RTC: ") + startup_status_text(rtcDetected);
   const String line4 = String("TEMP: ") + (sensorOk ? "Detected" : "Fail");
 
-  draw_startup_base("HEALTH CHECK", rtcDetected, tempC, true);
+  draw_startup_base("HEALTH CHECK", rtcDetected, 0, false);
   uiDisplayPrintStyledAt((displayW - uiDisplayTextWidth(line1, textSize, textFont)) / 2,
                          startY,
                          line1,

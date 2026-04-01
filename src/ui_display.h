@@ -37,7 +37,7 @@ void uiDisplayRenderTransientListSetup(const UiViewState &state);
 void uiDisplayUpdateTransientListSetupContent(const UiViewState &state);
 void uiDisplayUpdateTransientListSetupValue(const UiViewState &state);
 void uiDisplayRenderStartupSplash(bool rtcDetected, int tempC);
-void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, int tempC, bool sensorOk);
+void uiDisplayRenderStartupHealthCheck(bool dacDetected, bool adsDetected, bool rtcDetected, bool sensorOk);
 void uiDisplayRenderConfigRootMenu(const UiViewState &state);
 void uiDisplayRenderProtectionMenu(const UiViewState &state);
 void uiDisplayRenderUpdateMenu(const UiViewState &state);
