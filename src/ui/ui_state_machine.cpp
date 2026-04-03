@@ -378,6 +378,14 @@ bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
 
 bool invalidate_active_config_screen_if_temp_changed(UiScreen screen, const UiViewState &viewState) {
   switch (screen) {
+    case UiScreen::BatterySetupTask:
+    case UiScreen::BatterySetupCustomCutoff:
+    case UiScreen::BatterySetupCellCount:
+    case UiScreen::TransientContSetupLow:
+    case UiScreen::TransientContSetupHigh:
+    case UiScreen::TransientContSetupPeriod:
+    case UiScreen::TransientListSetupCount:
+    case UiScreen::TransientListSetupStep:
     case UiScreen::MenuRoot:
     case UiScreen::MenuProtection:
     case UiScreen::MenuUpdate:
@@ -694,6 +702,21 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
   const bool configTempChanged = invalidate_active_config_screen_if_temp_changed(screen, viewState);
   if (configChromeChanged || configTempChanged) {
     switch (screen) {
+      case UiScreen::BatterySetupTask:
+      case UiScreen::BatterySetupCustomCutoff:
+      case UiScreen::BatterySetupCellCount:
+      case UiScreen::TransientContSetupLow:
+      case UiScreen::TransientContSetupHigh:
+      case UiScreen::TransientContSetupPeriod:
+      case UiScreen::TransientListSetupCount:
+      case UiScreen::TransientListSetupStep:
+        if (configTempChanged) {
+          uiDisplayUpdateSetupTopStatus(viewState);
+        }
+        if (configChromeChanged) {
+          uiDisplayUpdateSetupFooterTime();
+        }
+        break;
       case UiScreen::MenuRoot:
       case UiScreen::MenuProtection:
       case UiScreen::MenuUpdate:
