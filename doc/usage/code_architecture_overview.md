@@ -169,7 +169,8 @@ La UI esta separada en dos niveles:
 
 - `ui_renderer.cpp`: convierte `SystemState` en `UiViewState`
 - `ui_state_machine.cpp`: decide que pantalla renderizar y cuando redibujar
-- `ui_display.cpp`: contiene el dibujo real sobre la TFT
+- `ui_display.cpp`: expone primitivas publicas del TFT y una fachada minima
+- `src/ui_display/`: contiene el render concreto por familias de pantallas
 
 Eso permite que el `core` maneje el estado sin quedar acoplado a primitivas de dibujo.
 
@@ -178,15 +179,29 @@ Flujo de render:
 1. `core` produce `SystemState`
 2. `ui_renderer` arma una vista amigable para UI
 3. `ui_state_machine` decide la pantalla y controla invalidaciones
-4. `ui_display.cpp` dibuja la pantalla concreta
+4. los modulos de `ui_display/` dibujan la pantalla concreta sobre una base comun de zonas
 
 En menus y pantallas de configuracion, la UI ya no depende de redraws completos para cambios pequenos:
 
 - cambios del RTC actualizan solo el footer con fecha y hora
 - cambios de temperatura actualizan solo el bloque superior de estado
+- cambios de `A/V/W` actualizan solo la barra de metricas, incluso dentro de menus
 - cambios de seleccion o edicion en menus suelen repintar solo la zona azul de contenido
 
 Esto mantiene la navegacion mas fluida y reduce parpadeos innecesarios.
+
+Despues de la reorganizacion del subsistema TFT, el render quedo particionado asi:
+
+- [ui_display.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display.cpp): primitivas publicas y helpers minimos del TFT
+- [ui_display_chrome.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_chrome.cpp): layout compartido, top bar, metricas, input y footer
+- [ui_display_home.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_home.cpp): pantallas de modos y Home
+- [ui_display_config_menus.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_config_menus.cpp): menus de configuracion
+- [ui_display_config_helpers.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_config_helpers.cpp): helpers visuales reusables para menus
+- [ui_display_setups.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_setups.cpp): setups de bateria y transitorios
+- [ui_display_overlays.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_overlays.cpp): overlays de calibracion y proteccion
+- [ui_display_startup.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_startup.cpp): splash y health check
+- [ui_display_fw_update.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_fw_update.cpp): pantalla de actualizacion OTA
+- [ui_display_internal.h](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_internal.h): contratos internos y constantes visuales compartidas
 
 ### Persistencia
 
@@ -273,6 +288,8 @@ Si alguien entra nuevo al repo, conviene recorrerlo en este orden:
 7. [ui_renderer.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui/ui_renderer.cpp)
 8. [ui_state_machine.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui/ui_state_machine.cpp)
 9. [ui_display.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display.cpp)
+10. [ui_display_chrome.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_chrome.cpp)
+11. [ui_display_home.cpp](/c:/Users/thetr/Documentos/PlatformIO/Projects/DC_Load_ESP32/src/ui_display/ui_display_home.cpp)
 
 ## Resumen Corto
 
