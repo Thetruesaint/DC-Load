@@ -113,8 +113,7 @@ void ensure_rtc_running() {
 }
 
 void show_startup_splash() {
-  app_measurements_set_temp_c(app_measurements_read_temp_c());
-  uiDisplayRenderStartupSplash(false, app_measurements_temp_c());
+  uiDisplayRenderStartupSplash();
 
 #ifndef WOKWI_SIMULATION
   delay(2000);
