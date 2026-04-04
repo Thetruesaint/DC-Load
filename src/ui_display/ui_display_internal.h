@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <TFT_eSPI.h>
+#include "../config/system_constants.h"
 
 struct UiViewState;
 
@@ -61,7 +62,6 @@ constexpr uint16_t kUiHighlight = TFT_YELLOW;
 constexpr uint16_t kUiSetColor = TFT_MAGENTA;
 constexpr uint16_t kUiAlertBg = TFT_RED;
 constexpr uint16_t kUiAlertText = TFT_WHITE;
-constexpr const char *kFirmwareVersion = "v2.14b";
 
 constexpr uint8_t kFooterTextFont = 1;
 #ifdef WOKWI_SIMULATION

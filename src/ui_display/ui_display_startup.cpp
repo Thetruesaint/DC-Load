@@ -67,7 +67,7 @@ void draw_startup_base(const StartupScreenLayout &layout, const char *title, boo
   draw_startup_borders(layout);
 
   uiDisplayPrintStyledAt(layout.displayW / 50, topBarTextY, title, kUiText, kUiAccent, barTextSize, barTextFont);
-  uiDisplayPrintStyledAt(4, footerTextY, kFirmwareVersion, kUiText, kUiAccent, kFooterTextSize, kFooterTextFont);
+  uiDisplayPrintStyledAt(4, footerTextY, FW_VERSION, kUiText, kUiAccent, kFooterTextSize, kFooterTextFont);
   if (!rtcDetected) {
     return;
   }

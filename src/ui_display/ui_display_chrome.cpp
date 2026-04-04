@@ -17,7 +17,6 @@ using ui_display_internal::ManagedZoneLayout;
 using ui_display_internal::MetricsZoneState;
 using ui_display_internal::kFooterTextFont;
 using ui_display_internal::kFooterTextSize;
-using ui_display_internal::kFirmwareVersion;
 using ui_display_internal::kUiAccent;
 using ui_display_internal::kUiAlertBg;
 using ui_display_internal::kUiBg;
@@ -37,6 +36,13 @@ uint8_t g_setupMetricsMode = 0xFF;
 String g_setupLastMetric1;
 String g_setupLastMetric2;
 String g_setupLastMetric3;
+bool g_configMetricsValid = false;
+int g_configMetricsDisplayW = 0;
+int g_configMetricsDisplayH = 0;
+uint8_t g_configMetricsMode = 0xFF;
+String g_configLastMetric1;
+String g_configLastMetric2;
+String g_configLastMetric3;
 
 struct TopStatusZoneState {
   String label;
@@ -197,7 +203,7 @@ TopStatusZoneState current_top_status_zone_state(const String &label, bool loadE
 }
 
 FooterZoneState current_footer_zone_state() {
-  return {String(kFirmwareVersion), rtc_timestamp_text()};
+  return {String(FW_VERSION), rtc_timestamp_text()};
 }
 
 void draw_footer_zone(const ManagedZoneLayout &layout, const FooterZoneState &state) {
@@ -460,6 +466,21 @@ void draw_battery_setup_set_zone(const String &prefix, const String &valueText) 
   }
 }
 
+void update_config_metrics_internal(const UiViewState &state) {
+  const ManagedZoneLayout layout = managed_zone_layout();
+  const MetricsZoneState metricsState = {format_measured_current_display(max(0.0f, state.measuredCurrent_A)),
+                                         format_measured_voltage_display(max(0.0f, state.measuredVoltage_V)),
+                                         format_measured_power_display(max(0.0f, state.measuredPower_W))};
+  const bool layoutChanged =
+      !g_configMetricsValid || g_configMetricsDisplayW != layout.displayW || g_configMetricsDisplayH != layout.displayH || g_configMetricsMode != state.mode;
+
+  update_metrics_zone_values(layout, metricsState, layoutChanged, g_configLastMetric1, g_configLastMetric2, g_configLastMetric3);
+  g_configMetricsValid = true;
+  g_configMetricsDisplayW = layout.displayW;
+  g_configMetricsDisplayH = layout.displayH;
+  g_configMetricsMode = state.mode;
+}
+
 void draw_shared_chrome(const ManagedZoneLayout &layout,
                         const String &label,
                         bool loadEnabled,
@@ -476,9 +497,25 @@ void draw_shared_chrome(const ManagedZoneLayout &layout,
   draw_zone_borders(layout);
 }
 
-void draw_config_chrome(bool clearContentZone) {
+void draw_config_chrome(const UiViewState &state, bool clearContentZone) {
   const ManagedZoneLayout layout = managed_zone_layout();
-  draw_shared_chrome(layout, mode_label_for_value(app_mode_state_mode()), false, clearContentZone, true);
+  draw_top_status_zone(layout, current_top_status_zone_state(String(mode_label_for_value(app_mode_state_mode())), false));
+  const MetricsZoneState metricsState = {format_measured_current_display(max(0.0f, state.measuredCurrent_A)),
+                                         format_measured_voltage_display(max(0.0f, state.measuredVoltage_V)),
+                                         format_measured_power_display(max(0.0f, state.measuredPower_W))};
+  draw_metrics_zone(layout, metricsState);
+  if (clearContentZone) {
+    uiDisplayFillRect(1, layout.contentY + 1, layout.displayW - 2, layout.contentH - 1, kUiModeAreaBg);
+  }
+  draw_footer_zone(layout, current_footer_zone_state());
+  draw_zone_borders(layout);
+  g_configMetricsValid = true;
+  g_configMetricsDisplayW = layout.displayW;
+  g_configMetricsDisplayH = layout.displayH;
+  g_configMetricsMode = state.mode;
+  g_configLastMetric1 = metricsState.metric1;
+  g_configLastMetric2 = metricsState.metric2;
+  g_configLastMetric3 = metricsState.metric3;
 }
 
 void draw_config_footer_time_only() {
@@ -528,8 +565,12 @@ void uiDisplayUpdateSetupFooterTime(void) {
   draw_zone_borders(layout);
 }
 
-void uiDisplayUpdateConfigChrome(void) {
-  draw_config_chrome(false);
+void uiDisplayUpdateConfigChrome(const UiViewState &state) {
+  draw_config_chrome(state, false);
+}
+
+void uiDisplayUpdateConfigMetrics(const UiViewState &state) {
+  update_config_metrics_internal(state);
 }
 
 void uiDisplayUpdateConfigFooterTime(void) {

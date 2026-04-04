@@ -62,6 +62,7 @@ const float CAL_OFFSET_MAX = 0.10f;
 const float TEMP_CAL_FACTOR_MIN = 0.80f;
 const float TEMP_CAL_FACTOR_MAX = 1.20f;
 const float MIN_RUNOUT_PROTECTION_CURRENT_A = 0.010f;
+constexpr const char *FW_VERSION = "v2.14";
 
 #ifndef WOKWI_SIMULATION
 #define TEMP_CONVERSION_FACTOR 0.02686202686202686f

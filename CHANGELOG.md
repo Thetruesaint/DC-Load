@@ -1,7 +1,7 @@
-## v2.14b ## CLEANING IT UP!
+## v2.14 ## CLEANING IT UP!
 
 **Trabajando:**
-- Refresco de selecciòn en menues y healt check de TFT
+- 
 
 **A Trabajar:**
 - 
@@ -15,6 +15,8 @@
  - Si falla el `health check`, la pantalla queda detenida mostrando el fallo y no avanza el arranque.
  - Calibraciòn de Sensado de Temperatura con su menu y almacenamiento de factor en EEPROM, ya no se publica en Health Check.
  - Edicion de ajuste de limites y Fan Settings con encoder y otras mejoras visuales
+ - Reorganización de todas las funciones de display
+ - Ahora en los menues de configuración, a/v/w se actualizan.
  
 **Fixes**
 - `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
