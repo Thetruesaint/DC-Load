@@ -6,7 +6,7 @@
 #include "app_battery_context.h"
 #include "app_calibration_context.h"
 #include "app_fan_context.h"
-#include "app_limits_bootstrap.h"
+#include "app_limits_storage.h"
 #include "app_limits_context.h"
 #include "app_load_context.h"
 #include "app_measurements_context.h"
@@ -77,6 +77,7 @@ void capture_fan_state(RuntimeSnapshot *state) {
 
   state->fanTempOnC = static_cast<float>(app_fan_temp_on_c());
   state->fanHoldSeconds = static_cast<float>(app_fan_hold_seconds());
+  state->fanOutputOn = app_fan_output_is_on();
   state->fanManualOverrideActive = app_fan_manual_override_active();
   state->fanManualStateOn = state->fanManualOverrideActive
                               ? app_fan_manual_state_on()

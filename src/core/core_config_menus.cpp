@@ -41,7 +41,7 @@ uint8_t config_menu_item_count(ConfigMenu menu) {
     case ConfigMenu::Protection: return 3;
     case ConfigMenu::Update: return 2;
     case ConfigMenu::FanSettings: return 4;
-    case ConfigMenu::Calibration: return 5;
+    case ConfigMenu::Calibration: return 6;
     default: return 0;
   }
 }
@@ -322,7 +322,6 @@ void fan_menu_finish(SystemState *state, bool save, bool returnToParent = false)
   state->fanSaveEvent = save;
   state->fanEditActive = false;
   state->fanManualOverrideActive = false;
-  state->fanManualStateOn = false;
   fan_input_reset(state);
 
   if (returnToParent && parent != ConfigMenu::None) {
@@ -368,7 +367,7 @@ void calibration_menu_begin(SystemState *state) {
   state->calibrationMenuActive = true;
   state->currentConfigMenu = ConfigMenu::Calibration;
   state->parentConfigMenu = ConfigMenu::Root;
-  if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 5) {
+  if (state->calibrationMenuOption < 1 || state->calibrationMenuOption > 6) {
     state->calibrationMenuOption = 1;
   }
 }
@@ -414,7 +413,6 @@ void clear_config_runtime_flags(SystemState *state) {
   state->calibrationMenuActive = false;
   state->fanEditActive = false;
   state->fanManualOverrideActive = false;
-  state->fanManualStateOn = false;
   fan_input_reset(state);
   state->clockEditActive = false;
   clock_input_reset(state);
@@ -553,8 +551,36 @@ bool limits_menu_backspace(SystemState *state) {
   return true;
 }
 
+void limits_menu_adjust_field(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0 || !state->limitsEditActive) return;
+
+  // Encoder edits operate on the draft values directly, independent of typed input.
+  limits_input_reset(state);
+
+  if (state->limitsMenuField == 0) {
+    state->limitsDraftCurrentA =
+        constrain(state->limitsDraftCurrentA + (0.1f * static_cast<float>(direction)),
+                  1.0f,
+                  static_cast<float>(MAX_CURRENT));
+  } else if (state->limitsMenuField == 1) {
+    state->limitsDraftPowerW =
+        constrain(state->limitsDraftPowerW + static_cast<float>(direction),
+                  1.0f,
+                  static_cast<float>(MAX_POWER));
+  } else {
+    state->limitsDraftTempC =
+        constrain(state->limitsDraftTempC + static_cast<float>(direction),
+                  30.0f,
+                  static_cast<float>(MAX_TEMP));
+  }
+}
+
 void limits_menu_commit_edit(SystemState *state) {
-  if (state == nullptr || state->limitsInputLength == 0) return;
+  if (state == nullptr) return;
+  if (state->limitsInputLength == 0) {
+    limits_menu_cancel_edit(state);
+    return;
+  }
   const float value = static_cast<float>(atof(state->limitsInputText));
 
   if (state->limitsMenuField == 0) {
@@ -584,8 +610,31 @@ void fan_menu_cancel_edit(SystemState *state) {
   fan_input_reset(state);
 }
 
+void fan_menu_adjust_field(SystemState *state, int direction) {
+  if (state == nullptr || direction == 0 || !state->fanEditActive) return;
+
+  // Encoder edits operate on the draft values directly, independent of typed input.
+  fan_input_reset(state);
+
+  if (state->fanSettingsMenuSelection == 0) {
+    state->fanDraftTempC =
+        static_cast<float>(constrain(static_cast<int>(state->fanDraftTempC) + direction,
+                                     MIN_FAN_TEMP_ON_C,
+                                     MAX_FAN_TEMP_ON_C));
+  } else if (state->fanSettingsMenuSelection == 1) {
+    state->fanDraftHoldSeconds =
+        static_cast<float>(constrain(static_cast<int>(state->fanDraftHoldSeconds) + direction,
+                                     static_cast<int>(MIN_FAN_HOLD_MS / 1000UL),
+                                     static_cast<int>(MAX_FAN_HOLD_MS / 1000UL)));
+  }
+}
+
 void fan_menu_commit_edit(SystemState *state) {
-  if (state == nullptr || state->fanInputLength == 0) return;
+  if (state == nullptr) return;
+  if (state->fanInputLength == 0) {
+    fan_menu_cancel_edit(state);
+    return;
+  }
   const int value = atoi(state->fanInputText);
 
   if (state->fanSettingsMenuSelection == 0) {
@@ -605,8 +654,10 @@ void config_menu_activate_selection(SystemState *state, ConfigMenu menu) {
 
   if (menu == ConfigMenu::Calibration) {
     const uint8_t selection = config_menu_selection_index(*state, ConfigMenu::Calibration);
-    if (selection == 4) {
+    if (selection == 5) {
       calibration_menu_finish(state, false, true);
+    } else if (selection == 2) {
+      state->calibrationMenuApplyEvent = true;
     } else {
       calibration_menu_finish(state, true);
     }

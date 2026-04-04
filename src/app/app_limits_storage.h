@@ -1,5 +1,5 @@
-#ifndef APP_LIMITS_BOOTSTRAP_H
-#define APP_LIMITS_BOOTSTRAP_H
+#ifndef APP_LIMITS_STORAGE_H
+#define APP_LIMITS_STORAGE_H
 
 bool app_limits_values_are_valid(float currentCutoffA, float powerCutoffW, float tempCutoffC);
 bool app_limits_current_values_are_valid();

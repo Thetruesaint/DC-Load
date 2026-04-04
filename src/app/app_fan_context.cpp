@@ -62,8 +62,3 @@ void app_fan_set_manual_override(bool active, bool on) {
   fanManualOverrideActive = active;
   fanManualStateOn = on;
 }
-
-void app_fan_clear_manual_override() {
-  fanManualOverrideActive = false;
-  fanManualStateOn = false;
-}

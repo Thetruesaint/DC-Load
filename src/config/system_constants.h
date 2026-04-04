@@ -53,7 +53,16 @@ const int TMP_CHK_TIME = 1000;
 
 const float CAL_MIN_VOLTAGE_DELTA = 10.0f;
 const float CAL_MIN_CURRENT_DELTA = 4.0f;
-const float CAL_MAX_POINT_ERROR_RATIO = 0.20f;
+const float CAL_MAX_POINT1_ERROR_RATIO = 0.30f;
+const float CAL_MAX_POINT2_ERROR_RATIO = 0.20f;
+const float CAL_FACTOR_MIN = 0.90f;
+const float CAL_FACTOR_MAX = 1.10f;
+const float CAL_OFFSET_MIN = -0.10f;
+const float CAL_OFFSET_MAX = 0.10f;
+const float TEMP_CAL_FACTOR_MIN = 0.80f;
+const float TEMP_CAL_FACTOR_MAX = 1.20f;
+const float MIN_RUNOUT_PROTECTION_CURRENT_A = 0.010f;
+constexpr const char *FW_VERSION = "v2.14";
 
 #ifndef WOKWI_SIMULATION
 #define TEMP_CONVERSION_FACTOR 0.02686202686202686f
@@ -73,6 +82,7 @@ const int ADD_SNS_CURR_OFF_CAL = 28;
 const int ADD_OUT_CURR_OFF_CAL = 32;
 const int ADD_FAN_TEMP_ON = 36;
 const int ADD_FAN_HOLD_MS = 40;
+const int ADD_TEMP_FAC_CAL = 44;
 
 #endif
 

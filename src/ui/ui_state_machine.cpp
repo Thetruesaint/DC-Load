@@ -11,6 +11,7 @@
 
 namespace {
 UiScreen g_currentScreen = UiScreen::Home;
+UiScreen g_previousScreen = UiScreen::Home;
 uint8_t g_lastMenuRootSelection = 0xFF;
 
 struct LimitsRenderCache {
@@ -83,6 +84,13 @@ struct ConfigRtcRenderCache {
   bool valid;
 };
 
+struct ConfigChromeRenderCache {
+  float tempC;
+  float fanTempOnC;
+  float tempCutOffC;
+  bool valid;
+};
+
 struct BatterySetupRenderCache {
   uint8_t stage;
   char batteryType[8];
@@ -121,9 +129,21 @@ LimitsRenderCache g_limitsCache = {0.0f, 0.0f, 0.0f, 0, false, {'\0'}, false};
 CalibrationRenderCache g_calibrationCache = {1, false};
 ClockRenderCache g_clockCache = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, {'\0'}, false};
 ConfigRtcRenderCache g_configRtcCache = {0, 0, 0, 0, 0, false, false};
+ConfigChromeRenderCache g_configChromeCache = {0.0f, 0.0f, 0.0f, false};
 BatterySetupRenderCache g_batterySetupCache = {0, {'\0'}, {'\0'}, false, false};
 TransientContSetupRenderCache g_transientContSetupCache = {0, 0.0f, 0.0f, 0.0f, {'\0'}, false, false};
 TransientListSetupRenderCache g_transientListSetupCache = {0, 0, 0, 0, 0.0f, 0.0f, {'\0'}, false, false};
+
+bool is_transient_cont_setup_screen(UiScreen screen) {
+  return screen == UiScreen::TransientContSetupLow ||
+         screen == UiScreen::TransientContSetupHigh ||
+         screen == UiScreen::TransientContSetupPeriod;
+}
+
+bool is_transient_list_setup_screen(UiScreen screen) {
+  return screen == UiScreen::TransientListSetupCount ||
+         screen == UiScreen::TransientListSetupStep;
+}
 
 void draw_menu_root_if_needed(const UiViewState &viewState) {
   if (g_lastMenuRootSelection == viewState.menuRootSelection) return;
@@ -223,7 +243,7 @@ void draw_fan_settings_if_needed(const UiViewState &viewState) {
       g_fanSettingsCache.tempC == viewState.fanDraftTempC &&
       g_fanSettingsCache.holdSeconds == viewState.fanDraftHoldSeconds &&
       g_fanSettingsCache.editActive == viewState.fanEditActive &&
-      g_fanSettingsCache.fanOn == viewState.fanManualStateOn &&
+      g_fanSettingsCache.fanOn == viewState.fanOutputOn &&
       std::strcmp(g_fanSettingsCache.inputText, viewState.fanInputText) == 0) {
     return;
   }
@@ -233,7 +253,7 @@ void draw_fan_settings_if_needed(const UiViewState &viewState) {
   g_fanSettingsCache.tempC = viewState.fanDraftTempC;
   g_fanSettingsCache.holdSeconds = viewState.fanDraftHoldSeconds;
   g_fanSettingsCache.editActive = viewState.fanEditActive;
-  g_fanSettingsCache.fanOn = viewState.fanManualStateOn;
+  g_fanSettingsCache.fanOn = viewState.fanOutputOn;
   std::strncpy(g_fanSettingsCache.inputText, viewState.fanInputText, sizeof(g_fanSettingsCache.inputText) - 1);
   g_fanSettingsCache.inputText[sizeof(g_fanSettingsCache.inputText) - 1] = '\0';
   g_fanSettingsCache.valid = true;
@@ -344,35 +364,6 @@ bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
                        g_configRtcCache.shiftActive == shiftActive;
 
   if (!sameRtc) {
-    switch (screen) {
-      case UiScreen::MenuRoot:
-        g_lastMenuRootSelection = 0xFF;
-        break;
-      case UiScreen::MenuProtection:
-        g_protectionCache.valid = false;
-        break;
-      case UiScreen::MenuUpdate:
-        g_updateCache.valid = false;
-        break;
-      case UiScreen::MenuFwUpdate:
-        g_fwUpdateCache.valid = false;
-        break;
-      case UiScreen::MenuFanSettings:
-        g_fanSettingsCache.valid = false;
-        break;
-      case UiScreen::MenuLimits:
-        g_limitsCache.valid = false;
-        break;
-      case UiScreen::MenuCalibration:
-        g_calibrationCache.valid = false;
-        break;
-      case UiScreen::MenuClock:
-        g_clockCache.valid = false;
-        break;
-      default:
-        break;
-    }
-
     g_configRtcCache.day = viewState.rtcDay;
     g_configRtcCache.month = viewState.rtcMonth;
     g_configRtcCache.year = viewState.rtcYear;
@@ -383,6 +374,44 @@ bool invalidate_active_config_screen_if_rtc_changed(UiScreen screen, const UiVie
     return true;
   }
   return false;
+}
+
+bool invalidate_active_config_screen_if_temp_changed(UiScreen screen, const UiViewState &viewState) {
+  switch (screen) {
+    case UiScreen::BatterySetupTask:
+    case UiScreen::BatterySetupCustomCutoff:
+    case UiScreen::BatterySetupCellCount:
+    case UiScreen::TransientContSetupLow:
+    case UiScreen::TransientContSetupHigh:
+    case UiScreen::TransientContSetupPeriod:
+    case UiScreen::TransientListSetupCount:
+    case UiScreen::TransientListSetupStep:
+    case UiScreen::MenuRoot:
+    case UiScreen::MenuProtection:
+    case UiScreen::MenuUpdate:
+    case UiScreen::MenuFanSettings:
+    case UiScreen::MenuLimits:
+    case UiScreen::MenuCalibration:
+    case UiScreen::MenuClock:
+      break;
+    default:
+      return false;
+  }
+
+  const bool sameTemp = g_configChromeCache.valid &&
+                        g_configChromeCache.tempC == viewState.tempC &&
+                        g_configChromeCache.fanTempOnC == viewState.fanTempOnC &&
+                        g_configChromeCache.tempCutOffC == viewState.tempCutOffC;
+
+  if (sameTemp) {
+    return false;
+  }
+
+  g_configChromeCache.tempC = viewState.tempC;
+  g_configChromeCache.fanTempOnC = viewState.fanTempOnC;
+  g_configChromeCache.tempCutOffC = viewState.tempCutOffC;
+  g_configChromeCache.valid = true;
+  return true;
 }
 
 void screen_enter_home(const UiViewState &viewState) {
@@ -397,6 +426,7 @@ void screen_enter_home(const UiViewState &viewState) {
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
+  g_configChromeCache.valid = false;
   if (viewState.mode == CA && app_calibration_confirmation_active()) {
     return;
   }
@@ -461,9 +491,12 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  if (!sameStage || !sameValues) {
+  if (!g_transientContSetupCache.valid) {
     uiDisplayRenderTransientContSetup(viewState);
   } else {
+    if (!sameStage || !sameValues) {
+      uiDisplayUpdateTransientContSetupContent(viewState);
+    }
     uiDisplayUpdateTransientContSetupValue(viewState);
   }
 
@@ -478,7 +511,9 @@ void draw_transient_cont_setup_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_transient_cont_setup(const UiViewState &viewState) {
-  g_transientContSetupCache.valid = false;
+  if (!is_transient_cont_setup_screen(g_previousScreen)) {
+    g_transientContSetupCache.valid = false;
+  }
   draw_transient_cont_setup_if_needed(viewState);
 }
 
@@ -505,9 +540,12 @@ void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
     return;
   }
 
-  if (!sameStage || !sameValues) {
+  if (!g_transientListSetupCache.valid) {
     uiDisplayRenderTransientListSetup(viewState);
   } else {
+    if (!sameStage || !sameValues) {
+      uiDisplayUpdateTransientListSetupContent(viewState);
+    }
     uiDisplayUpdateTransientListSetupValue(viewState);
   }
 
@@ -524,7 +562,9 @@ void draw_transient_list_setup_if_needed(const UiViewState &viewState) {
 }
 
 void screen_enter_transient_list_setup(const UiViewState &viewState) {
-  g_transientListSetupCache.valid = false;
+  if (!is_transient_list_setup_screen(g_previousScreen)) {
+    g_transientListSetupCache.valid = false;
+  }
   draw_transient_list_setup_if_needed(viewState);
 }
 
@@ -537,10 +577,12 @@ void screen_render_transient_list_setup(const UiViewState &viewState) { (void)vi
 
 void screen_enter_menu_root(const UiViewState &viewState) {
   g_lastMenuRootSelection = 0xFF;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_menu_root_if_needed(viewState);
 }
 
 void screen_update_menu_root(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_menu_root_if_needed(viewState);
 }
 
@@ -548,10 +590,12 @@ void screen_render_menu_root(const UiViewState &viewState) { (void)viewState; }
 
 void screen_enter_menu_protection(const UiViewState &viewState) {
   g_protectionCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_protection_if_needed(viewState);
 }
 
 void screen_update_menu_protection(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_protection_if_needed(viewState);
 }
 
@@ -559,10 +603,12 @@ void screen_render_menu_protection(const UiViewState &viewState) { (void)viewSta
 
 void screen_enter_menu_update(const UiViewState &viewState) {
   g_updateCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_update_if_needed(viewState);
 }
 
 void screen_update_menu_update(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_update_if_needed(viewState);
 }
 
@@ -585,10 +631,12 @@ void screen_render_menu_fw_update(const UiViewState &viewState) { (void)viewStat
 
 void screen_enter_menu_fan_settings(const UiViewState &viewState) {
   g_fanSettingsCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_fan_settings_if_needed(viewState);
 }
 
 void screen_update_menu_fan_settings(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_fan_settings_if_needed(viewState);
 }
 
@@ -596,10 +644,12 @@ void screen_render_menu_fan_settings(const UiViewState &viewState) { (void)viewS
 
 void screen_enter_menu_limits(const UiViewState &viewState) {
   g_limitsCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_limits_if_needed(viewState);
 }
 
 void screen_update_menu_limits(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_limits_if_needed(viewState);
 }
 
@@ -607,10 +657,12 @@ void screen_render_menu_limits(const UiViewState &viewState) { (void)viewState; 
 
 void screen_enter_menu_calibration(const UiViewState &viewState) {
   g_calibrationCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_calibration_if_needed(viewState);
 }
 
 void screen_update_menu_calibration(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_calibration_if_needed(viewState);
 }
 
@@ -618,10 +670,12 @@ void screen_render_menu_calibration(const UiViewState &viewState) { (void)viewSt
 
 void screen_enter_menu_clock(const UiViewState &viewState) {
   g_clockCache.valid = false;
+  uiDisplayUpdateConfigChrome(viewState);
   draw_clock_if_needed(viewState);
 }
 
 void screen_update_menu_clock(const UiViewState &viewState) {
+  uiDisplayUpdateConfigMetrics(viewState);
   draw_clock_if_needed(viewState);
 }
 
@@ -652,8 +706,24 @@ void run_screen_enter(UiScreen screen, const UiViewState &viewState) {
 
 void run_screen_update(UiScreen screen, const UiViewState &viewState) {
   const bool configChromeChanged = invalidate_active_config_screen_if_rtc_changed(screen, viewState);
-  if (configChromeChanged) {
+  const bool configTempChanged = invalidate_active_config_screen_if_temp_changed(screen, viewState);
+  if (configChromeChanged || configTempChanged) {
     switch (screen) {
+      case UiScreen::BatterySetupTask:
+      case UiScreen::BatterySetupCustomCutoff:
+      case UiScreen::BatterySetupCellCount:
+      case UiScreen::TransientContSetupLow:
+      case UiScreen::TransientContSetupHigh:
+      case UiScreen::TransientContSetupPeriod:
+      case UiScreen::TransientListSetupCount:
+      case UiScreen::TransientListSetupStep:
+        if (configTempChanged) {
+          uiDisplayUpdateSetupTopStatus(viewState);
+        }
+        if (configChromeChanged) {
+          uiDisplayUpdateSetupFooterTime();
+        }
+        break;
       case UiScreen::MenuRoot:
       case UiScreen::MenuProtection:
       case UiScreen::MenuUpdate:
@@ -661,7 +731,7 @@ void run_screen_update(UiScreen screen, const UiViewState &viewState) {
       case UiScreen::MenuLimits:
       case UiScreen::MenuCalibration:
       case UiScreen::MenuClock:
-        uiDisplayUpdateConfigChrome();
+        uiDisplayUpdateAccentChromeStatus();
         break;
       case UiScreen::MenuFwUpdate:
         break;
@@ -718,6 +788,7 @@ void run_screen_render(UiScreen screen, const UiViewState &viewState) {
 void ui_state_machine_reset() {
   uiDisplayInvalidateHomeLayout();
   g_currentScreen = UiScreen::Home;
+  g_previousScreen = UiScreen::Home;
   g_lastMenuRootSelection = 0xFF;
   g_protectionCache.valid = false;
   g_updateCache.valid = false;
@@ -727,6 +798,7 @@ void ui_state_machine_reset() {
   g_calibrationCache.valid = false;
   g_clockCache.valid = false;
   g_configRtcCache.valid = false;
+  g_configChromeCache.valid = false;
   g_batterySetupCache.valid = false;
   g_transientContSetupCache.valid = false;
   g_transientListSetupCache.valid = false;
@@ -734,6 +806,7 @@ void ui_state_machine_reset() {
 
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) {
   if (targetScreen != g_currentScreen) {
+    g_previousScreen = g_currentScreen;
     uiDisplayInvalidateHomeLayout();
     if (g_currentScreen == UiScreen::MenuFwUpdate && targetScreen != UiScreen::MenuFwUpdate) {
       app_ota_stop();
@@ -750,6 +823,10 @@ void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState) 
 
 UiScreen ui_state_machine_current_screen() {
   return g_currentScreen;
+}
+
+void ui_state_machine_invalidate_menu_calibration() {
+  g_calibrationCache.valid = false;
 }
 
 

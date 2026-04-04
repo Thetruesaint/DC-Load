@@ -77,7 +77,9 @@ void dispatch_encoder_delta(int32_t value) {
     case UiScreen::MenuFwUpdate:
       return;
     case UiScreen::MenuFanSettings:
-      if (!g_state.fanEditActive) {
+      if (g_state.fanEditActive) {
+        fan_menu_adjust_field(&g_state, direction);
+      } else {
         config_menu_step_selection(&g_state, ConfigMenu::FanSettings, direction);
       }
       return;
@@ -89,7 +91,9 @@ void dispatch_encoder_delta(int32_t value) {
       }
       return;
     case UiScreen::MenuLimits:
-      if (!g_state.limitsEditActive) {
+      if (g_state.limitsEditActive) {
+        limits_menu_adjust_field(&g_state, direction);
+      } else {
         limits_menu_move_field(&g_state, direction);
       }
       return;
@@ -441,7 +445,7 @@ void dispatch_key_for_config_menu(char key) {
       return;
 
     case UiScreen::MenuCalibration:
-      if (key >= '1' && key <= '5') {
+      if (key >= '1' && key <= '6') {
         config_menu_select_index(&g_state, ConfigMenu::Calibration, static_cast<uint8_t>(key - '1'));
       } else if (key == 'U' || key == 'L') {
         config_menu_step_selection(&g_state, ConfigMenu::Calibration, -1);
@@ -547,17 +551,6 @@ void core_init() {
 
 void core_sync_from_runtime(const RuntimeSnapshot &snapshot) {
   core_sync_merge_runtime_state(&g_state, snapshot);
-  const bool calibrationMenuReturnRequested = app_calibration_consume_menu_return_request();
-  if (calibrationMenuReturnRequested) {
-    g_state.currentConfigMenu = ConfigMenu::Calibration;
-    g_state.parentConfigMenu = ConfigMenu::Root;
-    g_state.calibrationMenuActive = true;
-    if (g_state.calibrationMenuOption < 1 || g_state.calibrationMenuOption > 5) {
-      g_state.calibrationMenuOption = 1;
-    }
-    ui_state_machine_reset();
-  }
-
   core_mode_normalize_state(&g_state);
   core_mode_update_setpoints(&g_state);
   core_mode_update_ui_screen(&g_state);

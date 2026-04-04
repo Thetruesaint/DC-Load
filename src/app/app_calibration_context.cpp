@@ -9,7 +9,6 @@
 namespace {
 bool calibrationVoltageMode = false;
 bool calibrationFirstPointTaken = false;
-bool calibrationMenuReturnRequested = false;
 bool calibrationConfirmationActive = false;
 bool calibrationPendingVoltageMode = false;
 uint8_t calibrationReturnMode = 0;
@@ -21,6 +20,7 @@ float snsCurrCalibFactor = 1.0f;
 float snsCurrCalibOffset = 0.0f;
 float outCurrCalibFactor = 1.0f;
 float outCurrCalibOffset = 0.0f;
+float tempCalibFactor = 1.0f;
 
 float pendingSensorFactor = 1.0f;
 float pendingSensorOffset = 0.0f;
@@ -36,16 +36,8 @@ bool app_calibration_is_voltage_mode() {
   return calibrationVoltageMode;
 }
 
-void app_calibration_set_voltage_mode(bool enabled) {
-  calibrationVoltageMode = enabled;
-}
-
 bool app_calibration_first_point_taken() {
   return calibrationFirstPointTaken;
-}
-
-void app_calibration_set_first_point_taken(bool taken) {
-  calibrationFirstPointTaken = taken;
 }
 
 void app_calibration_reset_session() {
@@ -81,9 +73,24 @@ bool app_calibration_capture_or_compute(
     float realValue,
     float setCurrentA,
     AppCalibrationComputationResult &result) {
-  result = {false, false, false, 1.0f, 0.0f, 1.0f, 0.0f};
+  result = {false, false, false, false, false, false, false, 1.0f, 0.0f, 1.0f, 0.0f};
 
   if (!calibrationFirstPointTaken) {
+    const float senseErrRatio1 = fabsf(measuredValue - realValue) / max(fabsf(measuredValue), 0.001f);
+    result.ready = true;
+    result.point1SenseMismatch = senseErrRatio1 > CAL_MAX_POINT1_ERROR_RATIO;
+
+    if (!calibrationVoltageMode) {
+      const float outputErrRatio1 = fabsf(setCurrentA - realValue) / max(fabsf(setCurrentA), 0.001f);
+      result.point1OutputMismatch = outputErrRatio1 > CAL_MAX_POINT1_ERROR_RATIO;
+    }
+
+    result.pointMismatch = result.point1SenseMismatch || result.point1OutputMismatch;
+    if (result.pointMismatch) {
+      calibrationFirstPointTaken = false;
+      return true;
+    }
+
     firstMeasuredValue = measuredValue;
     firstRealValue = realValue;
     firstSetCurrentA = setCurrentA;
@@ -101,22 +108,30 @@ bool app_calibration_capture_or_compute(
       ? (measuredDelta < CAL_MIN_VOLTAGE_DELTA)
       : (setCurrentDelta < CAL_MIN_CURRENT_DELTA);
 
-  if (!calibrationVoltageMode) {
-    const float errRatio1 = fabsf(firstMeasuredValue - firstSetCurrentA) / max(firstSetCurrentA, 0.001f);
-    const float errRatio2 = fabsf(measuredValue - setCurrentA) / max(setCurrentA, 0.001f);
-    result.pointMismatch = (errRatio1 > CAL_MAX_POINT_ERROR_RATIO) || (errRatio2 > CAL_MAX_POINT_ERROR_RATIO);
-  }
-
-  if (result.pointsTooClose || result.pointMismatch) {
+  if (result.pointsTooClose) {
     return true;
   }
 
-  result.sensorFactor = max(0.9f, min(1.1f, (realValue - firstRealValue) / (measuredValue - firstMeasuredValue)));
-  result.sensorOffset = max(-0.1f, min(0.1f, firstRealValue - (firstMeasuredValue * result.sensorFactor)));
+  const float senseErrRatio2 = fabsf(measuredValue - realValue) / max(fabsf(measuredValue), 0.001f);
+  result.point2SenseMismatch = senseErrRatio2 > CAL_MAX_POINT2_ERROR_RATIO;
 
   if (!calibrationVoltageMode) {
-    result.outputFactor = max(0.9f, min(1.1f, (realValue - firstRealValue) / (setCurrentA - firstSetCurrentA)));
-    result.outputOffset = max(-0.1f, min(0.1f, firstRealValue - (firstSetCurrentA * result.outputFactor))) * 1000.0f;
+    const float outputErrRatio2 = fabsf(setCurrentA - realValue) / max(fabsf(setCurrentA), 0.001f);
+    result.point2OutputMismatch = outputErrRatio2 > CAL_MAX_POINT2_ERROR_RATIO;
+  }
+
+  result.pointMismatch = result.point2SenseMismatch || result.point2OutputMismatch;
+
+  if (result.pointMismatch) {
+    return true;
+  }
+
+  result.sensorFactor = max(CAL_FACTOR_MIN, min(CAL_FACTOR_MAX, (realValue - firstRealValue) / (measuredValue - firstMeasuredValue)));
+  result.sensorOffset = max(CAL_OFFSET_MIN, min(CAL_OFFSET_MAX, firstRealValue - (firstMeasuredValue * result.sensorFactor)));
+
+  if (!calibrationVoltageMode) {
+    result.outputFactor = max(CAL_FACTOR_MIN, min(CAL_FACTOR_MAX, (realValue - firstRealValue) / (setCurrentA - firstSetCurrentA)));
+    result.outputOffset = max(CAL_OFFSET_MIN, min(CAL_OFFSET_MAX, firstRealValue - (firstSetCurrentA * result.outputFactor))) * 1000.0f;
   }
 
   return true;
@@ -175,6 +190,10 @@ void app_calibration_accept_pending_result() {
     true,
     false,
     false,
+    false,
+    false,
+    false,
+    false,
     pendingSensorFactor,
     pendingSensorOffset,
     pendingOutputFactor,
@@ -213,16 +232,6 @@ int app_calibration_return_function_index() {
   return calibrationReturnFunctionIndex;
 }
 
-void app_calibration_request_menu_return() {
-  calibrationMenuReturnRequested = true;
-}
-
-bool app_calibration_consume_menu_return_request() {
-  const bool requested = calibrationMenuReturnRequested;
-  calibrationMenuReturnRequested = false;
-  return requested;
-}
-
 float& app_calibration_sns_volt_factor_ref() {
   return snsVoltCalibFactor;
 }
@@ -245,4 +254,8 @@ float& app_calibration_out_curr_factor_ref() {
 
 float& app_calibration_out_curr_offset_ref() {
   return outCurrCalibOffset;
+}
+
+float& app_calibration_temp_factor_ref() {
+  return tempCalibFactor;
 }

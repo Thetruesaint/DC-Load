@@ -19,6 +19,5 @@ void app_fan_set_output_state(bool on);
 bool app_fan_manual_override_active();
 bool app_fan_manual_state_on();
 void app_fan_set_manual_override(bool active, bool on);
-void app_fan_clear_manual_override();
 
 #endif

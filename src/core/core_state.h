@@ -77,6 +77,7 @@ struct SystemState {
   bool fanEditActive;
   char fanInputText[8];
   uint8_t fanInputLength;
+  bool fanOutputOn;
   bool fanManualOverrideActive;
   bool fanManualStateOn;
 

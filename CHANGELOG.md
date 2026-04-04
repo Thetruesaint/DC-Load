@@ -1,17 +1,48 @@
-## v2.13 ## LEVELING UP!
+## v2.14 ## CLEANING IT UP!
 
 **Trabajando:**
-
+- 
 
 **A Trabajar:**
-- Seguir optimizando la arquitectura
+- 
+
+**Mejoras**
+- En BC tiene status de "Pause" cuando se pasa a OFF sin resetear el modo.
+- Ahora los valores de a y v y w se actualizan en pantalla cada 2mA y 5mV o 10mV w es consecuencia del producto. Solo en visualización.
+- Calibración: Nueva evaluación de aceptación de P1 y P2 para Out y Sense: Out: usa abs(SET - REAL) / SET y Sense: usa abs(READ - REAL) / READ comparador con margenes seteables por constantes en system_constants.h
+- Calibración con mensajes de abort más claros y espera con E-Accept
+- Ahora `MOSFONOFF = HIGH` queda reservado para emergencia: si falla el `health check` de arranque o si salta una protección. En operación normal, `OFF` se controla con `DAC = 0` para evitar lecturas residuales de corriente que genera el apagado forzado de los MOSFET. Tras `E-Accept` en una protección, `MOSFONOFF` vuelve a `LOW` y el sistema queda listo para continuar.
+ - Si falla el `health check`, la pantalla queda detenida mostrando el fallo y no avanza el arranque.
+ - Calibraciòn de Sensado de Temperatura con su menu y almacenamiento de factor en EEPROM, ya no se publica en Health Check.
+ - Edicion de ajuste de limites y Fan Settings con encoder y otras mejoras visuales
+ - Reorganización de todas las funciones de display
+ - Ahora en los menues de configuración, a/v/w se actualizan.
+ 
+**Fixes**
+- `TC` y `TL`se refrescaba todo el render con cada ingreso de valor, ahora solo zona azul
+- Runout deshabilitado para SET <= 10 mA dado que no se requiere y daba falsa alarma
+- En Fan Setting ahora la opción 3-FAN muestra el estado real del FAN.
+- El refresco de minutos y temperatura ya no refresca toda la pantalla.
+- Optimizaciòn en refresco de menues de configuracion 
 
 **Bugs**
 - Pixeles remanentes cuando a y v se reacomodan por los digitos
 
-**Fixes**
-- Indicacion de `sf` en menues de configuracion
-- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
+
+**Posibles mejoras de software**
+- Menu de configuracion ampliado, por ejemplo limites de descarga de baterias
+- En `TC` y `TL`: mostrar mSec decrecientes
+- En `CP` y `CR`: recalcular los limites de `W` y `R` en funcion de la `DC` presente
+- El RTC es un `DS1307` de Maxim y cuenta con una `EEPROM AT24C32` de Atmel. Evaluar aprovechar esa memoria
+
+
+**Posibles mejoras de hardware**
+- Medicion de baterias por celda
+- Medir frecuencia maxima en `TC` y `TL` con osciloscopio, usando LiPo
+- Referencia de `4.096V` para ADC
+- Resistencia shunt con mejor coeficiente de temperatura
+
+## v2.13 ## LEVELING UP!
 
 **Mejoras**
 - Adjunto Documentación y reorganizo
@@ -20,21 +51,12 @@
 - Indicador de `ON` en blanco y temperatura con grado de color de amarillo a rojo al incrementarse
 - Histograma de `a/v/t` accesible con `S+0` para `CC`, `CP`, `CR` y `BC`
 
-**Posibles mejoras de software**
-- Unificar template para cuando se supera mas de un limite
-- Menu de configuracion ampliado, por ejemplo limites de descarga de baterias
-- En `TC` y `TL`: mostrar mSec decrecientes
-- En `CP` y `CR`: recalcular los limites de `W` y `R` en funcion de la `DC` presente
-- El RTC es un `DS1307` de Maxim y cuenta con una `EEPROM AT24C32` de Atmel. Evaluar aprovechar esa memoria
-- Promediar los valores de `a` y `v` para reducir refrescos continuos
-- Graficar `Y/t` para mostrar el historico de `a` y `v`
+**Fixes**
+- Indicacion de `sf` en menues de configuracion
+- `BC`, `TC` y `TL` ahora muestran `a`, `v` y `w` durante el setup
 
-**Posibles mejoras de hardware**
-- Medicion de baterias por celda
-- Medir frecuencia maxima en `TC` y `TL` con osciloscopio, usando LiPo
-- Habilitar control externo de MOSFETs
-- Referencia de `4.096V` para ADC
-- Resistencia shunt con mejor coeficiente de temperatura
+**Bugs**
+- Pixeles remanentes cuando a y v se reacomodan por los digitos
 
 ## v2.12 ## NICE TO SEE YOU
 

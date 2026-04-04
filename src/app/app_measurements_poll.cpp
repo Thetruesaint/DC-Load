@@ -7,6 +7,7 @@
 #include "app_load_context.h"
 #include "app_measurements_context.h"
 #include "app_mode_context.h"
+#include "app_mode_state_context.h"
 
 namespace {
 float apply_voltage_calibration(float rawVoltage) {
@@ -32,25 +33,39 @@ void app_measurements_poll() {
 #else
   static float simulatedVoltage = 0.0f;
   static unsigned long lastDecreaseTime = 0;
+  static bool batteryVoltageInitialized = false;
   const unsigned long currentMillis = app_io_millis();
   const bool loadEnabled = app_load_is_enabled();
   const float simulatedSourceVoltage = SIM_DEFAULT_VOLTAGE;
+  const bool batteryMode = app_mode_is_battery();
+  const bool batteryConfigured = app_mode_state_configured();
 
-  if (!app_mode_is_battery() && !app_mode_is_calibration()) {
+  if (!batteryMode && !app_mode_is_calibration()) {
     simulatedVoltage = simulatedSourceVoltage;
+    batteryVoltageInitialized = false;
     app_measurements_set_voltage_v(simulatedVoltage);
-  } else if (app_mode_is_battery()) {
-    if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
-      lastDecreaseTime = currentMillis;
-      simulatedVoltage -= 0.005f;
-      simulatedVoltage = max(simulatedVoltage, 0.0f);
-      app_measurements_set_voltage_v(simulatedVoltage);
-    } else if (!loadEnabled) {
+  } else if (batteryMode) {
+    if (!batteryConfigured) {
       simulatedVoltage = simulatedSourceVoltage;
+      batteryVoltageInitialized = false;
+      app_measurements_set_voltage_v(simulatedVoltage);
+    } else {
+      if (!batteryVoltageInitialized) {
+        simulatedVoltage = simulatedSourceVoltage;
+        lastDecreaseTime = currentMillis;
+        batteryVoltageInitialized = true;
+      }
+
+      if (loadEnabled && (currentMillis - lastDecreaseTime >= 2000)) {
+        lastDecreaseTime = currentMillis;
+        simulatedVoltage -= 0.005f;
+        simulatedVoltage = max(simulatedVoltage, 0.0f);
+      }
       app_measurements_set_voltage_v(simulatedVoltage);
     }
   } else if (app_mode_is_calibration()) {
     simulatedVoltage = simulatedSourceVoltage;
+    batteryVoltageInitialized = false;
     const float errorVoltage = simulatedVoltage * 1.05f - 0.1f;
     app_measurements_set_voltage_v(apply_voltage_calibration(errorVoltage));
   }

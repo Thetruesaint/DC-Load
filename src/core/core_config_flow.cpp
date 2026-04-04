@@ -1,9 +1,5 @@
 #include "core_config_flow.h"
 
-bool core_config_wants_limits(const SystemState &state) {
-  return state.openLimitsConfigEvent;
-}
-
 bool core_config_wants_calibration(const SystemState &state) {
   return state.openCalibrationConfigEvent;
 }

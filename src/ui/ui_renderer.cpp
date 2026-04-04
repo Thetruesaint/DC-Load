@@ -46,6 +46,7 @@ UiViewState make_ui_view_state(const SystemState &state) {
   view.fanEditActive = state.fanEditActive;
   std::strncpy(view.fanInputText, state.fanInputText, sizeof(view.fanInputText) - 1);
   view.fanInputText[sizeof(view.fanInputText) - 1] = '\0';
+  view.fanOutputOn = state.fanOutputOn;
   view.fanManualOverrideActive = state.fanManualOverrideActive;
   view.fanManualStateOn = state.fanManualStateOn;
   view.rtcDay = state.rtcDay;

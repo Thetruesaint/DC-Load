@@ -7,5 +7,6 @@
 void ui_state_machine_reset();
 void ui_state_machine_tick(UiScreen targetScreen, const UiViewState &viewState);
 UiScreen ui_state_machine_current_screen();
+void ui_state_machine_invalidate_menu_calibration();
 
 #endif

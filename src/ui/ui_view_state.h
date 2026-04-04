@@ -43,6 +43,7 @@ struct UiViewState {
   float fanDraftHoldSeconds;
   bool fanEditActive;
   char fanInputText[8];
+  bool fanOutputOn;
   bool fanManualOverrideActive;
   bool fanManualStateOn;
 
